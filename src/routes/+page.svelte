@@ -24,6 +24,7 @@
 	import { updateSettings } from '$utils/updateSettings';
 	import { quranMetaData, juzMeta, hizbMeta, mostRead } from '$data/quranMeta';
 	import { term } from '$utils/terminologies';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 	import { disabledClasses } from '$data/commonClasses';
 	import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 
@@ -157,8 +158,8 @@
 					<Search2Bold size={4} />
 					<span class="hidden md:block">Cari</span>
 				</button>
-				<a href="/topics" class="{topButtonClasses} !py-4 md:bg-transparent"><TopicsBold size={4} /><span class="hidden md:block">Topics</span></a>
-				<a href={`/${term('supplications').toLowerCase()}`} class="{topButtonClasses} !py-4 md:bg-transparent"><SupplicationBold size={4} /><span class="hidden md:block">{term('supplications')}</span></a>
+				<a href="/topics" class="{topButtonClasses} !py-4 md:bg-transparent"><TopicsBold size={4} /><span class="hidden md:block">Topik</span></a>
+				<a href="/duas" class="{topButtonClasses} !py-4 md:bg-transparent"><SupplicationBold size={4} /><span class="hidden md:block">{term('supplications')}</span></a>
 				<a href={Object.prototype.hasOwnProperty.call($__lastRead, 'page') ? `/page?id=${$__lastRead.page}` : '/page?id=1'} class="{topButtonClasses} !py-4 md:bg-transparent"><BookFilled size={4} /><span class="hidden md:block">Mushaf</span></a>
 				<a href="/morphology?word=1:1" class="{topButtonClasses} !py-4 md:bg-transparent"><MorphologyBold size={4} /><span class="hidden md:block">Morfologi</span></a>
 			</div>
@@ -245,7 +246,7 @@
 			<button class="inline-flex p-2 rounded-full items-center border border-transparent hover:border-theme-accent bg-theme-accent/5" on:click={() => (homepageLayoutPreferences.extrasPanelVisible = !homepageLayoutPreferences.extrasPanelVisible)} data-umami-event="Toggle Panel Button">
 				<svelte:component this={homepageLayoutPreferences.extrasPanelVisible ? EyeCrossed : Eye} size={4} />
 			</button>
-			<Tooltip arrow={false} type="light" placement="top" class="z-30 w-max hidden md:block font-normal">{homepageLayoutPreferences.extrasPanelVisible ? 'Hide Panel' : 'Show Panel'}</Tooltip>
+			<Tooltip arrow={false} type="light" placement="top" class="z-30 w-max hidden md:block font-normal">{homepageLayoutPreferences.extrasPanelVisible ? 'Sembunyikan Panel' : 'Tampilkan Panel'}</Tooltip>
 		</div>
 
 		<div id="extras-panel" class="mb-4 pt-2 {homepageLayoutPreferences.extrasPanelVisible ? 'block' : 'hidden'}">
@@ -265,13 +266,13 @@
 					<div class="{cardGridClasses} grid-cols-1">
 						{#each Object.entries(mostRead) as [_, item]}
 							<a href={item.url} class="!justify-start {cardInnerClasses} flex-col">
-								<span class="text-sm">{quranMetaData[item.chapter].transliteration} ({item.verses})</span>
+								<span class="text-sm">{getChapterDisplayMeta(item.chapter).transliteration} ({item.verses})</span>
 								<div class="block text-xs opacity-70">{item.title}</div>
 							</a>
 						{/each}
 					</div>
 
-					<div class="px-2 text-xs opacity-70">Suggestions listed here are based on the most frequently read chapters and verses by muslim audience, as well as virtues derived from Hadiths. While some Hadiths highlighting these virtues may be considered weak by some scholars, using them for beneficial knowledge is also a widely accepted opinion.</div>
+					<div class="px-2 text-xs opacity-70">Daftar saran di sini disusun dari surah dan ayat yang paling sering dibaca umat Muslim, serta keutamaan yang disebut dalam hadis. Sebagian hadis tentang keutamaan tersebut dinilai lemah oleh sebagian ulama, tetapi penggunaannya untuk pengetahuan yang bermanfaat juga dikenal sebagai pendapat yang diterima.</div>
 				</div>
 			</div>
 
@@ -285,7 +286,7 @@
 		<div id="quran-division-tabs" class="mt-4">
 			<div class="flex flex-row items-center justify-between">
 				<div class="flex text-sm font-medium text-center justify-center space-x-1 md:space-x-4 rounded-full py-2">
-					<button id="favorite-chapters-tab" on:click={() => changeTabs('divisionsActiveTab', favoriteChaptersTab)} class="{divisionsActiveTab === favoriteChaptersTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center" data-umami-event="Favorite Chapters Tab Button" aria-label={`Favorite ${term('chapters')}`} title={`Favorite ${term('chapters')}`}>
+					<button id="favorite-chapters-tab" on:click={() => changeTabs('divisionsActiveTab', favoriteChaptersTab)} class="{divisionsActiveTab === favoriteChaptersTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center" data-umami-event="Favorite Chapters Tab Button" aria-label={`${term('chapters')} Favorit`} title={`${term('chapters')} Favorit`}>
 						<svelte:component this={divisionsActiveTab === favoriteChaptersTab ? StarFilled : Star} size={4} />
 					</button>
 					<button on:click={() => changeTabs('divisionsActiveTab', chaptersTab)} class="{divisionsActiveTab === chaptersTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-2 items-center" data-umami-event="Chapters Tab Button">
@@ -303,9 +304,9 @@
 					<button class="inline-flex p-2 rounded-full items-center border border-transparent hover:border-theme-accent bg-theme-accent/5" on:click={() => sortDivisions()} data-umami-event="Homepage Divisions Sort Button">
 						<svelte:component this={currentSortIsAscending ? SortDescending : SortAscending} size={4} />
 					</button>
-					<Tooltip arrow={false} type="light" placement="top" class="z-30 w-max hidden md:block font-normal">
-						{currentSortIsAscending ? 'Sort Descending' : 'Sort Ascending'}
-					</Tooltip>
+						<Tooltip arrow={false} type="light" placement="top" class="z-30 w-max hidden md:block font-normal">
+							{currentSortIsAscending ? 'Urutkan Menurun' : 'Urutkan Menaik'}
+						</Tooltip>
 				{/if}
 			</div>
 		</div>
@@ -323,7 +324,7 @@
 							<span class="truncate">
 								<span class="md:hidden">Lanjut:</span>
 								<span class="hidden md:inline-block">Lanjut Baca:</span>
-								{quranMetaData[lastReadChapter].transliteration}, {lastReadChapter}:{lastReadVerse}
+								{getChapterDisplayMeta(lastReadChapter).transliteration}, {lastReadChapter}:{lastReadVerse}
 							</span>
 						</a>
 					{/if}
@@ -369,7 +370,7 @@
 						<!-- Edit Favorites button  -->
 						<button class="{topButtonClasses} truncate w-full min-h-[54px] md:min-h-[58px]" on:click={() => __favoriteChaptersModalVisible.set(true)}>
 							<Edit2 size={4} />
-							<span>{hasFavorites ? 'Manage' : 'Add Your'} Favorite {term('chapters')}</span>
+							<span>{hasFavorites ? `Kelola ${term('chapters')} Favorit` : `Tambah ${term('chapters')} Favorit`}</span>
 						</button>
 					</div>
 

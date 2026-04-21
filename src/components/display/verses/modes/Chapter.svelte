@@ -88,7 +88,7 @@
 		<!-- invisible for now... -->
 		{#if endVerse < chapterTotalVerses && document.getElementById('loadVersesButton') === null}
 			<div id="loadVersesButton" class="flex justify-center pt-6 pb-18 invisible" use:inview={loadButtonOptions} on:inview_enter={() => document.querySelector('#loadVersesButton > button').click()}>
-				<button on:click={loadNextVerses} class="text-sm {buttonOutlineClasses}"> Continue Reading </button>
+				<button on:click={loadNextVerses} class="text-sm {buttonOutlineClasses}"> Lanjut Baca </button>
 			</div>
 		{/if}
 	{/if}

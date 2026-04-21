@@ -5,6 +5,7 @@
 	import Mecca from '$svgs/Mecca.svelte';
 	import Madinah from '$svgs/Madinah.svelte';
 	import { quranMetaData } from '$data/quranMeta';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 	import { __chapterNumber, __currentPage, __lastRead, __topNavbarVisible, __pageNumber, __morphologyKey, __mushafPageDivisions, __siteNavigationModalVisible, __quranNavigationModalVisible, __wideWesbiteLayoutEnabled, __fullVersesDisplayKeys } from '$utils/stores';
 	import { term } from '$utils/terminologies';
 	import { getWebsiteWidth } from '$utils/getWebsiteWidth';
@@ -76,11 +77,12 @@
 
 	// Get the chapter name for the navbar
 	$: {
-		navbarChapterName = quranMetaData[$__chapterNumber].transliteration;
+		const chapterMeta = getChapterDisplayMeta($__chapterNumber);
+		navbarChapterName = chapterMeta.transliteration;
 
 		// Only show the translation if it's different from the transliteration
-		if (quranMetaData[$__chapterNumber].transliteration !== quranMetaData[$__chapterNumber].translation) {
-			navbarChapterName += `<span class="hidden md:inline-block">&nbsp;(${quranMetaData[$__chapterNumber].translation})</span>`;
+		if (chapterMeta.transliteration !== chapterMeta.translation) {
+			navbarChapterName += `<span class="hidden md:inline-block">&nbsp;(${chapterMeta.translation})</span>`;
 		}
 	}
 
@@ -88,9 +90,9 @@
 	$: if ($__mushafPageDivisions?.juz && $__mushafPageDivisions?.chapters) {
 		try {
 			mushafJuz = `${term('juz')} ${$__mushafPageDivisions.juz}`;
-			mushafChapters = Object.values($__mushafPageDivisions.chapters).map((value) => quranMetaData[value].transliteration);
+			mushafChapters = Object.values($__mushafPageDivisions.chapters).map((value) => getChapterDisplayMeta(value).transliteration);
 			mushafChapterInfo = Object.values($__mushafPageDivisions.chapters).map((chapter) => ({
-				name: quranMetaData[chapter].transliteration,
+				name: getChapterDisplayMeta(chapter).transliteration,
 				Icon: quranMetaData[chapter].revelation === 1 ? Mecca : Madinah
 			}));
 		} catch (error) {

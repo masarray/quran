@@ -58,7 +58,7 @@ export const selectableDisplays = {
 	},
 	7: {
 		displayID: 7,
-		displayName: 'Translation/Transliteration',
+		displayName: 'Terjemah/Transliterasi',
 		displayComponent: 'TranslationTransliteration',
 		layout: 'wbw',
 		continuous: false,
@@ -876,7 +876,7 @@ export const selectablePlaybackSpeeds = {
 export const selectableTooltipOptions = {
 	1: { id: 1, name: 'None' },
 	2: { id: 2, name: 'Transliteration' },
-	3: { id: 3, name: 'Translation' },
+	3: { id: 3, name: 'Terjemah' },
 	4: { id: 4, name: 'Both' }
 };
 

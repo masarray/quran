@@ -15,6 +15,7 @@
 	import { updateSettings } from '$utils/updateSettings';
 	import { term } from '$utils/terminologies';
 	import { quranMetaData } from '$data/quranMeta';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 
 	const chapter = parseInt(key.split(':')[0], 10);
 	const verse = parseInt(key.split(':')[1], 10);
@@ -78,7 +79,7 @@
 					{#if ['chapter', 'juz', 'hizb'].includes($__currentPage)}
 						{key}
 					{:else}
-						{quranMetaData[chapter].transliteration}, {key}
+						{getChapterDisplayMeta(chapter).transliteration}, {key}
 					{/if}
 				</div>
 			</a>

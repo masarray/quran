@@ -8,6 +8,7 @@
 	import { term } from '$utils/terminologies';
 	import { getModalTransition } from '$utils/getModalTransition';
 	import { selectableVerseTranslations } from '$data/options';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 
 	// CSS classes for radio buttons
 	const radioClasses = 'inline-flex justify-between items-center py-2 px-4 w-full bg-theme-bg rounded-lg border-2 border-theme-accent/20 cursor-pointer peer-checked:border-2 peer-checked:border-theme-accent hover:bg-theme-accent/5';
@@ -105,7 +106,7 @@
 
 		// Add verse key on top
 		if (includeKey) {
-			results += `${quranMetaData[chapter].transliteration}, ${key}\n\n`;
+			results += `${getChapterDisplayMeta(chapter).transliteration}, ${key}\n\n`;
 		}
 
 		// Get Arabic and/or translation text
@@ -157,7 +158,7 @@
 
 <Modal id="copyShareVerseModal" bind:open={$__copyShareVerseModalVisible} transitionParams={getModalTransition('bottom')} size="xs" class="!rounded-b-none md:!rounded-3xl !theme max-h-[90vh] flex flex-col" bodyClass="p-6 flex flex-col min-h-0 overflow-hidden" placement="center" position="bottom" outsideclose>
 	<h3 id="modal-title" class="mb-2 text-xl font-medium flex-shrink-0">
-		{quranMetaData[chapter || 1].transliteration}, {$__verseKey}
+		{getChapterDisplayMeta(chapter || 1).transliteration}, {$__verseKey}
 	</h3>
 
 	<div class="flex-1 min-h-0 overflow-y-auto w-full pr-2">

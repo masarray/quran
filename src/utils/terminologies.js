@@ -20,9 +20,9 @@ export const englishTerms = {
 	false: {
 		chapter: 'Surah',
 		chapters: 'Surah',
-		verse: 'Ayah',
+		verse: 'Ayat',
 		verses: 'Ayat',
-		supplications: 'Duas',
+		supplications: 'Doa',
 		tafsir: 'Tafsir',
 		tajweed: 'Tajweed',
 		juz: 'Juz',

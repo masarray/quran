@@ -8,6 +8,7 @@
 	import { buttonClasses } from '$data/commonClasses';
 	import { selectableTafsirs } from '$data/selectableTafsirs';
 	import { term } from '$utils/terminologies';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 	import { fetchAndCacheJson } from '$utils/fetchData';
 	import { tafsirDataUrls } from '$data/websiteSettings';
 
@@ -52,7 +53,7 @@
 
 <Modal
 	bind:open={$__tafsirModalVisible}
-	title="{quranMetaData[chapter].transliteration}, {chapter}:{verse}"
+	title="{getChapterDisplayMeta(chapter).transliteration}, {chapter}:{verse}"
 	id="tafsirModal"
 	class="!rounded-b-none md:!rounded-3xl"
 	bodyClass="p-6 space-y-4 flex-1 overflow-y-auto overscroll-contain !border-t-0"

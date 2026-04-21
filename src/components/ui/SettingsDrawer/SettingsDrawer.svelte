@@ -420,8 +420,8 @@
 					<!-- verse-translation-setting -->
 					<div id="verse-translation-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">{term('verse')} Translation</div>
-							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-translation')}>{$__verseTranslations.length - totalVerseTransliterationsSelected} selected</button>
+							<div class="block">Terjemah {term('verse')}</div>
+							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-translation')}>{$__verseTranslations.length - totalVerseTransliterationsSelected} dipilih</button>
 						</div>
 						<p class={settingsDescriptionClasses}>Pilihan terjemah {term('verse').toLowerCase()} dari berbagai penulis dan bahasa.</p>
 					</div>

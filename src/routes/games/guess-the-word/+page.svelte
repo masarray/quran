@@ -99,10 +99,10 @@
 		answerChecked = false;
 	}
 
-	__currentPage.set('Guess The Word');
+	__currentPage.set('Tebak Kata');
 </script>
 
-<PageHead title={'Guess The Word'} />
+<PageHead title={'Tebak Kata'} />
 
 <div class="space-y-12">
 	{#await randomWordsData}
@@ -117,7 +117,7 @@
 
 			<!-- options -->
 			<div id="options" class="pt-8">
-				<p class="mb-5 text-sm">Guess the correct translation:</p>
+				<p class="mb-5 text-sm">Pilih terjemahan yang benar:</p>
 				<div class="grid gap-4 md:gap-6 w-full md:grid-cols-2">
 					{#each Object.entries(data) as [key, _]}
 						<Radio name="bordered" bind:group={selection} value={+key} class={answerChecked === true && selection !== +key ? disabledClasses : null} custom>
@@ -140,7 +140,7 @@
 			{#if answerChecked === true && isAnswerCorrect !== null}
 				<div id="answer-results" class="flex justify-center text-center font-medium text-md">
 					<span>
-						{isAnswerCorrect ? 'Your answer was correct 😀' : `Sorry, the correct answer was "${data[randomWord].word_english}" 😟`}
+						{isAnswerCorrect ? 'Jawaban Anda benar.' : `Jawaban yang benar adalah "${data[randomWord].word_english}"`}
 					</span>
 				</div>
 			{/if}
@@ -150,21 +150,21 @@
 				<!-- confirm-button -->
 				{#if !answerChecked}
 					<div id="confirm-button" class="{selection === null || answerChecked === true ? disabledClasses : null} w-full">
-						<button class="{buttonClasses} w-full" on:click={() => checkAnswer()}>Confirm</button>
+						<button class="{buttonClasses} w-full" on:click={() => checkAnswer()}>Konfirmasi</button>
 					</div>
 				{/if}
 
 				<!-- skip-word-button -->
 				<div id="skip-word-button" class="w-full">
-					<button class="{buttonOutlineClasses} w-full" on:click={() => setRandomWord()}>{answerChecked ? 'Next' : 'Skip'} {@html '&#x2192;'}</button>
+					<button class="{buttonOutlineClasses} w-full" on:click={() => setRandomWord()}>{answerChecked ? 'Berikutnya' : 'Lewati'} {@html '&#x2192;'}</button>
 				</div>
 			</div>
 
 			<!-- correct / wrong answers so far -->
 			<div id="quiz-stats" class="flex flex-row space-x-4 justify-center text-xs">
-				<span>Correct: {$__quizCorrectAnswers}</span>
+				<span>Benar: {$__quizCorrectAnswers}</span>
 				<span>|</span>
-				<span>Wrong: {$__quizWrongAnswers}</span>
+				<span>Salah: {$__quizWrongAnswers}</span>
 			</div>
 		</div>
 	{:catch error}

@@ -108,7 +108,7 @@
 					</button>
 
 					<!-- Supplications -->
-					<a href="/{term('supplications').toLowerCase()}" class={linkClasses}>
+					<a href="/duas" class={linkClasses}>
 						<span><Supplication size={4} /></span>
 						<span class={linkTextClasses}>{term('supplications')}</span>
 					</a>

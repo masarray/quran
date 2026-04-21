@@ -241,7 +241,7 @@
 			-->
 			<div class="{loadPrevNextVerseButtons} {isNextVerseFirst && 'pb-12'}">
 				<button class="text-sm {buttonClasses}" on:click={() => __pageURL.set(Math.random())}>Start of {$__currentPage === 'hizb' ? term('hizb') : term('juz')}</button>
-				<button class="text-sm {buttonClasses}" on:click={() => gotoPreviousVerse(previousKey)}>Previous {term('verse')}</button>
+				<button class="text-sm {buttonClasses}" on:click={() => gotoPreviousVerse(previousKey)}>Ayat Sebelumnya</button>
 			</div>
 		{/if}
 
@@ -268,7 +268,7 @@
 		{#if showContinueReadingButton}
 			{#if endIndex < keysArrayLength && document.getElementById('loadVersesButton') === null}
 				<div id="loadVersesButton" class="flex justify-center pt-6 pb-18" use:inview={loadButtonOptions} on:inview_enter={() => document.querySelector('#loadVersesButton > button').click()}>
-					<button on:click={loadNextVerses} class="text-sm {buttonClasses}"> Continue Reading </button>
+					<button on:click={loadNextVerses} class="text-sm {buttonClasses}"> Lanjut Baca </button>
 				</div>
 			{/if}
 		{/if}

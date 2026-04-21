@@ -14,6 +14,7 @@
 	import { buttonClasses } from '$data/commonClasses';
 	import { goto } from '$app/navigation';
 	import { term } from '$utils/terminologies';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 	import { page } from '$app/stores';
 	import { fade } from 'svelte/transition';
 
@@ -54,7 +55,7 @@
 	__currentPage.set('chapter');
 </script>
 
-<PageHead title={`${quranMetaData[$__chapterNumber].transliteration} (${$__chapterNumber})`} />
+<PageHead title={`${getChapterDisplayMeta($__chapterNumber).transliteration} (${$__chapterNumber})`} />
 
 {#await chapterData}
 	<Spinner />

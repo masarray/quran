@@ -118,7 +118,7 @@
 		{
 			id: 'translation',
 			icon: VerseTranslation,
-			text: 'Translation',
+			text: 'Terjemah',
 			handler: handleTranslation,
 			analyticsEvent: 'Verse Translation Modal Button',
 			show: selectableDisplays[$__displayType].continuous
@@ -172,7 +172,7 @@
 					{
 						href: `/page?id=${page}`,
 						icon: Book,
-						text: 'Mushaf Mode',
+						text: 'Mode Mushaf',
 						analyticsEvent: 'Mushaf Mode Button'
 					}
 				];

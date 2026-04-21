@@ -3,6 +3,7 @@
 	import Madinah from '$svgs/Madinah.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import { quranMetaData } from '$data/quranMeta';
+	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 	import { term } from '$utils/terminologies';
 
 	export let type = 'chapter'; // 'chapter' | 'juz' | 'hizb'
@@ -16,6 +17,7 @@
 	$: isJuz = type === 'juz';
 	$: isHizb = type === 'hizb';
 	$: isChapter = type === 'chapter';
+	$: chapterMeta = isChapter ? getChapterDisplayMeta(id) : null;
 
 	$: starValue = isJuz ? juz.juz : isHizb ? hizb.hizb : id;
 	$: href = isJuz ? `/juz?id=${juz.juz}` : isHizb ? `/hizb?id=${hizb.hizb}` : `/${id}`;
@@ -50,16 +52,16 @@
 				{:else}
 					<!-- chapter name and revelation icon -->
 					<div class="flex flex-row items-center space-x-1 justify-start truncate">
-						<div>{quranMetaData[id].transliteration}</div>
-						<div><svelte:component this={quranMetaData[id].revelation === 1 ? Mecca : Madinah} /></div>
+						<div>{chapterMeta.transliteration}</div>
+						<div><svelte:component this={chapterMeta.revelation === 1 ? Mecca : Madinah} /></div>
 						<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">
-							{quranMetaData[id].revelation === 1 ? term('meccan') : term('medinan')} revelation
+							Wahyu {chapterMeta.revelation === 1 ? term('meccan').toLowerCase() : term('medinan').toLowerCase()}
 						</Tooltip>
 					</div>
 					<!-- chapter translation -->
-					<div class="block text-xs truncate opacity-70">{quranMetaData[id].translation}</div>
+					<div class="block text-xs truncate opacity-70">{chapterMeta.translation}</div>
 					<!-- chapter verse count -->
-					<div class="block text-xs opacity-70">{quranMetaData[id].verses} {term('verses')}</div>
+					<div class="block text-xs opacity-70">{chapterMeta.verses} {term('verses')}</div>
 				{/if}
 			</div>
 		</div>
