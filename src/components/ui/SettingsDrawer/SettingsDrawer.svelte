@@ -219,22 +219,22 @@
 	{#if showAllSettings}
 		<div id="all-settings">
 			<div class="flex z-30 top-0 sticky bg-theme-bg border-b-2 border-theme-accent/20 mb-4 {settingsDrawerOpacity}">
-				<h5 id="drawer-label" class="inline-flex items-center my-4 text-3xl font-semibold">Settings</h5>
+				<h5 id="drawer-label" class="inline-flex items-center my-4 text-3xl font-semibold">Pengaturan</h5>
 				<CloseButton on:click={() => ($__settingsDrawerHidden = true)} class="my-4 rounded-3xl" />
 			</div>
 
 			<!-- display-settings-block -->
 			<div id="display-settings-block" class="py-5 {settingsDrawerOpacity}">
-				<h3 class="block mb-2 font-medium text-xl">Display</h3>
+				<h3 class="block mb-2 font-medium text-xl">Tampilan</h3>
 
 				<div class="flex flex-col flex-wrap text-base">
 					<!-- website-theme-setting -->
 					<div id="website-theme-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Theme</div>
+							<div class="block">Tema</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('website-theme')}>{selectableThemes[$__websiteTheme].name}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>An assortment of website themes to please your vision.</p>
+						<p class={settingsDescriptionClasses}>Pilihan tema yang nyaman dipandang untuk sesi membaca Anda.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -242,10 +242,10 @@
 					<!-- display-type-setting -->
 					<div id="display-type-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Display Type</div>
+							<div class="block">Jenis Tampilan</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('display-type')}>{selectableDisplays[$__displayType].displayName}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>Different {term('verse')} layouts that you can choose from.</p>
+						<p class={settingsDescriptionClasses}>Pilih susunan tampilan {term('verse').toLowerCase()} yang paling nyaman untuk dibaca.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -253,10 +253,10 @@
 					<!-- word-tooltip-setting -->
 					<div id="word-tooltip-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Word Tooltip</div>
+							<div class="block">Tooltip Kata</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('word-tooltip')}>{selectableTooltipOptions[$__wordTooltip].name}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>Choose what is displayed when you hover a word.</p>
+						<p class={settingsDescriptionClasses}>Pilih informasi yang muncul saat Anda menyorot sebuah kata.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -264,14 +264,14 @@
 					<!-- word-translation-toggle-setting -->
 					<div id="word-translation-toggle-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Word Translation</span>
+							<span class="block">Terjemah Kata</span>
 
 							<label class="inline-flex items-center cursor-pointer {$__wordTransliterationEnabled === false && disabledClasses}">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__wordTranslationEnabled} on:click={(event) => updateSettings({ type: 'wordTranslationEnabled', value: event.target.checked })} />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Toggle the word translation which is shown below the Arabic word.</p>
+						<p class={settingsDescriptionClasses}>Tampilkan atau sembunyikan terjemah kata di bawah teks Arab.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -279,13 +279,13 @@
 					<!-- word-transliteration-toggle-setting -->
 					<div id="word-transliteration-toggle-setting" class="{settingsBlockClasses} {$__signLanguageModeEnabled && disabledClasses}">
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Word Transliteration</span>
+							<span class="block">Transliterasi Kata</span>
 							<label class="inline-flex items-center cursor-pointer {$__wordTranslationEnabled === false && disabledClasses}">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__wordTransliterationEnabled} on:click={(event) => updateSettings({ type: 'wordTransliterationEnabled', value: event.target.checked })} />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Toggle the word transliteration which is shown below the Arabic word.</p>
+						<p class={settingsDescriptionClasses}>Tampilkan atau sembunyikan transliterasi kata di bawah teks Arab.</p>
 					</div>
 
 					<!-- prevent sleep toggle, only show if the browser supports it  -->
@@ -295,13 +295,13 @@
 						<!-- prevent-sleep-toggle-setting -->
 						<div id="prevent-sleep-toggle-setting" class={settingsBlockClasses}>
 							<div class="flex flex-row justify-between items-center">
-								<span class="block">Prevent Sleep</span>
+								<span class="block">Cegah Layar Tidur</span>
 								<label class="inline-flex items-center cursor-pointer">
 									<input type="checkbox" value="" class="sr-only peer" checked={$__wakeLockEnabled} on:click={(event) => __wakeLockEnabled.set(event.target.checked)} data-umami-event="Toggle Prevent Sleep" />
 									<div class={toggleBtnClasses}></div>
 								</label>
 							</div>
-							<p class={settingsDescriptionClasses}>Enabling this option will prevent your screen from dimming or sleeping. Please note that you will need to manually enable this option for each session.</p>
+							<p class={settingsDescriptionClasses}>Jika diaktifkan, layar tidak akan redup atau tidur saat Anda sedang membaca. Opsi ini perlu diaktifkan ulang pada setiap sesi.</p>
 						</div>
 					{/if}
 
@@ -310,13 +310,13 @@
 					<!-- wide-website-layout-setting -->
 					<div id="wide-website-layout-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Wide Website Layout</span>
+							<span class="block">Layout Lebar</span>
 							<label class="inline-flex items-center cursor-pointer {$__wordTranslationEnabled === false && disabledClasses}">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__wideWesbiteLayoutEnabled} on:click={(event) => updateSettings({ type: 'wideWesbiteLayoutEnabled', value: event.target.checked })} />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Enable this to use a wider layout (extra large width). Best for larger screens.</p>
+						<p class={settingsDescriptionClasses}>Gunakan layout lebih lebar agar nyaman di layar besar.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -324,13 +324,13 @@
 					<!-- arabic-sign-language-setting -->
 					<div id="arabic-sign-language-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Arabic Sign Language</span>
+							<span class="block">Bahasa Isyarat Arab</span>
 							<label class="inline-flex items-center cursor-pointer {$__wordTranslationEnabled === false && disabledClasses}">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__signLanguageModeEnabled} on:click={(event) => updateSettings({ type: 'signLanguageModeEnabled', value: event.target.checked })} />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Enable this to switch the Quran view to Arabic Sign Language mode. The Indonesian Isep Misbah Digital font will be used, and some options will be disabled.</p>
+						<p class={settingsDescriptionClasses}>Aktifkan untuk mengubah tampilan Quran ke mode Bahasa Isyarat Arab. Font Indonesian Isep Misbah Digital akan digunakan dan beberapa opsi akan dinonaktifkan.</p>
 					</div>
 				</div>
 			</div>
@@ -343,10 +343,10 @@
 					<!-- quran-font-setting -->
 					<div id="quran-font-setting" class="{settingsBlockClasses} {settingsDrawerOpacity} {$__signLanguageModeEnabled && disabledClasses}">
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Quran Font</div>
+							<div class="block">Font Al Quran</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('quran-font')}>{selectableFontTypes[$__fontType].type} - {selectableFontTypes[$__fontType].font}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>Multiple Quranic fonts to choose from depending on your mushaf or region preference.</p>
+						<p class={settingsDescriptionClasses}>Pilih font Al Quran sesuai mushaf atau preferensi bacaan Anda.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20 {settingsDrawerOpacity}"></div>
@@ -354,7 +354,7 @@
 					<!-- arabic-word-size-setting -->
 					<div id="arabic-word-size-setting" class="fontSizeSliders {settingsBlockClasses} {$__currentPage === 'mushaf' && disabledClasses}">
 						<div class="flex flex-col justify-between space-y-4">
-							<span class="block">Arabic Word Size ({selectableFontSizes[arabicWordSizeValue].value.split('-')[1]})</span>
+							<span class="block">Ukuran Teks Arab ({selectableFontSizes[arabicWordSizeValue].value.split('-')[1]})</span>
 							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('arabic-word-size-setting')} on:mouseleave={() => onMouseLeave()}>
 								<Range min="1" max={maxFontSizeAllowed} bind:value={arabicWordSizeValue} class={rangeClasses} />
 							</div>
@@ -367,7 +367,7 @@
 					<div id="word-translation-size-setting" class="fontSizeSliders {settingsBlockClasses} {$__currentPage === 'mushaf' && disabledClasses}">
 						<div class="flex flex-col justify-between space-y-4">
 							<span class="block">
-								{$__signLanguageModeEnabled ? 'Sign Language Icon Size' : 'Word Translation/Transliteration Size'}
+								{$__signLanguageModeEnabled ? 'Ukuran Ikon Bahasa Isyarat' : 'Ukuran Terjemah/Transliterasi Kata'}
 								({selectableFontSizes[wordTranlationTransliterationSizeValue].value.split('-')[1]})
 							</span>
 							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('word-translation-size-setting')} on:mouseleave={() => onMouseLeave()}>
@@ -381,7 +381,7 @@
 					<!-- verse-translation-size-setting -->
 					<div id="verse-translation-size-setting" class="fontSizeSliders {settingsBlockClasses} {$__currentPage === 'mushaf' && disabledClasses}">
 						<div class="flex flex-col justify-between space-y-4">
-							<span class="block">{term('verse')} Translation/Transliteration Size ({selectableFontSizes[verseTranlationTransliterationSizeValue].value.split('-')[1]})</span>
+							<span class="block">Ukuran Terjemah/Transliterasi {term('verse')} ({selectableFontSizes[verseTranlationTransliterationSizeValue].value.split('-')[1]})</span>
 							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('verse-translation-size-setting')} on:mouseleave={() => onMouseLeave()}>
 								<Range min="1" max={maxFontSizeAllowed} bind:value={verseTranlationTransliterationSizeValue} class={rangeClasses} />
 							</div>
@@ -392,16 +392,16 @@
 
 			<!-- translation-settings-block -->
 			<div id="translation-settings-block" class="py-5 border-t-2 border-theme-accent/20 {settingsDrawerOpacity}">
-				<h3 class="block mb-2 font-medium text-xl">Translation, Transliteration & {term('tafsir')}</h3>
+				<h3 class="block mb-2 font-medium text-xl">Terjemah, Transliterasi & {term('tafsir')}</h3>
 
 				<div class="flex flex-col flex-wrap text-base">
 					<!-- word-translation-setting -->
 					<div id="word-translation-setting" class="{settingsBlockClasses} {$__signLanguageModeEnabled && disabledClasses}">
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Word Translation</div>
+							<div class="block">Terjemah Kata</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('word-translation')}>{selectableWordTranslations[$__wordTranslation].language}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>Word translation which will be displaced under the Arabic word text.</p>
+						<p class={settingsDescriptionClasses}>Bahasa terjemah kata yang ditampilkan di bawah teks Arab.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -409,10 +409,10 @@
 					<!-- word-transliteration-setting -->
 					<div id="word-transliteration-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Word Transliteration</div>
+							<div class="block">Transliterasi Kata</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('word-transliteration')}>{selectableWordTransliterations[wordTransliterationKey].language}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>Word transliteration of various types.</p>
+						<p class={settingsDescriptionClasses}>Pilih jenis transliterasi kata yang ingin digunakan.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -423,7 +423,7 @@
 							<div class="block">{term('verse')} Translation</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-translation')}>{$__verseTranslations.length - totalVerseTransliterationsSelected} selected</button>
 						</div>
-						<p class={settingsDescriptionClasses}>{term('verse')} translations from multiple authors and languages.</p>
+						<p class={settingsDescriptionClasses}>Pilihan terjemah {term('verse').toLowerCase()} dari berbagai penulis dan bahasa.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -434,7 +434,7 @@
 							<div class="block">{term('verse')} Transliteration</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-transliteration')}>{totalVerseTransliterationsSelected} selected</button>
 						</div>
-						<p class={settingsDescriptionClasses}>{term('verse')} transliteration of various types.</p>
+						<p class={settingsDescriptionClasses}>Pilihan transliterasi {term('verse').toLowerCase()} dari berbagai jenis.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -445,7 +445,7 @@
 							<div class="block">{term('tafsir')}</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-tafsir')}>{selectableTafsirs[$__verseTafsir].name}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>{term('verse')} {term('tafsir')} from multiple authors and languages.</p>
+						<p class={settingsDescriptionClasses}>{term('tafsir')} {term('verse').toLowerCase()} dari berbagai penulis dan bahasa.</p>
 					</div>
 				</div>
 			</div>
@@ -458,10 +458,10 @@
 					<!-- verse-reciter-setting -->
 					<div id="verse-reciter-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">{term('verse')} Reciter</div>
+							<div class="block">Qari {term('verse')}</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-reciter')}>{selectableReciters[$__reciter].reciter}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>The reciter's voice that will play when you choose to listen to a {term('verse')}.</p>
+						<p class={settingsDescriptionClasses}>Suara qari yang diputar saat Anda mendengarkan {term('verse').toLowerCase()}.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -469,7 +469,7 @@
 					<!-- playback-speed-setting -->
 					<div id="playback-speed-setting" class={settingsBlockClasses}>
 						<div class="flex flex-col justify-between space-y-4">
-							<span class="block">Playback Speed (x{selectablePlaybackSpeeds[playbackSpeedValue].speed})</span>
+							<span class="block">Kecepatan Putar (x{selectablePlaybackSpeeds[playbackSpeedValue].speed})</span>
 							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group">
 								<Range min="1" max={Object.keys(selectablePlaybackSpeeds).length} bind:value={playbackSpeedValue} class={rangeClasses} />
 							</div>
@@ -484,7 +484,7 @@
 							<div class="block">{term('verse')} Play Button</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-play-button')}>{selectableVersePlayButtonOptions[$__playButtonsFunctionality.verse].name}</button>
 						</div>
-						<p class={settingsDescriptionClasses}>Select what happens when you click on the play button for a {term('verse')}.</p>
+						<p class={settingsDescriptionClasses}>Pilih aksi yang terjadi saat tombol putar pada {term('verse').toLowerCase()} ditekan.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -492,32 +492,32 @@
 					<!-- wbw-autoscroll-setting -->
 					<div id="wbw-autoscroll-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Auto-Scroll to Highlighted Words</span>
+							<span class="block">Auto-Scroll ke Kata yang Disorot</span>
 							<label class="inline-flex items-center cursor-pointer">
 								<input type="checkbox" class="sr-only peer" bind:checked={$__audioSettings.wbwAutoScrollEnabled} on:change={() => updateSettings({ type: 'audioSettings', value: $__audioSettings })} data-umami-event="Toggle WBW Auto Scroll" />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Automatically scroll to the highlighted words while listening to the recitation. This option only works with reciters that support word-by-word highlighting.</p>
+						<p class={settingsDescriptionClasses}>Halaman akan mengikuti kata yang sedang disorot saat audio diputar. Hanya bekerja pada qari yang mendukung sorotan kata per kata.</p>
 					</div>
 				</div>
 			</div>
 
 			<!-- miscellaneous-settings-block -->
 			<div id="miscellaneous-settings-block" class="py-5 border-t-2 border-theme-accent/20 {settingsDrawerOpacity}">
-				<h3 class="block mb-2 font-medium text-xl">Miscellaneous</h3>
+				<h3 class="block mb-2 font-medium text-xl">Lain-lain</h3>
 
 				<div class="flex flex-col flex-wrap text-base">
 					<!-- verse-reciter-setting -->
 					<div id="verse-reciter-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">English Terminologies</span>
+							<span class="block">Terminologi Inggris</span>
 							<label class="inline-flex items-center cursor-pointer">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__englishTerminology} on:click={(event) => updateSettings({ type: 'englishTerminology', value: event.target.checked })} data-umami-event="Toggle English Terminology" />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Switch between the English and Arabic terminologies used on the website.</p>
+						<p class={settingsDescriptionClasses}>Ganti istilah yang digunakan antara terminologi Inggris dan istilah Quran.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -525,13 +525,13 @@
 					<!-- non-dua-part-toggle -->
 					<div id="non-dua-part-toggle" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Hide Non-{term('supplications')} Words</span>
+							<span class="block">Sembunyikan Kata Non-{term('supplications')}</span>
 							<label class="inline-flex items-center cursor-pointer">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__hideNonDuaPart} on:click={(event) => updateSettings({ type: 'hideNonDuaPart', value: event.target.checked })} data-umami-event="Toggle Non-Dua Words" />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Show/hide the non-{term('supplications')} words in the {term('supplications')} page.</p>
+						<p class={settingsDescriptionClasses}>Tampilkan atau sembunyikan kata non-{term('supplications').toLowerCase()} pada halaman {term('supplications').toLowerCase()}.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -539,13 +539,13 @@
 					<!-- show-morphology-on-word-click-toggle -->
 					<div id="show-morphology-on-word-click" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Word Morphology On Click</span>
+							<span class="block">Morfologi Saat Kata Diklik</span>
 							<label class="inline-flex items-center cursor-pointer">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__wordMorphologyOnClick} on:click={(event) => updateSettings({ type: 'wordMorphologyOnClick', value: event.target.checked })} data-umami-event="Toggle Morphology On Click" />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Show morphology on word click, instead of playing audio.</p>
+						<p class={settingsDescriptionClasses}>Klik kata akan membuka morfologi, bukan memutar audio.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -553,24 +553,24 @@
 					<!-- import-export-settings -->
 					<div id="import-export-settings" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Backup & Restore</span>
+							<span class="block">Cadangkan & Pulihkan</span>
 
 							<div class="flex flex-row space-x-2">
 								<button class="text-sm space-x-2 {buttonClasses}" on:click={exportSettings}>
 									<Export />
-									<span>Backup</span>
+									<span>Cadangkan</span>
 								</button>
-								<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Backup</Tooltip>
+								<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Cadangkan</Tooltip>
 
 								<button class="text-sm space-x-2 {buttonClasses}" on:click={triggerImport}>
 									<Import />
-									<span>Restore</span>
+									<span>Pulihkan</span>
 								</button>
-								<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Restore</Tooltip>
+								<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Pulihkan</Tooltip>
 								<input type="file" accept=".qwbw,.txt" bind:this={fileInput} on:change={handleFileChange} style="display: none;" />
 							</div>
 						</div>
-						<p class={settingsDescriptionClasses}>Keep your settings safe. Export a copy now or import one to restore your preferences.</p>
+						<p class={settingsDescriptionClasses}>Simpan salinan pengaturan Anda atau impor kembali kapan saja untuk memulihkan preferensi.</p>
 					</div>
 
 					<div class="border-b border-theme-accent/20"></div>
@@ -578,14 +578,14 @@
 					<!-- reset-setting-button -->
 					<div id="reset-setting-button" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Reset Settings</span>
-							<button class="text-sm space-x-2 {buttonClasses}" on:click={() => showConfirm('This action will permanently erase all locally stored data for this website, including settings, bookmarks, notes, offline files, and cache. This cannot be undone.', 'settings-drawer', () => resetSettings())}>
+							<span class="block">Reset Pengaturan</span>
+							<button class="text-sm space-x-2 {buttonClasses}" on:click={() => showConfirm('Tindakan ini akan menghapus seluruh data lokal situs ini, termasuk pengaturan, penanda, catatan, data offline, dan cache. Tindakan ini tidak bisa dibatalkan.', 'settings-drawer', () => resetSettings())}>
 								<ResetSettings />
 								<span>Reset</span>
 							</button>
 							<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Reset</Tooltip>
 						</div>
-						<p class={settingsDescriptionClasses}>Resets the website to a clean state by removing all saved settings, bookmarks, notes, offline data, and cached files from this device.</p>
+						<p class={settingsDescriptionClasses}>Mengembalikan situs ke kondisi awal dengan menghapus pengaturan, penanda, catatan, data offline, dan cache dari perangkat ini.</p>
 					</div>
 				</div>
 			</div>
@@ -602,7 +602,7 @@
 	{#if showIndividualSetting}
 		<div id="individual-setting" transition:fly={{ duration: 150, x: 0, easing: sineIn }}>
 			<div class="flex z-30 top-0 sticky bg-theme-bg border-b-2 border-theme-accent/20 mb-4">
-				<button id="drawer-label" class="inline-flex items-center my-4 text-3xl font-semibold" on:click={() => goBackToMainSettings()}>⟵ Back</button>
+				<button id="drawer-label" class="inline-flex items-center my-4 text-3xl font-semibold" on:click={() => goBackToMainSettings()}>Kembali</button>
 				<CloseButton on:click={() => ($__settingsDrawerHidden = true)} class="my-4 rounded-3xl" />
 			</div>
 

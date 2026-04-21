@@ -1,8 +1,8 @@
-export const websiteURL = 'QuranWBW.com';
+export const websiteURL = 'Al Quran';
 
-export const websiteTagline = 'Word By Word Translation, Transliteration And Morphology';
+export const websiteTagline = 'Teman membaca, mendengar, dan mempelajari Al Quran';
 
-export const websiteTitle = `Quran ${websiteTagline} - ${websiteURL}`;
+export const websiteTitle = `${websiteURL} - ${websiteTagline}`;
 
 export const wbwLanguages = 'English, Urdu, Hindi, Indonesian, Bangla, Turkish, Tamil, French, German, Chinese, Malayalam, Divehi, Sindhi, Persian and Albanian';
 

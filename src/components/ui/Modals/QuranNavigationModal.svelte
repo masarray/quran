@@ -26,7 +26,7 @@
 	let maxItemsToLoad = 20;
 	let maxVersesToLoad = 1;
 	let searchedKey = '';
-	let placeholder = 'Navigate or Search Quran';
+	let placeholder = 'Cari surah, ayat, juz, hizb, atau halaman';
 	let verseKeyData;
 	let searchResults;
 	let morphologyKey = '1:1';
@@ -91,7 +91,7 @@
 	}
 </script>
 
-<Modal id="quranNavigationModal" bind:open={$__quranNavigationModalVisible} transitionParams={getModalTransition('top')} title="Navigate" size="md" class="!rounded-t-none md:!rounded-3xl" bodyClass="md:p-2 !border-t-0" headerClass="hidden" placement="center" position="top" outsideclose>
+<Modal id="quranNavigationModal" bind:open={$__quranNavigationModalVisible} transitionParams={getModalTransition('top')} title="Navigasi" size="md" class="!rounded-t-none md:!rounded-3xl" bodyClass="md:p-2 !border-t-0" headerClass="hidden" placement="center" position="top" outsideclose>
 	<div class={`${getWebsiteWidth($__wideWesbiteLayoutEnabled)} flex flex-col space-y-2 justify-between px-4 py-5 mx-auto`}>
 		<!-- search block -->
 		<div id="search-block" class="mx-2">
@@ -107,7 +107,7 @@
 
 				<!-- instructions -->
 				<div id="search-instructions" class="text-xs pt-2 opacity-70 pb-4">
-					Enter a {term('chapter').toLowerCase()}, page, {term('juz').toLowerCase()}/{term('hizb').toLowerCase()} number, or {term('verse').toLowerCase()}/word key (e.g., 2:255, 2.286, 18-10, 2 1 1). You can also navigate using surah names (e.g., faatiha, kahf, mary).
+					Masukkan nama {term('chapter').toLowerCase()}, nomor halaman, {term('juz').toLowerCase()}/{term('hizb').toLowerCase()}, atau kunci {term('verse').toLowerCase()}/kata seperti 2:255, 2.286, 18-10, atau 2 1 1.
 				</div>
 
 				<!-- suggestions (only for home page) -->
@@ -118,7 +118,7 @@
 							{@const lastReadChapter = $__lastRead.chapter}
 							{@const lastReadVerse = $__lastRead.verse}
 							<div id="last-read-links" class="py-2 space-y-2">
-								<span class="text-xs font-semibold pt-2">Last Read</span>
+								<span class="text-xs font-semibold pt-2">Terakhir Dibaca</span>
 								<div class={linkClasses}>
 									<span>⟶</span>
 									<a href="/{lastReadChapter}/{lastReadVerse}" class={linkTextClasses}>{quranMetaData[lastReadChapter].transliteration}, {lastReadChapter}:{lastReadVerse}</a>
@@ -128,7 +128,7 @@
 
 						<!-- Suggestions -->
 						<div id="suggestions-links" class="py-2 space-y-2">
-							<span class="text-xs font-semibold pt-2">Suggestions</span>
+							<span class="text-xs font-semibold pt-2">Saran</span>
 							{#each Object.entries(mostRead) as [_, item]}
 								<div class={linkClasses}>
 									<span>⟶</span>
@@ -366,7 +366,7 @@
 		{/if}
 
 		<div class="w-full px-2">
-			<button class="w-full {buttonClasses}" on:click={() => __quranNavigationModalVisible.set(false)}>Close</button>
+			<button class="w-full {buttonClasses}" on:click={() => __quranNavigationModalVisible.set(false)}>Tutup</button>
 		</div>
 	</div>
 </Modal>

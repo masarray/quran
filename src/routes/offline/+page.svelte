@@ -688,11 +688,11 @@
 	__currentPage.set('Offline Mode (Beta)');
 </script>
 
-<PageHead title={'Offline Mode (Beta)'} />
+<PageHead title={'Mode Offline (Beta)'} />
 
 <div class="mx-auto">
 	<div class="markdown mx-auto">
-		<h3>Offline Mode (Beta)</h3>
+		<h3>Mode Offline (Beta)</h3>
 		<p>
 			Offline mode lets you use parts of QuranWBW without an internet connection by saving some website data on your device. This is optional and you can update or remove the saved data at any time. Please note that enabling offline mode downloads the core website files, which may use a noticeable amount of data and take some time, especially on slower connections or mobile data. It's best to use
 			a stable Wi-Fi connection if possible.

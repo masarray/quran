@@ -1,16 +1,26 @@
 import adapterAuto from '@sveltejs/adapter-auto';
+import adapterStatic from '@sveltejs/adapter-static';
 import adapterNode from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import path from 'path';
 
 const useNodeAdapter = process.env.USE_NODE_ADAPTER === 'true';
+const useStaticAdapter = process.env.GITHUB_PAGES === 'true';
+const basePath = process.env.BASE_PATH || '';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
 		// Use Node adapter when explicitly enabled (VPS / Docker / Dokploy / any Node server).
 		// Defaults to adapter-auto for platforms like Cloudflare Pages, Vercel, etc.
-		adapter: useNodeAdapter ? adapterNode() : adapterAuto(),
+		adapter: useStaticAdapter
+			? adapterStatic({
+					fallback: '404.html',
+					strict: false
+				})
+			: useNodeAdapter
+				? adapterNode()
+				: adapterAuto(),
 		alias: {
 			$src: path.resolve('./src'),
 			$utils: path.resolve('./src/utils'),
@@ -24,6 +34,12 @@ const config = {
 		},
 		output: {
 			bundleStrategy: 'single'
+		},
+		paths: {
+			base: basePath
+		},
+		prerender: {
+			handleHttpError: 'warn'
 		},
 		serviceWorker: {
 			register: true

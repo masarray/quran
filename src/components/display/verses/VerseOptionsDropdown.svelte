@@ -1,5 +1,5 @@
 <script>
-	export let page;
+	export let page, meta;
 
 	import Dropdown from '$ui/FlowbiteSvelte/dropdown/Dropdown.svelte';
 	import DropdownItem from '$ui/FlowbiteSvelte/dropdown/DropdownItem.svelte';
@@ -16,7 +16,7 @@
 	import Copy from '$svgs/Copy.svelte';
 	import { showAudioModal } from '$utils/audioController';
 	import { selectableDisplays } from '$data/options';
-	import { __userSettings, __verseKey, __notesModalVisible, __tafsirModalVisible, __morphologyModalVisible, __verseTranslationModalVisible, __copyShareVerseModalVisible, __currentPage, __displayType, __userNotes, __fontType, __morphologyKey } from '$utils/stores';
+	import { __userSettings, __verseKey, __notesModalVisible, __tafsirModalVisible, __morphologyModalVisible, __verseTranslationModalVisible, __copyShareVerseModalVisible, __currentPage, __displayType, __userNotes, __fontType, __morphologyKey, __chapterData } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { term } from '$utils/terminologies';
 	import { sineIn } from 'svelte/easing';
@@ -36,6 +36,8 @@
 	$: userBookmarks = JSON.parse($__userSettings).userBookmarks;
 	$: isBookmarked = userBookmarks.includes($__verseKey);
 	$: hasNotes = Object.prototype.hasOwnProperty.call($__userNotes, $__verseKey);
+	$: lastReadManual = JSON.parse($__userSettings).lastReadManual || {};
+	$: isManualLastRead = lastReadManual.chapter === chapter && lastReadManual.verse === verse;
 
 	// Event handlers
 	const handleAdvancedPlay = async () => {
@@ -72,6 +74,13 @@
 	const handleCopy = async () => {
 		if (!(await checkOnlineAndAlert())) return;
 		__copyShareVerseModalVisible.set(true);
+		dropdownOpen = false;
+	};
+
+	const handleSetLastRead = () => {
+		const verseMeta = meta || $__chapterData?.[$__verseKey]?.meta;
+		if (!verseMeta) return;
+		updateSettings({ type: 'lastRead', value: verseMeta, source: 'manual' });
 		dropdownOpen = false;
 	};
 
@@ -133,10 +142,18 @@
 		{
 			id: 'copy',
 			icon: Copy,
-			text: 'Copy',
+			text: 'Salin',
 			handler: handleCopy,
 			analyticsEvent: 'Copy Verse Modal Button',
 			show: !mushafFontTypes.includes($__fontType)
+		},
+		{
+			id: 'last-read',
+			icon: BookmarkFilled,
+			text: isManualLastRead ? 'Tanda Terakhir Dibaca' : 'Set as Last Read',
+			handler: handleSetLastRead,
+			analyticsEvent: 'Set Last Read Button',
+			show: true
 		}
 	];
 

@@ -162,16 +162,16 @@
 	__currentPage.set('search');
 </script>
 
-<PageHead title={'Search'} />
+<PageHead title={'Cari'} />
 
 <div class="mt-4 space-y-4">
 	<div class="flex max-w-xl mx-auto">
 		<!-- search input form -->
 		<form on:submit|preventDefault={() => updateSearchQuery(document.getElementById('search-input').value)} class="flex items-center w-full">
 			<div class="relative w-full">
-				<input type="search" id="search-input" value={searchQuery} class="bg-transparent block py-4 pl-4 rounded-l-3xl w-full z-20 text-sm border placeholder:text-theme-accent/50 border-theme-accent/20 focus:border-theme-accent focus:ring-theme-accent" placeholder="Search Ibrahim, Mary, Jannat, كتاب..." required />
+				<input type="search" id="search-input" value={searchQuery} class="bg-transparent block py-4 pl-4 rounded-l-3xl w-full z-20 text-sm border placeholder:text-theme-accent/50 border-theme-accent/20 focus:border-theme-accent focus:ring-theme-accent" placeholder="Cari Ibrahim, Maryam, surga, كتاب..." required />
 			</div>
-			<button type="submit" title="Search" class="py-4 px-5 rounded-r-3xl items-center border border-theme-accent/20 bg-theme-accent/5">
+			<button type="submit" title="Cari" class="py-4 px-5 rounded-r-3xl items-center border border-theme-accent/20 bg-theme-accent/5">
 				<Search2 size={5} />
 			</button>
 		</form>
@@ -180,7 +180,7 @@
 	<!-- search instructions -->
 	{#if searchQuery.length === 0}
 		<div id="how-to-search" class="flex flex-col text-center text-xs space-y-2 max-w-2xl mx-auto">
-			<span>Search for any text, regardless of English or Arabic terminology, and find the nearest or related results. </span>
+			<span>Cari kata apa pun, lalu temukan ayat atau bagian Quran yang paling relevan.</span>
 		</div>
 	{/if}
 
@@ -193,9 +193,9 @@
 			<div id="search-block">
 				<div id="search-results-information" class="text-center text-xs">
 					{#if resultsFound}
-						<span>Showing {totalResults >= 50 ? 'top ' : ''}{totalResults} {totalResults === 1 ? 'result' : 'results'} related to "{searchQuery}".</span>
+						<span>Menampilkan {totalResults >= 50 ? 'hingga ' : ''}{totalResults} {totalResults === 1 ? 'hasil' : 'hasil'} terkait "{searchQuery}".</span>
 					{:else if !resultsFound && navigationResults.length === 0}
-						<div class="flex text-center items-center justify-center pt-18 text-xs max-w-2xl mx-auto">Unfortunately, your query did not yield any results. Please try using a different keyword.</div>
+						<div class="flex text-center items-center justify-center pt-18 text-xs max-w-2xl mx-auto">Maaf, kata kunci yang Anda cari belum menemukan hasil. Coba gunakan kata lain.</div>
 					{/if}
 				</div>
 

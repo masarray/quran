@@ -11,7 +11,7 @@
 	import ErrorLoadingData from '$misc/ErrorLoadingData.svelte';
 	import { goto } from '$app/navigation';
 	import { onDestroy } from 'svelte';
-	import { __pageNumber, __currentPage, __fontType, __wordTranslation, __mushafPageDivisions, __displayType, __mushafMinimalModeEnabled } from '$utils/stores';
+	import { __pageNumber, __currentPage, __fontType, __wordTranslation, __mushafPageDivisions, __displayType, __mushafMinimalModeEnabled, __lastRead } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { quranMetaData } from '$data/quranMeta';
 	import { selectableFontTypes } from '$data/options';
@@ -228,6 +228,14 @@
 {:then}
 	<div id="page-block" class="text-center text-xl mt-6 mb-14 overflow-x-hidden overflow-y-hidden" in:fade={{ duration: 300 }} bind:this={pageBlock}>
 		<div class="space-y-2 mt-2.5">
+			{#if Object.prototype.hasOwnProperty.call($__lastRead, 'page')}
+				<div class="flex justify-center pb-2">
+					<a href="/page?id={$__lastRead.page}" class="w-fit flex flex-row space-x-2 py-3 px-4 rounded-xl items-center cursor-pointer border border-transparent hover:border-theme-accent bg-theme-accent/5">
+						<span>Lanjut ke Halaman Terakhir</span>
+					</a>
+				</div>
+			{/if}
+
 			<!-- single page -->
 			<div class="max-w-3xl md:max-w-[40rem] pb-2 mx-auto text-[5.4vw] md:text-[36px] lg:text-[36px] {+page === 1 ? 'space-y-1' : 'space-y-2'}">
 				{#each Array.from(Array(endingLine + 1).keys()).slice(startingLine) as line}

@@ -30,6 +30,9 @@ const cacheNames = {
 	morphologyData: 'quranwbw-morphology-data', // Morphology data files
 	tafsirData: 'quranwbw-tafsir-data' // Tafsir data files
 };
+const scopeUrl = new URL(self.registration.scope);
+const basePath = scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname.slice(0, -1) : scopeUrl.pathname;
+const withBase = (path) => `${basePath}${path}`;
 
 // Files we should never cache (the service worker itself and its settings)
 const stuffNotToCache = ['/service-worker.js', '/service-worker-settings.json'];
@@ -41,7 +44,7 @@ const precacheFiles = [
 ];
 
 // Important pages we want to cache
-const staticRoutesToCache = ['/about', '/bookmarks', '/changelog', '/duas', '/games/guess-the-word', '/morphology', '/offline', '/supplications', '/topics', '/juz', '/hizb', '/page'];
+const staticRoutesToCache = ['/about', '/bookmarks', '/changelog', '/duas', '/games/guess-the-word', '/morphology', '/offline', '/supplications', '/topics', '/juz', '/hizb', '/page'].map(withBase);
 
 // This flag tracks whether the user has enabled offline mode
 // CRITICAL: This must be loaded from cache on startup!
@@ -180,7 +183,7 @@ async function performCaching() {
 	const cache = await caches.open(cacheNames.core);
 
 	// Cache the homepage and all build files (CSS, JS, etc.)
-	await cache.addAll(['/', ...precacheFiles]);
+	await cache.addAll([withBase('/'), ...precacheFiles]);
 
 	// Helper function to cache a list of routes with progress tracking
 	const backgroundCache = async (routes, label) => {
@@ -392,7 +395,7 @@ self.addEventListener('fetch', (event) => {
 				// For page navigation, show the homepage if cached
 				if (event.request.mode === 'navigate') {
 					const cache = await caches.open(cacheNames.core);
-					const homepageResponse = await cache.match('/');
+					const homepageResponse = await cache.match(withBase('/'));
 					if (homepageResponse) {
 						console.log('[SW] Serving homepage for failed navigation');
 						return homepageResponse;

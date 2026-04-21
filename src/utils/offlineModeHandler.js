@@ -1,4 +1,5 @@
 import { showAlert } from '$utils/confirmationAlertHandler';
+import { base } from '$app/paths';
 
 export const dataUnavailableWhileOfflineMessage = 'Data unavailable offline';
 
@@ -12,7 +13,7 @@ export async function registerServiceWorker() {
 		let registration = await navigator.serviceWorker.getRegistration();
 
 		if (!registration) {
-			registration = await navigator.serviceWorker.register('/service-worker.js', {
+			registration = await navigator.serviceWorker.register(`${base}/service-worker.js`, {
 				type: 'module'
 			});
 		}

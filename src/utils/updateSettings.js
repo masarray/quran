@@ -32,6 +32,8 @@ import {
 	__signLanguageModeEnabled,
 	__offlineModeSettings,
 	__homepageLayoutPreferences
+	,
+	__readingAnalytics
 } from '$utils/stores';
 import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 
@@ -39,6 +41,7 @@ import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 export function updateSettings(props) {
 	// get the settings from localStorage
 	const userSettings = JSON.parse(localStorage.getItem('userSettings'));
+	ensureLastReadCompatibility(userSettings);
 	let trackEvent = false;
 	// let uploadSettings = false;
 
@@ -257,10 +260,22 @@ export function updateSettings(props) {
 		// for last read
 		case 'lastRead':
 			if (['chapter', 'mushaf', 'juz', 'hizb'].includes(get(__currentPage))) {
-				const data = props.value;
-				data['currentPage'] = get(__currentPage);
-				__lastRead.set(data);
-				userSettings.lastRead = props.value;
+				const data = {
+					...props.value,
+					currentPage: get(__currentPage),
+					source: props.source || 'auto',
+					trackedAt: new Date().toISOString()
+				};
+
+				if (props.source === 'manual') {
+					userSettings.lastReadManual = data;
+				} else {
+					userSettings.lastReadAuto = data;
+				}
+
+				userSettings.lastRead = getEffectiveLastRead(userSettings);
+				__lastRead.set(userSettings.lastRead);
+				appendReadingAnalyticsEntry(userSettings, data);
 			}
 			break;
 
@@ -363,7 +378,100 @@ export function updateSettings(props) {
 
 	// update the settings back into localStorage and global store
 	__userSettings.set(JSON.stringify(userSettings));
+	__readingAnalytics.set(userSettings.readingAnalytics);
 	localStorage.setItem('userSettings', JSON.stringify(userSettings));
+}
+
+function ensureLastReadCompatibility(userSettings) {
+	if (!userSettings.lastReadAuto || typeof userSettings.lastReadAuto !== 'object') {
+		userSettings.lastReadAuto = {};
+	}
+
+	if (!userSettings.lastReadManual || typeof userSettings.lastReadManual !== 'object') {
+		userSettings.lastReadManual = {};
+	}
+
+	if (
+		Object.keys(userSettings.lastReadAuto).length === 0 &&
+		userSettings.lastRead &&
+		typeof userSettings.lastRead === 'object' &&
+		Object.keys(userSettings.lastRead).length > 0
+	) {
+		userSettings.lastReadAuto = { ...userSettings.lastRead };
+	}
+
+	if (!userSettings.readingAnalytics || typeof userSettings.readingAnalytics !== 'object') {
+		userSettings.readingAnalytics = {
+			entries: [],
+			lastTrackedVerseKey: null,
+			lastTrackedAt: null
+		};
+	}
+
+	if (!Array.isArray(userSettings.readingAnalytics.entries)) {
+		userSettings.readingAnalytics.entries = [];
+	}
+
+	userSettings.lastRead = getEffectiveLastRead(userSettings);
+}
+
+function getEffectiveLastRead(userSettings) {
+	if (userSettings.lastReadManual && Object.keys(userSettings.lastReadManual).length > 0) {
+		return userSettings.lastReadManual;
+	}
+
+	return userSettings.lastReadAuto || {};
+}
+
+function appendReadingAnalyticsEntry(userSettings, data) {
+	if (!data?.page || !data?.chapter || !data?.verse) return;
+
+	const analytics = userSettings.readingAnalytics;
+	const verseKey = `${data.chapter}:${data.verse}`;
+	const now = new Date();
+	const trackedAt = now.toISOString();
+	const dayKey = trackedAt.slice(0, 10);
+	const entries = analytics.entries.filter((entry) => typeof entry?.day === 'string');
+	const latestEntry = entries[entries.length - 1];
+	const sameVerse = analytics.lastTrackedVerseKey === verseKey;
+	const recentlyTracked = analytics.lastTrackedAt ? now.getTime() - new Date(analytics.lastTrackedAt).getTime() < 30000 : false;
+
+	if (sameVerse && recentlyTracked) return;
+
+	if (latestEntry && latestEntry.day === dayKey) {
+		if (!latestEntry.pages.includes(data.page)) latestEntry.pages.push(data.page);
+		if (!latestEntry.verses.includes(verseKey)) latestEntry.verses.push(verseKey);
+		latestEntry.lastRead = {
+			chapter: data.chapter,
+			verse: data.verse,
+			page: data.page,
+			juz: data.juz,
+			hizb: data.hizb,
+			currentPage: data.currentPage,
+			source: data.source || 'auto',
+			trackedAt
+		};
+	} else {
+		entries.push({
+			day: dayKey,
+			pages: [data.page],
+			verses: [verseKey],
+			lastRead: {
+				chapter: data.chapter,
+				verse: data.verse,
+				page: data.page,
+				juz: data.juz,
+				hizb: data.hizb,
+				currentPage: data.currentPage,
+				source: data.source || 'auto',
+				trackedAt
+			}
+		});
+	}
+
+	userSettings.readingAnalytics.entries = entries.slice(-30);
+	analytics.lastTrackedVerseKey = verseKey;
+	analytics.lastTrackedAt = trackedAt;
 }
 
 // Toggle downloaded data setting (add if not present, remove if present)

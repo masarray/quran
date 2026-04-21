@@ -25,6 +25,8 @@
 
 	// Update userBookmarks whenever the __userSettings changes
 	$: userBookmarks = JSON.parse($__userSettings).userBookmarks;
+	$: lastReadManual = JSON.parse($__userSettings).lastReadManual || {};
+	$: isManualLastRead = lastReadManual.chapter === chapter && lastReadManual.verse === verse;
 
 	async function audioHandler(key) {
 		// Stop any audio if something is playing
@@ -80,6 +82,11 @@
 					{/if}
 				</div>
 			</a>
+			{#if isManualLastRead}
+				<div class="inline-flex items-center rounded-full px-3 text-[11px] font-medium text-theme-accent border border-theme-accent/20 bg-theme-accent/10">
+					Terakhir Dibaca
+				</div>
+			{/if}
 			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">{term('verse')} {key}</Tooltip>
 		</div>
 
@@ -124,7 +131,7 @@
 					<DotsHorizontal size={6} />
 				</div>
 			</button>
-			<VerseOptionsDropdown page={value.meta.page} />
+			<VerseOptionsDropdown page={value.meta.page} meta={value.meta} />
 			<Tooltip triggeredBy="#verse-options-{verse}" arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Options</Tooltip>
 		</div>
 	</div>

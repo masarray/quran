@@ -16,6 +16,7 @@
 	import Edit2 from '$svgs/Edit2.svelte';
 	import UserBookmarks from '$display/UserBookmarks.svelte';
 	import UserNotes from '$display/UserNotes.svelte';
+	import ReadingAnalytics from '$display/ReadingAnalytics.svelte';
 	import QuranDivisionCard from '$display/QuranDivisionCard.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import { websiteTagline } from '$data/websiteSettings';
@@ -33,13 +34,14 @@
 	const commontabClasses = 'px-2 md:px-3 py-2 text-xs md:text-md border-b-4 cursor-pointer';
 	const tabDefaultBorder = `${commontabClasses} border-transparent`;
 	const tabActiveBorder = `${commontabClasses} border-theme-accent/20`;
-	const siteDescriptionText = ['Your companion for reading, listening to, and learning the Holy Quran, word by word.', 'With features like word audios, Tajweed colors, and transliteration, delve into the Quran with ease. Additionally, explore multi-language translations, tafsir, and detailed word morphology.'];
+	const siteDescriptionText = ['Teman untuk membaca, mendengarkan, dan mempelajari Al Quran dengan lebih mudah.', 'Nikmati audio kata, warna tajwid, transliterasi, terjemah, tafsir, dan morfologi dalam pengalaman membaca yang nyaman.'];
 	const currentHour = new Date().getHours();
 
 	// Tab Indexes
 	const bookmarksTab = 1;
 	const notesTab = 2;
 	const suggestionsTab = 3;
+	const analyticsTab = 4;
 	const chaptersTab = 1;
 	const juzTab = 2;
 	const favoriteChaptersTab = 3;
@@ -153,12 +155,12 @@
 					}}
 				>
 					<Search2Bold size={4} />
-					<span class="hidden md:block">Search</span>
+					<span class="hidden md:block">Cari</span>
 				</button>
 				<a href="/topics" class="{topButtonClasses} !py-4 md:bg-transparent"><TopicsBold size={4} /><span class="hidden md:block">Topics</span></a>
 				<a href={`/${term('supplications').toLowerCase()}`} class="{topButtonClasses} !py-4 md:bg-transparent"><SupplicationBold size={4} /><span class="hidden md:block">{term('supplications')}</span></a>
 				<a href={Object.prototype.hasOwnProperty.call($__lastRead, 'page') ? `/page?id=${$__lastRead.page}` : '/page?id=1'} class="{topButtonClasses} !py-4 md:bg-transparent"><BookFilled size={4} /><span class="hidden md:block">Mushaf</span></a>
-				<a href="/morphology?word=1:1" class="{topButtonClasses} !py-4 md:bg-transparent"><MorphologyBold size={4} /><span class="hidden md:block">Morphology</span></a>
+				<a href="/morphology?word=1:1" class="{topButtonClasses} !py-4 md:bg-transparent"><MorphologyBold size={4} /><span class="hidden md:block">Morfologi</span></a>
 			</div>
 			<button class="{topButtonClasses} !py-4 md:bg-transparent" on:click={() => __siteNavigationModalVisible.set(true)}><Menu size={4} /><span class="hidden md:block">Menu</span></button>
 		</div>
@@ -171,8 +173,8 @@
 
 			<div class="flex flex-col">
 				<div id="site-title" class="text-2xl md:text-3xl font-bold pb-2 text-theme-accent">
-					<span class="block md:hidden">QuranWBW</span>
-					<span class="hidden md:block">Quran Word By Word</span>
+					<span class="block md:hidden">Al Quran</span>
+					<span class="hidden md:block">Al Quran</span>
 				</div>
 
 				<div id="site-description" class="text-sm opacity-70">
@@ -192,7 +194,7 @@
 						<a href="/18" class="{topButtonClasses} truncate w-full" on:click={() => window.umami.track('Al-Kahf Reminder Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[18].icon};`}</span>
 							<div class="flex flex-row truncate">
-								<span class="hidden md:block mr-1">Friday Reminder:</span>
+								<span class="hidden md:block mr-1">Pengingat Jumat:</span>
 								<span>Al Kahf</span>
 							</div>
 						</a>
@@ -202,7 +204,7 @@
 						<a href="/56" class="{topButtonClasses} truncate w-full" on:click={() => window.umami.track('Al-Waaqia Reminder Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[56].icon};`}</span>
 							<div class="flex flex-row truncate">
-								<span class="hidden md:block mr-1">Evening Reminder:</span>
+								<span class="hidden md:block mr-1">Pengingat Malam:</span>
 								<span>Al Waaqia</span>
 							</div>
 						</a>
@@ -210,7 +212,7 @@
 						<a href="/67" class="{topButtonClasses} truncate w-full" on:click={() => window.umami.track('Al-Mulk Reminder Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[67].icon};`}</span>
 							<div class="flex flex-row truncate">
-								<span class="hidden md:block mr-1">Night Reminder:</span>
+								<span class="hidden md:block mr-1">Pengingat Malam:</span>
 								<span>Al Mulk</span>
 							</div>
 						</a>
@@ -228,14 +230,15 @@
 			<div class="flex flex-row justify-center">
 				<div class="flex text-sm font-medium text-center justify-center space-x-1 md:space-x-4 rounded-full py-2 {!homepageLayoutPreferences.extrasPanelVisible && disabledClasses}">
 					<button on:click={() => changeTabs('extrasActiveTab', bookmarksTab)} class="{extrasActiveTab === bookmarksTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center truncate" data-umami-event="Bookmarks Tab Button">
-						<span>Bookmarks</span>
+						<span>Penanda</span>
 						<span>{totalBookmarks > 0 ? `(${totalBookmarks})` : ''}</span>
 					</button>
 					<button on:click={() => changeTabs('extrasActiveTab', notesTab)} class="{extrasActiveTab === notesTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center truncate" data-umami-event="Notes Tab Button">
-						<span>Notes</span>
+						<span>Catatan</span>
 						<span>{totalNotes > 0 ? `(${totalNotes})` : ''}</span>
 					</button>
-					<button on:click={() => changeTabs('extrasActiveTab', suggestionsTab)} class={extrasActiveTab === suggestionsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Suggestions Tab Button">Suggestions</button>
+					<button on:click={() => changeTabs('extrasActiveTab', suggestionsTab)} class={extrasActiveTab === suggestionsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Suggestions Tab Button">Saran</button>
+					<button on:click={() => changeTabs('extrasActiveTab', analyticsTab)} class={extrasActiveTab === analyticsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Reading Analytics Tab Button">Statistik</button>
 				</div>
 			</div>
 
@@ -270,6 +273,10 @@
 
 					<div class="px-2 text-xs opacity-70">Suggestions listed here are based on the most frequently read chapters and verses by muslim audience, as well as virtues derived from Hadiths. While some Hadiths highlighting these virtues may be considered weak by some scholars, using them for beneficial knowledge is also a widely accepted opinion.</div>
 				</div>
+			</div>
+
+			<div class="space-y-12 {extrasActiveTab === analyticsTab ? 'block' : 'hidden'}" id="analytics-tab-panel" role="tabpanel" aria-labelledby="analytics-tab">
+				<ReadingAnalytics />
 			</div>
 		</div>
 
@@ -314,8 +321,8 @@
 						<a href="/{lastReadChapter}?startVerse={lastReadVerse}" class="{continueReadingButtonClasses} mb-2 truncate w-full" on:click={() => window.umami.track('Continue Chapter Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[lastReadChapter].icon};`}</span>
 							<span class="truncate">
-								<span class="md:hidden">Continue:</span>
-								<span class="hidden md:inline-block">Continue Reading:</span>
+								<span class="md:hidden">Lanjut:</span>
+								<span class="hidden md:inline-block">Lanjut Baca:</span>
 								{quranMetaData[lastReadChapter].transliteration}, {lastReadChapter}:{lastReadVerse}
 							</span>
 						</a>
@@ -341,7 +348,7 @@
 						<a href="/juz?id={lastReadJuz}&startKey={lastReadChapter}:{lastReadVerse}" class="{continueReadingButtonClasses} mb-2 truncate w-full" on:click={() => window.umami.track('Continue Juz Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[lastReadChapter].icon};`}</span>
 							<span>
-								Continue Reading: {term('juz')}
+								Lanjut Baca: {term('juz')}
 								{lastReadJuz}, {lastReadChapter}:{lastReadVerse}
 							</span>
 						</a>
@@ -384,7 +391,7 @@
 						<a href="/hizb?id={lastReadHizb}&startKey={lastReadChapter}:{lastReadVerse}" class="{continueReadingButtonClasses} mb-2 truncate w-full" on:click={() => window.umami.track('Continue Hizb Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[lastReadChapter].icon};`}</span>
 							<span>
-								Continue Reading: {term('hizb')}
+								Lanjut Baca: {term('hizb')}
 								{lastReadHizb}, {lastReadChapter}:{lastReadVerse}
 							</span>
 						</a>

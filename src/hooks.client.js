@@ -28,8 +28,8 @@ export const defaultSettings = {
 		}
 	},
 	translations: {
-		word: 1,
-		verse_v1: [1, 131],
+		word: 4,
+		verse_v1: [33],
 		tafsir: 30
 	},
 	transliteration: {
@@ -55,6 +55,13 @@ export const defaultSettings = {
 		wrongAnswers: 0
 	},
 	lastRead: {},
+	lastReadAuto: {},
+	lastReadManual: {},
+	readingAnalytics: {
+		entries: [],
+		lastTrackedVerseKey: null,
+		lastTrackedAt: null
+	},
 	userBookmarks: [],
 	userFavoriteChapters: [],
 	userNotes: {},

@@ -57,7 +57,7 @@
 </script>
 
 <Modal id="siteNavigationModal" bind:open={$__siteNavigationModalVisible} transitionParams={getModalTransition('basic')} size="xs" class="rounded-3xl max-h-[90vh] flex flex-col" bodyClass="p-6 flex flex-col min-h-0 overflow-hidden" center outsideclose>
-	<h3 id="modal-title" class="mb-2 text-md font-semibold flex-shrink-0">Navigate</h3>
+	<h3 id="modal-title" class="mb-2 text-md font-semibold flex-shrink-0">Navigasi</h3>
 
 	<div class="flex-1 min-h-0 overflow-y-auto">
 		<div class="flex flex-col space-y-4">
@@ -67,7 +67,7 @@
 					<!-- Search -->
 					<a href="/search" class={`${linkClasses} ${!userOnline && disabledClasses}`} aria-disabled={!userOnline} tabindex={userOnline ? undefined : -1}>
 						<span><Search2 size={4} /></span>
-						<span class={linkTextClasses}>Search</span>
+						<span class={linkTextClasses}>Cari</span>
 					</a>
 
 					<!-- settings modal -->
@@ -79,19 +79,19 @@
 						class={linkClasses}
 					>
 						<span><Settings size={4} /></span>
-						<span class={linkTextClasses}>Settings</span>
+						<span class={linkTextClasses}>Pengaturan</span>
 					</button>
 
 					<!-- topics page link -->
 					<a href="/topics" class={linkClasses}>
 						<span><Topics size={4} /></span>
-						<span class={linkTextClasses}>Topics</span>
+						<span class={linkTextClasses}>Topik</span>
 					</a>
 
 					<!-- Bookmarks -->
 					<a href="/bookmarks" class={linkClasses}>
 						<span><Bookmark size={4} /></span>
-						<span class={linkTextClasses}>Bookmarks</span>
+						<span class={linkTextClasses}>Penanda</span>
 					</a>
 
 					<!-- tajweed rules modal -->
@@ -104,7 +104,7 @@
 						data-umami-event="Tajweed Modal Button"
 					>
 						<span><TajweedRules size={4} /></span>
-						<span class={linkTextClasses}>{term('tajweed')} Rules</span>
+						<span class={linkTextClasses}>Hukum {term('tajweed')}</span>
 					</button>
 
 					<!-- Supplications -->
@@ -116,37 +116,37 @@
 					<!-- Morphology -->
 					<a href="/morphology?word=1:1:1" class={linkClasses}>
 						<span><Morphology size={4} /></span>
-						<span class={linkTextClasses}>Morphology</span>
+						<span class={linkTextClasses}>Morfologi</span>
 					</a>
 
 					<!-- Guess The Word -->
 					<a href="/games/guess-the-word" class={linkClasses}>
 						<span><Puzzle size={4} /></span>
-						<span class={linkTextClasses}>Word Game</span>
+						<span class={linkTextClasses}>Game Kata</span>
 					</a>
 
 					<!-- changelog -->
 					<a href="/changelog" class={linkClasses}>
 						<span><Changelog size={4} /></span>
-						<span class={linkTextClasses}>Changelog</span>
+						<span class={linkTextClasses}>Pembaruan</span>
 					</a>
 
 					<!-- About -->
 					<a href="/about" class={linkClasses}>
 						<span><About size={4} /></span>
-						<span class={linkTextClasses}>About</span>
+						<span class={linkTextClasses}>Tentang</span>
 					</a>
 
 					<!-- Offline Mode page -->
 					<a href="/offline" class={linkClasses}>
 						<span><Offline size={4} /></span>
-						<span class={linkTextClasses}>Offline Mode (Beta)</span>
+						<span class={linkTextClasses}>Mode Offline (Beta)</span>
 					</a>
 
 					<!-- legacy site link -->
 					<a href="https://old.quranwbw.com/" target="_blank" rel="noopener noreferrer" class={`${linkClasses} ${!userOnline && disabledClasses}`} aria-disabled={!userOnline} tabindex={userOnline ? undefined : -1} data-umami-event="Legacy Site Button">
 						<span><LegacySite size={4} /></span>
-						<span class={linkTextClasses}>Old Website</span>
+						<span class={linkTextClasses}>Situs Lama</span>
 					</a>
 				</div>
 			</div>
