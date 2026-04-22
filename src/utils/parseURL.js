@@ -1,4 +1,5 @@
 import { get } from 'svelte/store';
+import { base } from '$app/paths';
 import { __chapterNumber } from '$utils/stores';
 import { quranMetaData } from '$data/quranMeta';
 
@@ -14,7 +15,8 @@ import { quranMetaData } from '$data/quranMeta';
 // And now supports URL parameter ?startVerse=<verse>
 export function parseURL() {
 	const chapterTotalVerses = quranMetaData[get(__chapterNumber)].verses;
-	const url = window.location.pathname;
+	const normalizedBase = base && base !== '/' ? base.replace(/\/$/, '') : '';
+	const url = normalizedBase && window.location.pathname.startsWith(normalizedBase) ? window.location.pathname.slice(normalizedBase.length) || '/' : window.location.pathname;
 	const hash = window.location.hash.slice(1);
 	const queryParams = new URLSearchParams(window.location.search);
 	const startVerseParam = parseInt(queryParams.get('startVerse'), 10);

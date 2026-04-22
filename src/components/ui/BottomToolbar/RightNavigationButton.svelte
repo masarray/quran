@@ -1,4 +1,5 @@
 <script>
+	import { base } from '$app/paths';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import ChevronRight from '$svgs/ChevronRight.svelte';
 	import { __chapterNumber, __currentPage, __pageNumber } from '$utils/stores';
@@ -44,7 +45,7 @@
 </script>
 
 <!-- next chapter / previous page -->
-<a href="/{linkHref}" class="inline-flex flex-col items-center justify-center px-5 rounded-e-full group hover:bg-theme-accent/5 {linkDisabled ? disabledClasses : 'opacity-100'}">
+<a href="{base}/{linkHref}" class="inline-flex flex-col items-center justify-center px-5 rounded-e-full group hover:bg-theme-accent/5 {linkDisabled ? disabledClasses : 'opacity-100'}">
 	<ChevronRight size={7} />
 	<span class="sr-only">{linkText}</span>
 </a>

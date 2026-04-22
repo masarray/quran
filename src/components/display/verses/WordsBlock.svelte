@@ -1,4 +1,7 @@
 <script>
+	const loadedMushafFonts = new Set();
+	const loadingMushafFonts = new Map();
+
 	export let key;
 	export let value;
 	export let line = null;
@@ -31,14 +34,31 @@
 
 	$: displayIsContinuous = selectableDisplays[$__displayType].continuous;
 
-	// Dynamically load the fonts if mushaf fonts are selected
-	//v4 words are hidden by default and shown only when the font is loaded...
-	if ([2, 3].includes($__fontType)) {
-		loadFont(`p${value.meta.page}`, getMushafWordFontLink(value.meta.page)).then(() => {
-			document.querySelectorAll(`.p${value.meta.page}`).forEach((element) => {
-				element.classList.remove('invisible');
-			});
+	// Load each Mushaf page font once, even though many word components are rendered per page.
+	function revealMushafPageFont(page) {
+		document.querySelectorAll(`.p${page}`).forEach((element) => {
+			element.classList.remove('invisible');
 		});
+	}
+
+	$: if ([2, 3].includes($__fontType)) {
+		const fontFamily = `p${value.meta.page}`;
+		const fontUrl = getMushafWordFontLink(value.meta.page);
+
+		if (loadedMushafFonts.has(fontFamily)) {
+			revealMushafPageFont(value.meta.page);
+		} else if (!loadingMushafFonts.has(fontFamily)) {
+			const loadPromise = loadFont(fontFamily, fontUrl)
+				.then(() => {
+					loadedMushafFonts.add(fontFamily);
+					revealMushafPageFont(value.meta.page);
+				})
+				.finally(() => {
+					loadingMushafFonts.delete(fontFamily);
+				});
+
+			loadingMushafFonts.set(fontFamily, loadPromise);
+		}
 	}
 
 	/**
