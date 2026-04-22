@@ -2,7 +2,7 @@
 	import Modal from '$ui/FlowbiteSvelte/modal/Modal.svelte';
 	import Radio from '$ui/FlowbiteSvelte/forms/Radio.svelte';
 	import Checkbox from '$ui/FlowbiteSvelte/forms/Checkbox.svelte';
-	import { quranMetaData } from '$data/quranMeta';
+	
 	import { __verseKey, __copyShareVerseModalVisible, __verseTranslationData } from '$utils/stores';
 	import { linkClasses, buttonClasses, selectedRadioOrCheckboxClasses } from '$data/commonClasses';
 	import { term } from '$utils/terminologies';

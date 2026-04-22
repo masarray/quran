@@ -8,7 +8,7 @@
 	import ErrorLoadingData from '$misc/ErrorLoadingData.svelte';
 	import { parseURL } from '$utils/parseURL';
 	import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
-	import { quranMetaData } from '$data/quranMeta';
+	
 	import { selectableDisplays } from '$data/options';
 	import { __userSettings, __currentPage, __chapterNumber, __displayType, __fontType, __wordTranslation, __wordTransliteration, __verseTranslations, __firstVerseOnPage, __lastRead } from '$utils/stores';
 	import { buttonClasses } from '$data/commonClasses';

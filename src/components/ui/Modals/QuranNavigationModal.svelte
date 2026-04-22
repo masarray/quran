@@ -250,10 +250,13 @@
 
 									<!-- chapter names -->
 									{#if key === 'chapters' && Object.keys(value).length > 0}
-										{#each Object.entries(value) as [key, value]}
+										{#each Object.entries(value) as [key, _value]}
 											<div class={linkClasses}>
 												<span>⟶</span>
-											<a href="/{key}" class={linkTextClasses}>{term('chapter')} {getChapterDisplayMeta(+key).transliteration} <span class="hidden md:inline-block">({getChapterDisplayMeta(+key).translation})</span></a>
+												<a href="/{key}" class={linkTextClasses}>
+													{term('chapter')} {getChapterDisplayMeta(+key).transliteration}
+													<span class="hidden md:inline-block">({getChapterDisplayMeta(+key).translation})</span>
+												</a>
 											</div>
 										{/each}
 									{/if}

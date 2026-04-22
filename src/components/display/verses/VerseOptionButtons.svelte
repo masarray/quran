@@ -14,7 +14,7 @@
 	import { __currentPage, __userSettings, __audioSettings, __verseKey, __userNotes, __notesModalVisible, __playButtonsFunctionality, __displayType, __verseWordBlocks } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { term } from '$utils/terminologies';
-	import { quranMetaData } from '$data/quranMeta';
+
 	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 
 	const chapter = parseInt(key.split(':')[0], 10);
