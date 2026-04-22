@@ -92,7 +92,7 @@ export function updateSettings(props) {
 			userSettings.displaySettings.websiteTheme = props.value;
 			trackEvent = true;
 			localStorage.setItem('userSettings', JSON.stringify(userSettings));
-			location.reload();
+			applyWebsiteTheme(props.value);
 			break;
 
 		// for word translation view
@@ -381,6 +381,53 @@ export function updateSettings(props) {
 	__userSettings.set(JSON.stringify(userSettings));
 	__readingAnalytics.set(userSettings.readingAnalytics);
 	localStorage.setItem('userSettings', JSON.stringify(userSettings));
+}
+
+function applyWebsiteTheme(themeId) {
+	if (typeof document === 'undefined') return;
+
+	const root = document.documentElement;
+	const body = document.body;
+	for (let i = 1; i <= 9; i += 1) {
+		root.classList.remove(`theme-${i}`);
+	}
+
+	root.classList.add(`theme-${themeId}`, 'bg-theme-bg');
+	body?.classList.add('text-theme-text');
+	syncThemeAccentArtifacts();
+}
+
+function syncThemeAccentArtifacts() {
+	if (typeof document === 'undefined') return;
+
+	const rgb = getComputedStyle(document.documentElement).getPropertyValue('--theme-accent-rgb').trim().split(' ');
+	if (rgb.length < 3) return;
+
+	const toHex = (n) => parseInt(n, 10).toString(16).padStart(2, '0');
+	const accentHex = `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+	const accentNoHash = accentHex.slice(1);
+
+	let themeDynamicStyle = document.getElementById('theme-dynamic-style');
+	if (!themeDynamicStyle) {
+		themeDynamicStyle = document.createElement('style');
+		themeDynamicStyle.id = 'theme-dynamic-style';
+		document.head.appendChild(themeDynamicStyle);
+	}
+
+	themeDynamicStyle.textContent = `
+		[type='checkbox'], [type='checkbox']:checked {
+			background-color: transparent !important;
+			border-color: ${accentHex} !important;
+		}
+		[type='checkbox']:checked {
+			background-color: transparent !important;
+			border-color: ${accentHex} !important;
+			background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 507.506 507.506' fill='%23${accentNoHash}'><g><path d='M163.865,436.934c-14.406,0.006-28.222-5.72-38.4-15.915L9.369,304.966c-12.492-12.496-12.492-32.752,0-45.248l0,0 c12.496-12.492,32.752-12.492,45.248,0l109.248,109.248L452.889,79.942c12.496-12.492,32.752-12.492,45.248,0l0,0 c12.492,12.496,12.492,32.752,0,45.248L202.265,421.019C192.087,431.214,178.271,436.94,163.865,436.934z'/></g></svg>") !important;
+		}
+	`;
+
+	const themeMetaTag = document.querySelector('meta[name="theme-color"]');
+	themeMetaTag?.setAttribute('content', accentHex);
 }
 
 function ensureLastReadCompatibility(userSettings) {
