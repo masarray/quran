@@ -5,8 +5,8 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import path from 'path';
 
 const useNodeAdapter = process.env.USE_NODE_ADAPTER === 'true';
-const useStaticAdapter = process.env.GITHUB_PAGES === 'true';
-const basePath = process.env.BASE_PATH || '';
+const useStaticAdapter = true;
+const basePath = process.env.BASE_PATH || '/quran';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
