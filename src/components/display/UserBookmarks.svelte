@@ -5,7 +5,6 @@
 	import { __userBookmarks } from '$utils/stores';
 	import { cdnStaticDataUrls } from '$data/websiteSettings';
 	import { fetchAndCacheJson } from '$utils/fetchData';
-	import { term } from '$utils/terminologies';
 
 	export let cardGridClasses;
 	export let cardInnerClasses;
@@ -34,12 +33,14 @@
 
 <ScrollableFadeContainer containerId="bookmark-cards" onScrollAction={handleScroll}>
 	{#if !hasBookmarks}
-		<div class="flex flex-row justify-start text-xs md:text-sm opacity-70 px-2">
-			<span class="leading-relaxed">
-				You haven't bookmarked any {term('verse')} yet! Start by clicking on the
-				<Bookmark classes="inline mt-[-4px] mx-1" /> icon for a {term('verse')}. It's a perfect way to return to the {term('verses')} that resonate with you.
-			</span>
-		</div>
+<div class="flex flex-row justify-start text-xs md:text-sm opacity-70 px-2">
+	<span class="leading-relaxed">
+		Belum ada ayat yang disimpan.
+		Tandai ayat yang menyentuh hati dengan ikon
+		<Bookmark classes="inline mt-[-4px] mx-1" />
+		agar mudah dibaca kembali.
+	</span>
+</div>
 	{:else}
 		<div>
 			<div class="{cardGridClasses} grid-cols-2 md:!grid-cols-4">

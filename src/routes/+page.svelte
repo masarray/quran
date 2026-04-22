@@ -231,15 +231,15 @@
 			<div class="flex flex-row justify-center">
 				<div class="flex text-sm font-medium text-center justify-center space-x-1 md:space-x-4 rounded-full py-2 {!homepageLayoutPreferences.extrasPanelVisible && disabledClasses}">
 					<button on:click={() => changeTabs('extrasActiveTab', bookmarksTab)} class="{extrasActiveTab === bookmarksTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center truncate" data-umami-event="Bookmarks Tab Button">
-						<span>Penanda</span>
+						<span>Tersimpan</span>
 						<span>{totalBookmarks > 0 ? `(${totalBookmarks})` : ''}</span>
 					</button>
 					<button on:click={() => changeTabs('extrasActiveTab', notesTab)} class="{extrasActiveTab === notesTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center truncate" data-umami-event="Notes Tab Button">
 						<span>Catatan</span>
 						<span>{totalNotes > 0 ? `(${totalNotes})` : ''}</span>
 					</button>
-					<button on:click={() => changeTabs('extrasActiveTab', suggestionsTab)} class={extrasActiveTab === suggestionsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Suggestions Tab Button">Saran</button>
-					<button on:click={() => changeTabs('extrasActiveTab', analyticsTab)} class={extrasActiveTab === analyticsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Reading Analytics Tab Button">Statistik</button>
+					<button on:click={() => changeTabs('extrasActiveTab', suggestionsTab)} class={extrasActiveTab === suggestionsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Suggestions Tab Button">Rekomendasi</button>
+					<button on:click={() => changeTabs('extrasActiveTab', analyticsTab)} class={extrasActiveTab === analyticsTab ? tabActiveBorder : tabDefaultBorder} data-umami-event="Reading Analytics Tab Button">Aktivitas</button>
 				</div>
 			</div>
 
