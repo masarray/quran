@@ -91,6 +91,7 @@ export function updateSettings(props) {
 			__websiteTheme.set(props.value);
 			userSettings.displaySettings.websiteTheme = props.value;
 			trackEvent = true;
+			localStorage.setItem('userSettings', JSON.stringify(userSettings));
 			location.reload();
 			break;
 
