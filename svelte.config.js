@@ -6,7 +6,7 @@ import path from 'path';
 
 const useNodeAdapter = process.env.USE_NODE_ADAPTER === 'true';
 const useStaticAdapter = true;
-const basePath = process.env.BASE_PATH ?? (process.env.GITHUB_PAGES === 'true' ? '/quran' : '');
+const basePath = process.env.BASE_PATH ?? '/quran';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {

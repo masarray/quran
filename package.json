@@ -3,9 +3,9 @@
 	"version": "4",
 	"private": true,
 	"scripts": {
-		"dev": "vite dev --host",
+		"dev": "vite dev --host --open /quran",
 		"build": "vite build",
-		"preview": "vite build && vite preview",
+		"preview": "vite build && vite preview --open /quran",
 		"start": "node build",
 		"lint:unused": "eslint . --ext .js,.svelte --max-warnings=0"
 	},

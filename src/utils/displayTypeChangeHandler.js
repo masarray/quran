@@ -1,5 +1,6 @@
 import { get } from 'svelte/store';
 import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import { __currentPage, __lastRead } from '$utils/stores';
 import { updateSettings } from '$utils/updateSettings';
 
@@ -18,13 +19,13 @@ function handleNonMushafMode(displayId) {
 	if (get(__currentPage) === 'mushaf') {
 		const firstWordKey = document.querySelector('.word').id;
 		const [chapter, verse] = firstWordKey.split(':');
-		goto(`/${chapter}/${verse}`);
+		goto(`${base}/${chapter}/${verse}`);
 	}
 
 	updateSettings({ type: 'displayType', value: displayId });
 }
 
 function handleMushafMode() {
-	const lastReadPage = get(__lastRead).page;
-	goto(`/page?id=${lastReadPage}`);
+	const lastReadPage = get(__lastRead).page || 1;
+	goto(`${base}/page?id=${lastReadPage}`);
 }
