@@ -11,6 +11,6 @@
 	__currentPage.set('morphology');
 </script>
 
-<PageHead title={`Morphology ${$__morphologyKey}`} />
+<PageHead title={`Morfologi ${$__morphologyKey}`} />
 
 <MorphologyView {data} />

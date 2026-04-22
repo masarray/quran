@@ -245,7 +245,7 @@
 									{#if key === 'word'}
 										<div class={linkClasses}>
 											<span>⟶</span>
-											<a href={`${base}/morphology?word=${value}`} class={linkTextClasses}>Word {value} Morphology</a>
+											<a href={`${base}/morphology?word=${value}`} class={linkTextClasses}>Morfologi Kata {value}</a>
 										</div>
 									{/if}
 
@@ -353,13 +353,13 @@
 				<!-- words selector -->
 				{#if $__currentPage === 'morphology'}
 					<div class="flex flex-col space-y-2 w-full">
-						<div class="px-2 text-sm pb-2 border-b border-theme-accent/20 font-medium">Words</div>
+						<div class="px-2 text-sm pb-2 border-b border-theme-accent/20 font-medium">Kata</div>
 						{#await verseKeyData then verseKeyData}
 							<ul id="navbar-words-list" class="grow basis-1/2 px-2 overflow-y-scroll">
 								{#each { length: verseKeyData[morphologyKey].words } as _, word}
 									<li>
 										<a href={`${base}/morphology?word=${morphologyKey}:${word + 1}`}>
-											<div class={listItemClasses}>Word {morphologyKey}:{word + 1}</div>
+											<div class={listItemClasses}>Kata {morphologyKey}:{word + 1}</div>
 										</a>
 									</li>
 								{/each}

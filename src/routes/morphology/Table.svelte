@@ -10,8 +10,8 @@
 	import { base } from '$app/paths';
 
 	const tableTitles = {
-		1: { title: 'with the same root' },
-		2: { title: 'appearing exactly' }
+		1: { title: 'dengan akar yang sama' },
+		2: { title: 'muncul persis sama' }
 	};
 
 	const params = new URLSearchParams(window.location.search);
@@ -36,17 +36,17 @@
 {#if totalAvailableWords > 0}
 	<div class="flex flex-col">
 		<div class="relative space-y-6 sm:rounded-3xl">
-			<h1 class="text-md md:text-2xl text-center">{totalAvailableWords} {totalAvailableWords > 1 ? 'words' : 'word'} {tableTitles[tableType].title}</h1>
+			<h1 class="text-md md:text-2xl text-center">{totalAvailableWords} kata {tableTitles[tableType].title}</h1>
 			<div class="max-h-[32em] overflow-auto">
 				<table class="w-full text-sm text-left rtl:text-right rounded-md">
 					<thead class="text-xs uppercase top-0 bg-theme-accent/5">
 						<tr>
 							<th class="px-6 py-3">#</th>
-							<th class="px-6 py-3">Word</th>
-							<th class="px-6 py-3">Translation</th>
-							<th class="px-6 py-3">Transliteration</th>
+							<th class="px-6 py-3">Kata</th>
+							<th class="px-6 py-3">Terjemah</th>
+							<th class="px-6 py-3">Transliterasi</th>
 							<th class="px-6 py-3">{term('verse')}</th>
-							<th class="px-6 py-3">Word</th>
+							<th class="px-6 py-3">Kata</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -74,7 +74,7 @@
 
 			{#if totalAvailableWords > maxResultsToLoad}
 				<div class="text-center text-xs {lastWordToLoad === totalAvailableWords && 'hidden'}">
-					<button on:click={updateLastWordToLoad} class={buttonClasses} data-umami-event="Morphology Load More Button"> Load more </button>
+					<button on:click={updateLastWordToLoad} class={buttonClasses} data-umami-event="Morphology Load More Button">Muat lebih banyak</button>
 				</div>
 			{/if}
 		</div>

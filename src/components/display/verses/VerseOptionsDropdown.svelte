@@ -135,7 +135,7 @@
 		{
 			id: 'morphology',
 			icon: Morphology,
-			text: 'Morphology',
+			text: 'Morfologi',
 			handler: handleMorphology,
 			analyticsEvent: 'Verse Morphology Modal Button',
 			show: true
@@ -151,7 +151,7 @@
 		{
 			id: 'last-read',
 			icon: BookmarkFilled,
-			text: isManualLastRead ? 'Tanda Terakhir Dibaca' : 'Set as Last Read',
+			text: isManualLastRead ? 'Tanda Terakhir Dibaca' : 'Jadikan Tanda Terakhir Dibaca',
 			handler: handleSetLastRead,
 			analyticsEvent: 'Set Last Read Button',
 			show: true

@@ -230,9 +230,12 @@
 	<div id="page-block" class="text-center text-xl mt-6 mb-14 overflow-x-hidden overflow-y-hidden" in:fade={{ duration: 300 }} bind:this={pageBlock}>
 		<div class="space-y-2 mt-2.5">
 			{#if Object.prototype.hasOwnProperty.call($__lastRead, 'page')}
-				<div class="flex justify-center pb-2">
-					<a href={`${base}/page?id=${$__lastRead.page}`} class="w-fit flex flex-row space-x-2 py-3 px-4 rounded-xl items-center cursor-pointer border border-transparent hover:border-theme-accent bg-theme-accent/5">
-						<span>Lanjut ke Halaman Terakhir</span>
+				<div class="flex justify-center pb-2 px-4">
+					<a
+						href={`${base}/page?id=${$__lastRead.page}`}
+						class="w-full max-w-xs md:max-w-sm flex items-center justify-center px-4 py-2.5 md:px-5 md:py-3 rounded-2xl text-base md:text-lg leading-snug text-center cursor-pointer border border-theme-accent/60 hover:border-theme-accent bg-theme-accent/5"
+					>
+						<span>Lanjut bacaan terakhir</span>
 					</a>
 				</div>
 			{/if}

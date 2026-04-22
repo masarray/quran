@@ -19,6 +19,68 @@
 
 	let chapter, verse, word;
 	let wordRoot = '';
+	const verbFormLabels = {
+		perfect: 'Perfek',
+		imperfect: 'Imperfek',
+		imperative: 'Imperatif',
+		active_participle: 'Partisipel Aktif',
+		passive_participle: 'Partisipel Pasif',
+		verbal_noun: 'Masdar'
+	};
+
+	function translateMorphologySummary(summary = '') {
+		if (!summary) return '';
+
+		return summary
+			.replace(/The first word of verse/g, 'Kata pertama dari ayat')
+			.replace(/The second word of verse/g, 'Kata kedua dari ayat')
+			.replace(/The third word of verse/g, 'Kata ketiga dari ayat')
+			.replace(/The fourth word of verse/g, 'Kata keempat dari ayat')
+			.replace(/The fifth word of verse/g, 'Kata kelima dari ayat')
+			.replace(/The sixth word of verse/g, 'Kata keenam dari ayat')
+			.replace(/The seventh word of verse/g, 'Kata ketujuh dari ayat')
+			.replace(/The eighth word of verse/g, 'Kata kedelapan dari ayat')
+			.replace(/The ninth word of verse/g, 'Kata kesembilan dari ayat')
+			.replace(/The tenth word of verse/g, 'Kata kesepuluh dari ayat')
+			.replace(/is divided into (\d+) morphological segments\./g, 'terbagi menjadi $1 segmen morfologis.')
+			.replace(/A preposition and noun\./g, 'Terdiri dari huruf jar dan isim.')
+			.replace(/A preposition and adjective\./g, 'Terdiri dari huruf jar dan kata sifat.')
+			.replace(/A preposition and pronoun\./g, 'Terdiri dari huruf jar dan kata ganti.')
+			.replace(/A noun\./g, 'Terdiri dari isim.')
+			.replace(/A verb\./g, 'Terdiri dari kata kerja.')
+			.replace(/An adjective\./g, 'Terdiri dari kata sifat.')
+			.replace(/The prefixed preposition ([a-zāīū]+) is usually translated as "([^"]+)" or "([^"]+)"\./g, 'Huruf jar awalan $1 biasanya diterjemahkan sebagai "$2" atau "$3".')
+			.replace(/The noun is masculine and is in the genitive case/g, 'Isim ini bersifat mudzakkar dan berada dalam keadaan majrur')
+			.replace(/The noun is feminine and is in the genitive case/g, 'Isim ini bersifat muannats dan berada dalam keadaan majrur')
+			.replace(/The noun is masculine and is in the nominative case/g, 'Isim ini bersifat mudzakkar dan berada dalam keadaan marfu')
+			.replace(/The noun is feminine and is in the nominative case/g, 'Isim ini bersifat muannats dan berada dalam keadaan marfu')
+			.replace(/The noun is masculine and is in the accusative case/g, 'Isim ini bersifat mudzakkar dan berada dalam keadaan manshub')
+			.replace(/The noun is feminine and is in the accusative case/g, 'Isim ini bersifat muannats dan berada dalam keadaan manshub')
+			.replace(/The adjective is masculine singular/g, 'Kata sifat ini mudzakkar tunggal')
+			.replace(/and is in the genitive case/g, 'dan berada dalam keadaan majrur')
+			.replace(/and is in the nominative case/g, 'dan berada dalam keadaan marfu')
+			.replace(/and is in the accusative case/g, 'dan berada dalam keadaan manshub')
+			.replace(/The noun's triliteral root is /g, 'Akar tiga huruf isim ini adalah ')
+			.replace(/The adjective's triliteral root is /g, 'Akar tiga huruf kata sifat ini adalah ')
+			.replace(/The verb's triliteral root is /g, 'Akar tiga huruf kata kerja ini adalah ')
+			.replace(/Together the segments form a preposition phrase known as /g, 'Gabungan segmen ini membentuk frasa jar yang dikenal sebagai ')
+			.replace(/Together the segments form /g, 'Gabungan segmen ini membentuk ')
+			.replace(/A preposition phrase/g, 'frasa huruf jar')
+			.replace(/A noun phrase/g, 'frasa isim')
+			.replace(/masculine/g, 'mudzakkar')
+			.replace(/feminine/g, 'muannats')
+			.replace(/singular/g, 'tunggal')
+			.replace(/plural/g, 'jamak')
+			.replace(/dual/g, 'mutsanna')
+			.replace(/preposition/g, 'huruf jar')
+			.replace(/noun/g, 'isim')
+			.replace(/adjective/g, 'kata sifat')
+			.replace(/verb/g, 'kata kerja')
+			.replace(/pronoun/g, 'kata ganti')
+			.replace(/ genitive case/g, ' keadaan majrur')
+			.replace(/ nominative case/g, ' keadaan marfu')
+			.replace(/ accusative case/g, ' keadaan manshub');
+	}
 
 	// Could be either the morphology page or modal
 	$: isMorphologyPage = $__currentPage === 'morphology';
@@ -161,12 +223,12 @@
 				{#if allData.wordSummaryData && Object.keys(allData.wordSummaryData).length > 0}
 					<div id="word-summary" class="text-center mx-auto md:w-3/4 text-sm md:text-lg pb-6 border-b-2 border-theme-accent/20">
 						<div class="flex flex-col space-y-4">
-							<span>{@html allData.wordSummaryData.data[$__morphologyKey]}</span>
+							<span>{@html translateMorphologySummary(allData.wordSummaryData.data[$__morphologyKey])}</span>
 						</div>
 
 						<!-- Buttons -->
 						<div class="pt-4 flex flex-row justify-center space-x-2 text-xs">
-							<button class={buttonClasses} on:click={() => wordAudioController({ key: $__morphologyKey })}>Play Word</button>
+							<button class={buttonClasses} on:click={() => wordAudioController({ key: $__morphologyKey })}>Putar Kata</button>
 
 							<!-- Show the "goto verse" button if the user in on morphology page -->
 							{#if isMorphologyPage}
@@ -190,7 +252,7 @@
 														<div class="flex items-center justify-center mb-2">
 															<p id="verb-1" class="text-xl md:text-2xl pb-4 leading-5 arabic-font-1">{value}</p>
 														</div>
-														<p class="text-xs capitalize opacity-70">{key.replace('_', ' ')}</p>
+														<p class="text-xs capitalize opacity-70">{verbFormLabels[key] || key.replaceAll('_', ' ')}</p>
 													</div>
 												{/if}
 											{/each}
