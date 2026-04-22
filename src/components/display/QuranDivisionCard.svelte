@@ -1,4 +1,5 @@
 <script>
+	import { base } from '$app/paths';
 	import Mecca from '$svgs/Mecca.svelte';
 	import Madinah from '$svgs/Madinah.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
@@ -20,7 +21,7 @@
 	$: chapterMeta = isChapter ? getChapterDisplayMeta(id) : null;
 
 	$: starValue = isJuz ? juz.juz : isHizb ? hizb.hizb : id;
-	$: href = isJuz ? `/juz?id=${juz.juz}` : isHizb ? `/hizb?id=${hizb.hizb}` : `/${id}`;
+	$: href = isJuz ? `${base}/juz?id=${juz.juz}` : isHizb ? `${base}/hizb?id=${hizb.hizb}` : `${base}/${id}`;
 </script>
 
 <a {href}>

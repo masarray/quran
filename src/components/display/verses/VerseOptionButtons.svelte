@@ -1,6 +1,7 @@
 <script>
 	export let key, value;
 
+	import { base } from '$app/paths';
 	import VerseOptionsDropdown from '$display/verses/VerseOptionsDropdown.svelte';
 	import Bookmark from '$svgs/Bookmark.svelte';
 	import BookmarkFilled from '$svgs/BookmarkFilled.svelte';
@@ -74,7 +75,7 @@
 	<div class="flex flex-row w-full space-x-2">
 		<!-- verse key -->
 		<div class="flex flex-row space-x-2">
-			<a href={`/${chapter}?startVerse=${verse}`} class={verseKeyClasses}>
+			<a href={`${base}/${chapter}?startVerse=${verse}`} class={verseKeyClasses}>
 				<div class="text-xs">
 					{#if ['chapter', 'juz', 'hizb'].includes($__currentPage)}
 						{key}

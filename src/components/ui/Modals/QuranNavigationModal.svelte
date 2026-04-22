@@ -1,4 +1,5 @@
 <script>
+	import { base } from '$app/paths';
 	import Modal from '$ui/FlowbiteSvelte/modal/Modal.svelte';
 	import Input from '$ui/FlowbiteSvelte/forms/Input.svelte';
 	import CloseButton from '$ui/FlowbiteSvelte/utils/CloseButton.svelte';
@@ -122,7 +123,7 @@
 								<span class="text-xs font-semibold pt-2">Terakhir Dibaca</span>
 								<div class={linkClasses}>
 									<span>⟶</span>
-									<a href="/{lastReadChapter}/{lastReadVerse}" class={linkTextClasses}>{getChapterDisplayMeta(lastReadChapter).transliteration}, {lastReadChapter}:{lastReadVerse}</a>
+									<a href="{base}/{lastReadChapter}/{lastReadVerse}" class={linkTextClasses}>{getChapterDisplayMeta(lastReadChapter).transliteration}, {lastReadChapter}:{lastReadVerse}</a>
 								</div>
 							</div>
 						{/if}
@@ -133,7 +134,7 @@
 							{#each Object.entries(mostRead) as [_, item]}
 								<div class={linkClasses}>
 									<span>⟶</span>
-									<a href={item.url} class={linkTextClasses}>{getChapterDisplayMeta(item.chapter).transliteration} ({item.verses})</a>
+									<a href={`${base}${item.url}`} class={linkTextClasses}>{getChapterDisplayMeta(item.chapter).transliteration} ({item.verses})</a>
 								</div>
 							{/each}
 						</div>
@@ -153,7 +154,7 @@
 											<span class="text-xs font-semibold">{term('chapter')} Saat Ini</span>
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{$__chapterNumber}?startVerse={value}" class={linkTextClasses}>{term('verse')} {value}</a>
+												<a href="{base}/{$__chapterNumber}?startVerse={value}" class={linkTextClasses}>{term('verse')} {value}</a>
 											</div>
 										</div>
 									{/if}
@@ -169,12 +170,12 @@
 										{#if key === 'chapter'}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/page?id={startPageOfChapters[value]}" class={linkTextClasses}>{term('chapter')} {value} ({getChapterDisplayMeta(value).transliteration})</a>
+												<a href="{base}/page?id={startPageOfChapters[value]}" class={linkTextClasses}>{term('chapter')} {value} ({getChapterDisplayMeta(value).transliteration})</a>
 											</div>
 										{:else if key === 'page'}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/page?id={value}" class={linkTextClasses}>Page {value}</a>
+												<a href="{base}/page?id={value}" class={linkTextClasses}>Page {value}</a>
 											</div>
 										{/if}
 
@@ -183,17 +184,17 @@
 											{#if key === 'juz'}
 												<div class={linkClasses}>
 													<span>⟶</span>
-													<a href="/page?id={verseKeyData[juzMeta[value - 1].from].page}" class={linkTextClasses}>{term('juz')} {value}</a>
+													<a href="{base}/page?id={verseKeyData[juzMeta[value - 1].from].page}" class={linkTextClasses}>{term('juz')} {value}</a>
 												</div>
 											{:else if key === 'hizb'}
 												<div class={linkClasses}>
 													<span>⟶</span>
-													<a href="/page?id={verseKeyData[hizbMeta[value - 1].from].page}" class={linkTextClasses}>{term('hizb')} {value}</a>
+													<a href="{base}/page?id={verseKeyData[hizbMeta[value - 1].from].page}" class={linkTextClasses}>{term('hizb')} {value}</a>
 												</div>
 											{:else if key === 'key'}
 												<div class={linkClasses}>
 													<span>⟶</span>
-													<a href="/page?id={verseKeyData[value].page}" class={linkTextClasses}>{getChapterDisplayMeta(value.split(':')[0]).transliteration}, {term('verse')} {value.split(':')[1]} (Halaman {verseKeyData[value].page})</a>
+													<a href="{base}/page?id={verseKeyData[value].page}" class={linkTextClasses}>{getChapterDisplayMeta(value.split(':')[0]).transliteration}, {term('verse')} {value.split(':')[1]} (Halaman {verseKeyData[value].page})</a>
 												</div>
 											{/if}
 										{/await}
@@ -201,41 +202,41 @@
 										{#if key === 'chapter'}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{value}" class={linkTextClasses}>{term('chapter')} {value} ({getChapterDisplayMeta(value).transliteration})</a>
+												<a href="{base}/{value}" class={linkTextClasses}>{term('chapter')} {value} ({getChapterDisplayMeta(value).transliteration})</a>
 											</div>
 										{:else if key === 'page'}
 											{@const [pageChapter, pageVerse] = pageNumberKeys[value - 1].split(':').map(Number)}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{pageChapter}/{pageVerse}" class={linkTextClasses}>Halaman {value} ({getChapterDisplayMeta(pageChapter).transliteration})</a>
+												<a href="{base}/{pageChapter}/{pageVerse}" class={linkTextClasses}>Halaman {value} ({getChapterDisplayMeta(pageChapter).transliteration})</a>
 											</div>
 
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/page?id={value}" class={linkTextClasses}>Halaman Mushaf {value} ({getChapterDisplayMeta(pageNumberKeys[value - 1].split(':')[0]).transliteration})</a>
+												<a href="{base}/page?id={value}" class={linkTextClasses}>Halaman Mushaf {value} ({getChapterDisplayMeta(pageNumberKeys[value - 1].split(':')[0]).transliteration})</a>
 											</div>
 										{:else if key === 'juz'}
 											{@const [juzChapter, juzVerse] = juzMeta[value - 1]['from'].split(':').map(Number)}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{juzChapter}/{juzVerse}" class={linkTextClasses}>{term('juz')} {value} ({juzMeta[value - 1].name})</a>
+												<a href="{base}/{juzChapter}/{juzVerse}" class={linkTextClasses}>{term('juz')} {value} ({juzMeta[value - 1].name})</a>
 											</div>
 										{:else if key === 'hizb'}
 											{@const [hizbChapter, hizbVerse] = hizbMeta[value - 1]['from'].split(':').map(Number)}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{hizbChapter}/{hizbVerse}" class={linkTextClasses}>{term('hizb')} {value}</a>
+												<a href="{base}/{hizbChapter}/{hizbVerse}" class={linkTextClasses}>{term('hizb')} {value}</a>
 											</div>
 										{:else if key === 'key'}
 											{@const [keyChapter, keyVerse] = value.split(':').map(Number)}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{keyChapter}/{keyVerse}" class={linkTextClasses}>{getChapterDisplayMeta(keyChapter).transliteration}, {term('verse')} {keyVerse}</a>
+												<a href="{base}/{keyChapter}/{keyVerse}" class={linkTextClasses}>{getChapterDisplayMeta(keyChapter).transliteration}, {term('verse')} {keyVerse}</a>
 											</div>
 										{:else if key === 'supplications'}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/duas#{value}" class={linkTextClasses}>{getChapterDisplayMeta(value.split(':')[0]).transliteration}, {value} ({term('supplications')}) </a>
+												<a href="{base}/duas#{value}" class={linkTextClasses}>{getChapterDisplayMeta(value.split(':')[0]).transliteration}, {value} ({term('supplications')}) </a>
 											</div>
 										{/if}
 									{/if}
@@ -244,7 +245,7 @@
 									{#if key === 'word'}
 										<div class={linkClasses}>
 											<span>⟶</span>
-											<a href="/morphology?word={value}" class={linkTextClasses}>Word {value} Morphology</a>
+											<a href="{base}/morphology?word={value}" class={linkTextClasses}>Word {value} Morphology</a>
 										</div>
 									{/if}
 
@@ -253,7 +254,7 @@
 										{#each Object.entries(value) as [key, _value]}
 											<div class={linkClasses}>
 												<span>⟶</span>
-												<a href="/{key}" class={linkTextClasses}>
+												<a href="{base}/{key}" class={linkTextClasses}>
 													{term('chapter')} {getChapterDisplayMeta(+key).transliteration}
 													<span class="hidden md:inline-block">({getChapterDisplayMeta(+key).translation})</span>
 												</a>
@@ -270,7 +271,7 @@
 								<span class="text-xs font-semibold">Cari di Al Quran</span>
 								<div class={linkClasses}>
 									<span>⟶</span>
-									<a href="/search?query={searchedKey}" class={linkTextClasses}>"{searchedKey}"</a>
+									<a href="{base}/search?query={searchedKey}" class={linkTextClasses}>"{searchedKey}"</a>
 								</div>
 							</div>
 						{/if}
@@ -289,7 +290,7 @@
 						<ul id="navbar-chapter-list" class="grow basis-1/2 overflow-y-scroll">
 							{#each { length: maxItemsToLoad } as _, chapter}
 								<li>
-									<a href={$__currentPage === 'mushaf' ? `/page?id=${startPageOfChapters[chapter + 1]}` : `/${chapter + 1}`}>
+									<a href={$__currentPage === 'mushaf' ? `${base}/page?id=${startPageOfChapters[chapter + 1]}` : `${base}/${chapter + 1}`}>
 										<div class="{listItemClasses} {$__currentPage === 'chapter' ? (chapter + 1 === $__chapterNumber ? `bg-theme-accent/5` : null) : null}">
 											{chapter + 1}. {getChapterDisplayMeta(chapter + 1).transliteration}
 
@@ -318,7 +319,7 @@
 							{#key $__chapterNumber}
 								{#each { length: maxVersesToLoad } as _, verse}
 									<li>
-										<a href="/{$__chapterNumber}?startVerse={verse + 1}">
+										<a href="{base}/{$__chapterNumber}?startVerse={verse + 1}">
 											<div class={listItemClasses}>{term('verse')} {verse + 1}</div>
 										</a>
 									</li>
@@ -357,7 +358,7 @@
 							<ul id="navbar-words-list" class="grow basis-1/2 px-2 overflow-y-scroll">
 								{#each { length: verseKeyData[morphologyKey].words } as _, word}
 									<li>
-										<a href="/morphology?word={morphologyKey}:{word + 1}">
+										<a href="{base}/morphology?word={morphologyKey}:{word + 1}">
 											<div class={listItemClasses}>Word {morphologyKey}:{word + 1}</div>
 										</a>
 									</li>

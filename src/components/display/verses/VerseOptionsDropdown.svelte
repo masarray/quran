@@ -1,6 +1,7 @@
 <script>
 	export let page, meta;
 
+	import { base } from '$app/paths';
 	import Dropdown from '$ui/FlowbiteSvelte/dropdown/Dropdown.svelte';
 	import DropdownItem from '$ui/FlowbiteSvelte/dropdown/DropdownItem.svelte';
 	import Play from '$svgs/Play.svelte';
@@ -162,7 +163,7 @@
 		$__currentPage === 'mushaf'
 			? [
 					{
-						href: `/${chapter}?startVerse=${verse}`,
+						href: `${base}/${chapter}?startVerse=${verse}`,
 						icon: ChapterMode,
 						text: `${term('chapter')} Mode`,
 						analyticsEvent: 'Chapter Mode Button'
@@ -170,7 +171,7 @@
 				]
 			: [
 					{
-						href: `/page?id=${page}`,
+						href: `${base}/page?id=${page}`,
 						icon: Book,
 						text: 'Mode Mushaf',
 						analyticsEvent: 'Mushaf Mode Button'

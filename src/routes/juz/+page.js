@@ -1,11 +1,12 @@
 import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import { error } from '@sveltejs/kit';
 
 export async function load({ url }) {
 	const juz = url.searchParams.get('id');
 
 	if (!juz) {
-		goto('/juz?id=1', { replaceState: false });
+		goto(`${base}/juz?id=1`, { replaceState: false });
 	}
 
 	if (juz < 1 || juz > 30 || isNaN(juz)) {

@@ -1,5 +1,6 @@
 import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 
 export async function load() {
-	goto('/games/guess-the-word', { replaceState: false });
+	goto(`${base}/games/guess-the-word`, { replaceState: false });
 }
