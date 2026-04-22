@@ -1,7 +1,9 @@
-<script>
+<script context="module">
 	const loadedMushafFonts = new Set();
 	const loadingMushafFonts = new Map();
+</script>
 
+<script>
 	export let key;
 	export let value;
 	export let line = null;

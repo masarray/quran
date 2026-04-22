@@ -216,8 +216,8 @@
 		}
 	});
 
-	// Only allow continuous normal mode, without saving the setting
-	$__displayType = 4;
+	// Mushaf page should reflect the actual saved Mushaf display mode.
+	$__displayType = 6;
 
 	__currentPage.set('mushaf');
 </script>

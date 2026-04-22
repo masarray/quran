@@ -27,5 +27,6 @@ function handleNonMushafMode(displayId) {
 
 function handleMushafMode() {
 	const lastReadPage = get(__lastRead).page || 1;
+	updateSettings({ type: 'displayType', value: 6, skipTrackEvent: true });
 	goto(`${base}/page?id=${lastReadPage}`);
 }

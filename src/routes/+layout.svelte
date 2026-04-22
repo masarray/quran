@@ -114,7 +114,7 @@
 		// Only restore user settings if sign language mode is OFF
 		if (!$__signLanguageModeEnabled) {
 			if (userSettings.displaySettings && parsedUserSettings.displaySettings) {
-				$__displayType = userSettings.displaySettings.displayType;
+				$__displayType = userSettings.displaySettings.displayType === 6 ? 1 : userSettings.displaySettings.displayType;
 				$__fontType = parsedUserSettings.displaySettings.fontType;
 				$__wordTranslation = parsedUserSettings.translations?.word;
 				$__wordTransliterationEnabled = parsedUserSettings.displaySettings.wordTransliterationEnabled;
