@@ -11,11 +11,9 @@ const basePath = process.env.BASE_PATH || '/quran';
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	kit: {
-		// Use Node adapter when explicitly enabled (VPS / Docker / Dokploy / any Node server).
-		// Defaults to adapter-auto for platforms like Cloudflare Pages, Vercel, etc.
 		adapter: useStaticAdapter
 			? adapterStatic({
-					fallback: '404.html',
+					fallback: 'index.html',
 					strict: false
 				})
 			: useNodeAdapter
