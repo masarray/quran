@@ -8,6 +8,7 @@
 	import { quranMetaData } from '$data/quranMeta';
 	import { updateSettings } from '$utils/updateSettings';
 	import { showConfirm } from '$utils/confirmationAlertHandler';
+	import { base } from '$app/paths';
 
 	export let bookmark;
 	export let fullQuranTextData = null;
@@ -62,7 +63,7 @@
 </script>
 
 <div class="relative bookmark-menu-container {cardInnerClasses} !p-0 overflow-visible {dropdownOpen ? '!border-transparent' : ''}" role="article" aria-label="Bookmark for {chapterMeta.transliteration} verse {bookmarkVerse}">
-	<a href="{bookmarkChapter}?startVerse={bookmarkVerse}" class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Go to {chapterMeta.transliteration} verse {bookmarkVerse}">
+	<a href={`${base}/${bookmarkChapter}?startVerse=${bookmarkVerse}`} class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Go to {chapterMeta.transliteration} verse {bookmarkVerse}">
 		<div class="text-sm truncate {maxTextLength}">
 			{chapterMeta.transliteration} ({bookmark})
 		</div>

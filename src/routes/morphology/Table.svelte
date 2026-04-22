@@ -7,6 +7,7 @@
 	import { __wordTranslation } from '$utils/stores';
 	import { buttonClasses, linkClasses } from '$data/commonClasses';
 	import { term } from '$utils/terminologies';
+	import { base } from '$app/paths';
 
 	const tableTitles = {
 		1: { title: 'with the same root' },
@@ -60,10 +61,10 @@
 								<td class={`px-6 py-4 ${selectableWordTranslations[$__wordTranslation].customClasses}`}>{translation}</td>
 								<td class="px-6 py-4">{transliteration}</td>
 								<td class="px-6 py-4">
-									<a class={linkClasses} href="/{chapter}?startVerse={verse}">{chapter}:{verse}</a>
+									<a class={linkClasses} href={`${base}/${chapter}?startVerse=${verse}`}>{chapter}:{verse}</a>
 								</td>
 								<td class="px-6 py-4">
-									<a class={linkClasses} href="/morphology?word={item}">{item}</a>
+									<a class={linkClasses} href={`${base}/morphology?word=${item}`}>{item}</a>
 								</td>
 							</tr>
 						{/each}

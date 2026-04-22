@@ -231,7 +231,7 @@
 		<div class="space-y-2 mt-2.5">
 			{#if Object.prototype.hasOwnProperty.call($__lastRead, 'page')}
 				<div class="flex justify-center pb-2">
-					<a href="{base}/page?id={$__lastRead.page}" class="w-fit flex flex-row space-x-2 py-3 px-4 rounded-xl items-center cursor-pointer border border-transparent hover:border-theme-accent bg-theme-accent/5">
+					<a href={`${base}/page?id=${$__lastRead.page}`} class="w-fit flex flex-row space-x-2 py-3 px-4 rounded-xl items-center cursor-pointer border border-transparent hover:border-theme-accent bg-theme-accent/5">
 						<span>Lanjut ke Halaman Terakhir</span>
 					</a>
 				</div>

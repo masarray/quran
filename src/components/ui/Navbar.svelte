@@ -10,6 +10,7 @@
 	import { term } from '$utils/terminologies';
 	import { getWebsiteWidth } from '$utils/getWebsiteWidth';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 
 	let lastReadPage;
 	let lastReadJuz;
@@ -106,7 +107,7 @@
 
 <nav id="navbar" class={navbarClasses}>
 	<div id="top-nav" class={topNavClasses} aria-label="Home">
-		<a href="/" class="flex flex-row items-center p-3 cursor-pointer rounded-3xl border border-transparent hover:border-theme-accent bg-theme-accent/5" aria-label="Home">
+		<a href={`${base}/`} class="flex flex-row items-center p-3 cursor-pointer rounded-3xl border border-transparent hover:border-theme-accent bg-theme-accent/5" aria-label="Home">
 			<Home />
 			<span class="text-xs pl-2 hidden md:block">Home</span>
 		</a>

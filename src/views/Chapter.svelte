@@ -13,6 +13,7 @@
 	import { __userSettings, __currentPage, __chapterNumber, __displayType, __fontType, __wordTranslation, __wordTransliteration, __verseTranslations, __firstVerseOnPage, __lastRead } from '$utils/stores';
 	import { buttonClasses } from '$data/commonClasses';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { term } from '$utils/terminologies';
 	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 	import { page } from '$app/stores';
@@ -69,13 +70,13 @@
 			<!-- buttons to start chapter from start and load previous verse -->
 			{#if Object.prototype.hasOwnProperty.call($__lastRead, 'chapter')}
 				<div class="flex justify-center pt-6 pb-2">
-					<a href="/{$__lastRead.chapter}?startVerse={$__lastRead.verse}" class="text-sm {buttonClasses}">Lanjut Bacaan Terakhir</a>
+					<a href={`${base}/${$__lastRead.chapter}?startVerse=${$__lastRead.verse}`} class="text-sm {buttonClasses}">Lanjut Bacaan Terakhir</a>
 				</div>
 			{/if}
 
 			{#if startVerse > 1}
 				<div class={loadPrevNextVerseButtons}>
-					<a href="/{$__chapterNumber}" class="text-sm {buttonClasses}">Awal {term('chapter')}</a>
+					<a href={`${base}/${$__chapterNumber}`} class="text-sm {buttonClasses}">Awal {term('chapter')}</a>
 					<button on:click={loadPreviousVerse} class="text-sm {buttonClasses}">Ayat Sebelumnya</button>
 				</div>
 			{/if}

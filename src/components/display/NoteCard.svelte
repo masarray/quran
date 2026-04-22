@@ -10,6 +10,7 @@
 	import { updateSettings } from '$utils/updateSettings';
 	import { showConfirm } from '$utils/confirmationAlertHandler';
 	import { __verseKey, __notesModalVisible } from '$utils/stores';
+	import { base } from '$app/paths';
 
 	export let verse;
 	export let note;
@@ -83,7 +84,7 @@
 </script>
 
 <div class="relative note-menu-container {cardInnerClasses} !p-0 overflow-visible {dropdownOpen ? '!border-transparent' : ''}" role="article" aria-label="Note for {chapterMeta.transliteration} verse {verseNumber}">
-	<a href="{chapter}?startVerse={verseNumber}" class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Go to {chapterMeta.transliteration} verse {verseNumber}" on:click={handleCardClick}>
+	<a href={`${base}/${chapter}?startVerse=${verseNumber}`} class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Go to {chapterMeta.transliteration} verse {verseNumber}" on:click={handleCardClick}>
 		<div class="text-sm truncate {maxTextLength}">
 			{chapterMeta.transliteration} ({verse})
 		</div>

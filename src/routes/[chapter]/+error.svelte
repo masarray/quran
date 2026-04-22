@@ -1,5 +1,6 @@
 <script>
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import { __currentPage } from '$utils/stores';
 	import { linkClasses } from '$data/commonClasses';
 
@@ -15,5 +16,5 @@
 
 	<span>If you think this error shouldn't occur, please let us know via <a class={linkClasses} href="mailto:quranwbw@gmail.com">email</a>.</span>
 
-	<a class="{linkClasses} pt-8" href="/">Go back to homepage.</a>
+	<a class="{linkClasses} pt-8" href={`${base}/`}>Kembali ke beranda.</a>
 </div>

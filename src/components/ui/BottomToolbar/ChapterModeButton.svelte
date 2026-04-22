@@ -4,6 +4,7 @@
 	import { pageNumberKeys } from '$data/quranMeta';
 	import { __pageNumber } from '$utils/stores';
 	import { term } from '$utils/terminologies';
+	import { base } from '$app/paths';
 
 	let verseKey, chapter, verse;
 
@@ -14,7 +15,7 @@
 	}
 </script>
 
-<a href="/{chapter}/{verse}" class="inline-flex flex-col items-center justify-center px-5 group hover:bg-theme-accent/5">
+<a href={`${base}/${chapter}/${verse}`} class="inline-flex flex-col items-center justify-center px-5 group hover:bg-theme-accent/5">
 	<List />
 	<span class="sr-only">{term('chapter')} Mode</span>
 </a>

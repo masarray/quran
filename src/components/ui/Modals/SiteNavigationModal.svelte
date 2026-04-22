@@ -18,6 +18,7 @@
 	import { term } from '$utils/terminologies';
 	import { getModalTransition } from '$utils/getModalTransition';
 	import { isUserOnline } from '$utils/offlineModeHandler';
+	import { base } from '$app/paths';
 
 	const linkClasses = 'w-full flex flex-row space-x-2 py-4 px-4 rounded-xl items-center cursor-pointer border border-transparent hover:border-theme-accent bg-theme-accent/5';
 	const linkTextClasses = 'text-xs md:text-sm text-left w-[-webkit-fill-available] truncate';
@@ -65,7 +66,7 @@
 			<div class="flex flex-col space-y-2">
 				<div class="grid grid-cols-2 md:grid-cols-2 gap-1">
 					<!-- Search -->
-					<a href="/search" class={`${linkClasses} ${!userOnline && disabledClasses}`} aria-disabled={!userOnline} tabindex={userOnline ? undefined : -1}>
+					<a href={`${base}/search`} class={`${linkClasses} ${!userOnline && disabledClasses}`} aria-disabled={!userOnline} tabindex={userOnline ? undefined : -1}>
 						<span><Search2 size={4} /></span>
 						<span class={linkTextClasses}>Cari</span>
 					</a>
@@ -83,13 +84,13 @@
 					</button>
 
 					<!-- topics page link -->
-					<a href="/topics" class={linkClasses}>
+					<a href={`${base}/topics`} class={linkClasses}>
 						<span><Topics size={4} /></span>
 						<span class={linkTextClasses}>Topik</span>
 					</a>
 
 					<!-- Bookmarks -->
-					<a href="/bookmarks" class={linkClasses}>
+					<a href={`${base}/bookmarks`} class={linkClasses}>
 						<span><Bookmark size={4} /></span>
 						<span class={linkTextClasses}>Penanda</span>
 					</a>
@@ -108,37 +109,37 @@
 					</button>
 
 					<!-- Supplications -->
-					<a href="/duas" class={linkClasses}>
+					<a href={`${base}/duas`} class={linkClasses}>
 						<span><Supplication size={4} /></span>
 						<span class={linkTextClasses}>{term('supplications')}</span>
 					</a>
 
 					<!-- Morphology -->
-					<a href="/morphology?word=1:1:1" class={linkClasses}>
+					<a href={`${base}/morphology?word=1:1:1`} class={linkClasses}>
 						<span><Morphology size={4} /></span>
 						<span class={linkTextClasses}>Morfologi</span>
 					</a>
 
 					<!-- Guess The Word -->
-					<a href="/games/guess-the-word" class={linkClasses}>
+					<a href={`${base}/games/guess-the-word`} class={linkClasses}>
 						<span><Puzzle size={4} /></span>
 						<span class={linkTextClasses}>Game Kata</span>
 					</a>
 
 					<!-- changelog -->
-					<a href="/changelog" class={linkClasses}>
+					<a href={`${base}/changelog`} class={linkClasses}>
 						<span><Changelog size={4} /></span>
 						<span class={linkTextClasses}>Pembaruan</span>
 					</a>
 
 					<!-- About -->
-					<a href="/about" class={linkClasses}>
+					<a href={`${base}/about`} class={linkClasses}>
 						<span><About size={4} /></span>
 						<span class={linkTextClasses}>Tentang</span>
 					</a>
 
 					<!-- Offline Mode page -->
-					<a href="/offline" class={linkClasses}>
+					<a href={`${base}/offline`} class={linkClasses}>
 						<span><Offline size={4} /></span>
 						<span class={linkTextClasses}>Mode Offline (Beta)</span>
 					</a>
