@@ -11,7 +11,6 @@
 	
 	import { selectableDisplays } from '$data/options';
 	import { __userSettings, __currentPage, __chapterNumber, __displayType, __fontType, __wordTranslation, __wordTransliteration, __verseTranslations, __firstVerseOnPage, __lastRead } from '$utils/stores';
-	import { buttonClasses } from '$data/commonClasses';
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
 	import { term } from '$utils/terminologies';
@@ -44,8 +43,9 @@
 
 	$: fetchVerseTranslationData({ reRenderWhenTheseUpdates: $__verseTranslations });
 
-	// Update the layout for the previous/next verse buttons
-	$: loadPrevNextVerseButtons = `flex ${selectableDisplays[effectiveDisplayType].continuous ? 'flex-row-reverse' : 'flex-row'} space-x-4 justify-center pt-8 pb-6`;
+	// Match the chapter action chips to the page-divider chip for a consistent visual rhythm.
+	$: topActionButtonsClasses = `flex ${selectableDisplays[effectiveDisplayType].continuous ? 'flex-row-reverse' : 'flex-row'} flex-wrap justify-center text-center mx-auto w-full max-w-md mt-6 mb-1 gap-2`;
+	$: compactActionClasses = 'inline-flex items-center justify-center text-center py-1.5 px-3 text-xs md:text-sm rounded-full border border-theme-accent/10 hover:border-theme-accent/30 bg-theme-accent/5 leading-none whitespace-nowrap';
 
 	// Function to load the previous verse
 	function loadPreviousVerse() {
@@ -67,17 +67,17 @@
 
 		<!-- need custom stylings if display type is 3 or 4 - continuous -->
 		<div id="verses-block" class={selectableDisplays[effectiveDisplayType].customClasses}>
-			<!-- buttons to start chapter from start and load previous verse -->
-			{#if Object.prototype.hasOwnProperty.call($__lastRead, 'chapter')}
-				<div class="flex justify-center pt-6 pb-2">
-					<a href={`${base}/${$__lastRead.chapter}?startVerse=${$__lastRead.verse}`} class="text-sm {buttonClasses}">Lanjut Bacaan Terakhir</a>
-				</div>
-			{/if}
+			<!-- compact top actions -->
+			{#if Object.prototype.hasOwnProperty.call($__lastRead, 'chapter') || startVerse > 1}
+				<div class={topActionButtonsClasses}>
+					{#if Object.prototype.hasOwnProperty.call($__lastRead, 'chapter')}
+						<a href={`${base}/${$__lastRead.chapter}?startVerse=${$__lastRead.verse}`} class={compactActionClasses}>Lanjut bacaan terakhir</a>
+					{/if}
 
-			{#if startVerse > 1}
-				<div class={loadPrevNextVerseButtons}>
-					<a href={`${base}/${$__chapterNumber}`} class="text-sm {buttonClasses}">Awal {term('chapter')}</a>
-					<button on:click={loadPreviousVerse} class="text-sm {buttonClasses}">Ayat Sebelumnya</button>
+					{#if startVerse > 1}
+						<a href={`${base}/${$__chapterNumber}`} class={compactActionClasses}>Awal {term('chapter')}</a>
+						<button on:click={loadPreviousVerse} class={compactActionClasses}>Ayat sebelumnya</button>
+					{/if}
 				</div>
 			{/if}
 

@@ -77,11 +77,13 @@
 		${page === 2 ? 'text-[5vw] md:text-[36px] lg:text-[36px]' : 'text-[5vw] md:text-[32px] lg:text-[36px]'}
 		${commonClasses}
 	`;
+
+	$: shouldShowChapterBismillah = startVerse === 1 && ![1, 9].includes(chapter);
 </script>
 
 <!-- chapter page -->
 {#if ['chapter', 'juz', 'hizb'].includes($__currentPage)}
-	{#if ![1, 9].includes(chapter) || (chapter === 1 && startVerse > 1)}
+	{#if shouldShowChapterBismillah}
 		<div style="font-family: bismillah" class={chapterBismillahClasses}>
 			<!-- uthmani fonts -->
 			{#if isUthmaniFontType}
@@ -90,7 +92,7 @@
 						{bismillahTypes.uthmaniType1}
 					{:else if [95, 97].includes(chapter)}
 						{bismillahTypes.uthmaniType3}
-					{:else if ![1, 9, 2, 95, 97].includes(chapter) || (chapter === 1 && startVerse > 1)}
+					{:else if ![1, 9, 2, 95, 97].includes(chapter)}
 						{bismillahTypes.uthmaniType2}
 					{/if}
 				</span>

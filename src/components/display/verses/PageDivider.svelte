@@ -7,10 +7,10 @@
 	import { term } from '$utils/terminologies';
 
 	const dividerClasses = `
-		flex flex-row justify-center text-center mx-auto w-full mt-8 
+		flex flex-row justify-center text-center mx-auto w-full mt-6 max-w-md
 		${selectableDisplays[`${$__displayType}`].continuous ? 'mb-4' : 'mb-1'} 
-		py-2 px-4 text-sm rounded-full
-		border border-transparent hover:border-theme-accent
+		py-1.5 px-3 text-xs md:text-sm rounded-full
+		border border-theme-accent/10 hover:border-theme-accent/30
 		bg-theme-accent/5
 	`;
 

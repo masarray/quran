@@ -233,7 +233,7 @@
 				<div class="flex justify-center pb-2 px-4">
 					<a
 						href={`${base}/page?id=${$__lastRead.page}`}
-						class="w-full max-w-xs md:max-w-sm flex items-center justify-center px-4 py-2.5 md:px-5 md:py-3 rounded-2xl text-base md:text-lg leading-snug text-center cursor-pointer border border-theme-accent/60 hover:border-theme-accent bg-theme-accent/5"
+						class="inline-flex items-center justify-center text-center py-1.5 px-3 text-xs md:text-sm rounded-full border border-theme-accent/10 hover:border-theme-accent/30 bg-theme-accent/5 leading-none whitespace-nowrap"
 					>
 						<span>Lanjut bacaan terakhir</span>
 					</a>
