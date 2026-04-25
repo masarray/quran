@@ -24,13 +24,13 @@ export const englishTerms = {
 		verses: 'Ayat',
 		supplications: 'Doa',
 		tafsir: 'Tafsir',
-		tajweed: 'Tajweed',
+		tajweed: 'Tajwid',
 		juz: 'Juz',
 		juzs: 'Juz',
 		hizb: 'Hizb',
 		hizbs: 'Hizb',
-		meccan: 'Makki',
-		medinan: 'Madani'
+		meccan: 'Makkiyah',
+		medinan: 'Madaniyah'
 	}
 };
 
