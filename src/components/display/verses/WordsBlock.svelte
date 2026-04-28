@@ -28,7 +28,7 @@
 	const arabicWords = value.words.arabic;
 	const transliterationWords = value.words.transliteration;
 	const translationWords = value.words.translation;
-	const longPressDelay = 500;
+	const longPressDelay = 400;
 	const doubleTapDelay = 300;
 	const touchMoveTolerance = 10;
 
