@@ -24,7 +24,10 @@
 	import { toggleNavbarToolbarOnScroll } from '$utils/toggleNavbarToolbarOnScroll';
 	import { resetAudioSettings } from '$utils/audioController';
 	import { updateSettings } from '$utils/updateSettings';
+	import { registerServiceWorker } from '$utils/offlineModeHandler';
+	import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 	import { fade } from 'svelte/transition';
+	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { getWebsiteWidth } from '$utils/getWebsiteWidth';
 
@@ -38,6 +41,31 @@
 	let paddingX = 0;
 
 	setDefaultPaddings();
+
+	onMount(() => {
+		const warmReaderCache = async () => {
+			try {
+				const currentVersion = __APP_VERSION__.split(' ')[0];
+				const coreCacheKey = `readerCoreCachePrimed:${currentVersion}`;
+				if (localStorage.getItem(coreCacheKey) !== 'true') {
+					const result = await registerServiceWorker();
+					if (result.success) localStorage.setItem(coreCacheKey, 'true');
+				}
+
+				const settings = JSON.parse(localStorage.getItem('userSettings'));
+				const lastRead = settings?.lastReadManual?.chapter ? settings.lastReadManual : settings?.lastRead;
+				if (lastRead?.chapter) {
+					await fetchChapterData({ chapter: lastRead.chapter, preventStoreUpdate: true });
+					await fetchVerseTranslationData({ preventStoreUpdate: true });
+				}
+			} catch (error) {
+				console.warn(error);
+			}
+		};
+
+		const runWhenIdle = window.requestIdleCallback || ((callback) => setTimeout(callback, 2500));
+		runWhenIdle(warmReaderCache);
+	});
 
 	// Update body scroll based on settings drawer visibility
 	$: document.body.classList.toggle('overflow-y-hidden', !$__settingsDrawerHidden);

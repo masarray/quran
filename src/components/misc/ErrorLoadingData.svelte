@@ -40,9 +40,13 @@
 </script>
 
 <div class="flex flex-col space-y-4 justify-center text-center !text-sm max-w-xl mx-auto" class:pt-[30vh]={center === true}>
-	<p>Sorry, we couldn’t load the data right now. Please try again in a {errorCode !== null ? `moment (${errorCode})` : 'moment'}.</p>
+	<p>Data ayat belum berhasil dimuat dengan lengkap. Silakan muat ulang data halaman ini.</p>
 
 	{#if !userOnline}
-		<p>It also looks like you’re currently offline. Please reconnect to the internet and, if you plan to use this page offline, make sure the required offline data is downloaded beforehand.</p>
+		<p>Perangkat sedang offline. Jika ingin membaca tanpa internet, pastikan data offline yang dibutuhkan sudah diunduh sebelumnya.</p>
 	{/if}
+
+	<button type="button" class="w-fit mx-auto px-4 py-2 rounded-full border border-theme-accent/20 bg-theme-accent/5 hover:border-theme-accent" on:click={() => location.reload()}>
+		Muat Ulang Data{errorCode !== null ? ` (${errorCode})` : ''}
+	</button>
 </div>

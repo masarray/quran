@@ -2,7 +2,7 @@
 	import PlaySolid from '$svgs/PlaySolid.svelte';
 	import PauseSolid from '$svgs/PauseSolid.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
-	import { __currentPage, __audioSettings, __fullVersesDisplayKeys } from '$utils/stores';
+	import { __currentPage, __audioSettings, __fullVersesDisplayKeys, __lastRead } from '$utils/stores';
 	import { playVerseAudio, setVersesToPlay, resetAudioSettings } from '$utils/audioController';
 	import { checkOnlineAndAlert } from '$utils/offlineModeHandler';
 
@@ -23,6 +23,11 @@
 			// On other pages, play all verses available on the page
 			else {
 				setVersesToPlay({ allVersesOnPage: true });
+			}
+
+			const anchorKey = Object.prototype.hasOwnProperty.call($__lastRead, 'chapter') ? `${$__lastRead.chapter}:${$__lastRead.verse}` : null;
+			if (anchorKey && window.versesToPlayArray?.includes(anchorKey)) {
+				window.versesToPlayArray = window.versesToPlayArray.slice(window.versesToPlayArray.indexOf(anchorKey));
 			}
 
 			playVerseAudio({

@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import { __fontType, __chapterData, __verseTranslationData, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 import { staticEndpoint, cdnStaticDataUrls } from '$data/websiteSettings';
 import { selectableFontTypes, selectableWordTranslations, selectableWordTransliterations, selectableVerseTranslations } from '$data/options';
+import { quranMetaData } from '$data/quranMeta';
 
 // Keep track of in-progress fetches globally
 const inFlightRequests = new Map();
@@ -134,6 +135,7 @@ export async function fetchAndCacheJson(url, type = 'other') {
 	const secondLastPart = pathParts[pathParts.length - 2] || 'root';
 	const cacheKey = `${secondLastPart}/${lastPart}${parsedUrl.search}`;
 	const maxCacheAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+	const validator = getCacheValidator(parsedUrl, type);
 
 	// 1. Try cache first
 	const cachedData = await manageCache(cacheKey, type);
@@ -151,6 +153,7 @@ export async function fetchAndCacheJson(url, type = 'other') {
 						const response = await fetch(url);
 						if (!response.ok) throw new Error('CDN response not ok');
 						const freshData = await response.json();
+						validateCachedJson(freshData, validator, cacheKey);
 						await manageCache(cacheKey, type, freshData);
 						console.log(`[cache] background update done for ${cacheKey}`);
 						return freshData;
@@ -178,6 +181,7 @@ export async function fetchAndCacheJson(url, type = 'other') {
 			const response = await fetch(url);
 			if (!response.ok) throw new Error('Failed to fetch data from the CDN');
 			const data = await response.json();
+			validateCachedJson(data, validator, cacheKey);
 			await manageCache(cacheKey, type, data);
 			return data;
 		} finally {
@@ -188,6 +192,66 @@ export async function fetchAndCacheJson(url, type = 'other') {
 	inFlightRequests.set(cacheKey, fetchPromise);
 
 	return fetchPromise;
+}
+
+function validateCachedJson(data, validator, cacheKey) {
+	if (!validator) return true;
+	if (validator(data)) return true;
+	throw new Error(`Invalid Quran data shape: ${cacheKey}`);
+}
+
+function getCacheValidator(parsedUrl, type) {
+	const pathname = parsedUrl.pathname;
+
+	if (type === 'word' && pathname.includes('/words-data/arabic/')) {
+		return validateArabicWordData;
+	}
+
+	if (type === 'word' && (pathname.includes('/words-data/translations/') || pathname.includes('/words-data/transliterations/'))) {
+		return validateWordLanguageData;
+	}
+
+	if (type === 'translation' || pathname.includes('/verse-translations/')) {
+		return validateVerseTranslationDataShape;
+	}
+
+	if (pathname.includes('/meta/verseKeyData.json')) {
+		return validateVerseKeyData;
+	}
+
+	return null;
+}
+
+function validateArabicWordData(data) {
+	if (!data || typeof data !== 'object') return false;
+
+	for (let chapter = 1; chapter <= 114; chapter += 1) {
+		const verses = data[chapter];
+		if (!verses || typeof verses !== 'object') return false;
+
+		const expectedVerses = quranMetaData[chapter]?.verses || 0;
+		for (let verse = 1; verse <= expectedVerses; verse += 1) {
+			const verseData = verses[verse];
+			if (!Array.isArray(verseData) || !Array.isArray(verseData[0]) || verseData[0].length === 0) return false;
+		}
+	}
+
+	return true;
+}
+
+function validateWordLanguageData(data) {
+	if (!data || typeof data !== 'object') return false;
+	return Boolean(data[1]?.[1]?.[0]?.length && data[114]?.[6]?.[0]?.length);
+}
+
+function validateVerseTranslationDataShape(data) {
+	if (!data || typeof data !== 'object') return false;
+	return Object.keys(data).length > 0 && Boolean(data[1] || data['1'] || data['1:1']);
+}
+
+function validateVerseKeyData(data) {
+	if (!data || typeof data !== 'object') return false;
+	return Boolean(data['1:1']?.page && data['114:6']?.page);
 }
 
 // Unified cache utility for IndexedDB with version and freshness control

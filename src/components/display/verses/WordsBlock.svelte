@@ -13,6 +13,7 @@
 	import VerseOptionsDropdown from '$display/verses/VerseOptionsDropdown.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import { goto } from '$app/navigation';
+	import { base } from '$app/paths';
 	import { selectableDisplays, selectableWordTranslations, selectableWordTransliterations } from '$data/options';
 	import { supplicationsFromQuran } from '$data/quranMeta';
 	import { __currentPage, __fontType, __displayType, __userSettings, __audioSettings, __morphologyKey, __verseKey, __websiteTheme, __morphologyModalVisible, __wordMorphologyOnClick, __wordTranslation, __wordTransliteration, __wordTranslationEnabled, __wordTransliterationEnabled, __wordTooltip, __hideNonDuaPart, __signLanguageModeEnabled } from '$utils/stores';
@@ -27,6 +28,16 @@
 	const arabicWords = value.words.arabic;
 	const transliterationWords = value.words.transliteration;
 	const translationWords = value.words.translation;
+	const longPressDelay = 500;
+	const doubleTapDelay = 300;
+	const touchMoveTolerance = 10;
+
+	let pointerStart = { x: 0, y: 0 };
+	let pointerMoved = false;
+	let longPressTimer = null;
+	let longPressConsumed = false;
+	let wordTapTimer = null;
+	let lastTappedWordKey = null;
 
 	// fix for Ba'da Ma Ja'aka for page 254
 	// since it's just a cosmetic change, there's no need of changing it at database level
@@ -74,10 +85,53 @@
 	 *    - If an end-verse icon is clicked:
 	 *      - Adds a bookmark (if continuous display is disabled).
 	 */
+	function setManualLastRead() {
+		updateSettings({
+			type: 'lastRead',
+			value: value.meta,
+			source: 'manual'
+		});
+	}
+
+	function clearLongPressTimer() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	function pointerDownHandler(event) {
+		pointerStart = { x: event.clientX, y: event.clientY };
+		pointerMoved = false;
+		longPressConsumed = false;
+		clearLongPressTimer();
+
+		longPressTimer = setTimeout(() => {
+			if (pointerMoved) return;
+			longPressConsumed = true;
+			setManualLastRead();
+		}, longPressDelay);
+	}
+
+	function pointerMoveHandler(event) {
+		const distanceX = Math.abs(event.clientX - pointerStart.x);
+		const distanceY = Math.abs(event.clientY - pointerStart.y);
+		if (distanceX > touchMoveTolerance || distanceY > touchMoveTolerance) {
+			pointerMoved = true;
+			clearLongPressTimer();
+		}
+	}
+
+	function pointerEndHandler() {
+		clearLongPressTimer();
+	}
+
 	function wordClickHandler(props) {
+		if (pointerMoved || longPressConsumed) return;
+
 		if ($__currentPage === 'morphology' && props.type === 'word') {
 			__morphologyKey.set(props.key);
-			goto(`/morphology?word=${props.key}`, { replaceState: false });
+			goto(`${base}/morphology?word=${props.key}`, { replaceState: false });
 		} else if ((!['morphology', 'mushaf'].includes($__currentPage) && props.type === 'word' && $__wordMorphologyOnClick) || $__morphologyModalVisible) {
 			__morphologyKey.set(props.key);
 			__morphologyModalVisible.set(true);
@@ -85,7 +139,19 @@
 			__verseKey.set(props.key);
 
 			if (props.type === 'word') {
-				wordAudioController({ key: props.key });
+				if (lastTappedWordKey === props.key && wordTapTimer) {
+					clearTimeout(wordTapTimer);
+					wordTapTimer = null;
+					lastTappedWordKey = null;
+					wordAudioController({ key: props.key });
+				} else {
+					lastTappedWordKey = props.key;
+					clearTimeout(wordTapTimer);
+					wordTapTimer = setTimeout(() => {
+						lastTappedWordKey = null;
+						wordTapTimer = null;
+					}, doubleTapDelay);
+				}
 			} else if (props.type === 'end') {
 				if (!displayIsContinuous) {
 					updateSettings({
@@ -186,6 +252,10 @@
 				${$__audioSettings.playingWordKey === wordKey || ($__currentPage === 'morphology' && $__morphologyKey === wordKey) || ($__morphologyModalVisible && $__morphologyKey === wordKey) ? 'bg-theme-accent/15' : ''}
 				${$__currentPage === 'supplications' && word + 1 < (supplicationsFromQuran[key] || 0) ? ($__hideNonDuaPart ? 'hidden' : 'opacity-30') : ''}
 			`.trim()}
+			on:pointerdown={pointerDownHandler}
+			on:pointermove={pointerMoveHandler}
+			on:pointerup={pointerEndHandler}
+			on:pointercancel={pointerEndHandler}
 			on:click={() => wordClickHandler({ key: wordKey, type: 'word' })}
 		>
 			<span class={wordSpanClasses} data-fontSize={fontSizes.arabicText}>
@@ -241,7 +311,14 @@
 {#if $__currentPage !== 'mushaf' || ($__currentPage === 'mushaf' && value.words.line[value.words.line.length - 1] === line)}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-no-static-element-interactions -->
-	<div class={endIconClasses} on:click={() => wordClickHandler({ key, type: 'end' })}>
+	<div
+		class={endIconClasses}
+		on:pointerdown={pointerDownHandler}
+		on:pointermove={pointerMoveHandler}
+		on:pointerup={pointerEndHandler}
+		on:pointercancel={pointerEndHandler}
+		on:click={() => wordClickHandler({ key, type: 'end' })}
+	>
 		<span class={wordSpanClasses} data-fontSize={fontSizes.arabicText}>
 			<!-- Everything except Mushaf fonts -->
 			{#if ![2, 3].includes($__fontType)}
