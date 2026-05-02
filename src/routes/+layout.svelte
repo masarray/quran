@@ -24,7 +24,7 @@
 	import { toggleNavbarToolbarOnScroll } from '$utils/toggleNavbarToolbarOnScroll';
 	import { resetAudioSettings } from '$utils/audioController';
 	import { updateSettings } from '$utils/updateSettings';
-	import { registerServiceWorker } from '$utils/offlineModeHandler';
+	import { disableServiceWorkerInDevelopment, registerServiceWorker } from '$utils/offlineModeHandler';
 	import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -45,6 +45,8 @@
 	onMount(() => {
 		const warmReaderCache = async () => {
 			try {
+				await disableServiceWorkerInDevelopment();
+
 				const currentVersion = __APP_VERSION__.split(' ')[0];
 				const coreCacheKey = `readerCoreCachePrimed:${currentVersion}`;
 				if (localStorage.getItem(coreCacheKey) !== 'true') {

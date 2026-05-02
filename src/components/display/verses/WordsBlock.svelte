@@ -28,14 +28,11 @@
 	const arabicWords = value.words.arabic;
 	const transliterationWords = value.words.transliteration;
 	const translationWords = value.words.translation;
-	const longPressDelay = 400;
 	const doubleTapDelay = 300;
 	const touchMoveTolerance = 10;
 
 	let pointerStart = { x: 0, y: 0 };
 	let pointerMoved = false;
-	let longPressTimer = null;
-	let longPressConsumed = false;
 	let wordTapTimer = null;
 	let lastTappedWordKey = null;
 
@@ -85,32 +82,9 @@
 	 *    - If an end-verse icon is clicked:
 	 *      - Adds a bookmark (if continuous display is disabled).
 	 */
-	function setManualLastRead() {
-		updateSettings({
-			type: 'lastRead',
-			value: value.meta,
-			source: 'manual'
-		});
-	}
-
-	function clearLongPressTimer() {
-		if (longPressTimer) {
-			clearTimeout(longPressTimer);
-			longPressTimer = null;
-		}
-	}
-
 	function pointerDownHandler(event) {
 		pointerStart = { x: event.clientX, y: event.clientY };
 		pointerMoved = false;
-		longPressConsumed = false;
-		clearLongPressTimer();
-
-		longPressTimer = setTimeout(() => {
-			if (pointerMoved) return;
-			longPressConsumed = true;
-			setManualLastRead();
-		}, longPressDelay);
 	}
 
 	function pointerMoveHandler(event) {
@@ -118,16 +92,11 @@
 		const distanceY = Math.abs(event.clientY - pointerStart.y);
 		if (distanceX > touchMoveTolerance || distanceY > touchMoveTolerance) {
 			pointerMoved = true;
-			clearLongPressTimer();
 		}
 	}
 
-	function pointerEndHandler() {
-		clearLongPressTimer();
-	}
-
 	function wordClickHandler(props) {
-		if (pointerMoved || longPressConsumed) return;
+		if (pointerMoved) return;
 
 		if ($__currentPage === 'morphology' && props.type === 'word') {
 			__morphologyKey.set(props.key);
@@ -254,8 +223,6 @@
 			`.trim()}
 			on:pointerdown={pointerDownHandler}
 			on:pointermove={pointerMoveHandler}
-			on:pointerup={pointerEndHandler}
-			on:pointercancel={pointerEndHandler}
 			on:click={() => wordClickHandler({ key: wordKey, type: 'word' })}
 		>
 			<span class={wordSpanClasses} data-fontSize={fontSizes.arabicText}>
@@ -315,8 +282,6 @@
 		class={endIconClasses}
 		on:pointerdown={pointerDownHandler}
 		on:pointermove={pointerMoveHandler}
-		on:pointerup={pointerEndHandler}
-		on:pointercancel={pointerEndHandler}
 		on:click={() => wordClickHandler({ key, type: 'end' })}
 	>
 		<span class={wordSpanClasses} data-fontSize={fontSizes.arabicText}>

@@ -6,6 +6,7 @@
 	import VerseTranslations from '$display/verses/VerseTranslations.svelte';
 	import PageDivider from '$display/verses/PageDivider.svelte';
 	import VerseSeparator from '$display/verses/VerseSeparator.svelte';
+	import { readingAnchor } from '$utils/readingAnchor';
 	import { updateSettings } from '$utils/updateSettings';
 	import { __userSettings, __verseTranslations } from '$utils/stores';
 	import { inview } from 'svelte-inview';
@@ -20,7 +21,7 @@
 	<!-- show page/juz/hizb number  -->
 	<PageDivider {key} />
 
-	<div id={key} class="verse flex flex-col py-8 space-y-8 verse-{value.meta.chapter}-{value.meta.verse}" class:last-read-anchor={isManualLastRead} data-words={value.meta.words} data-page={value.meta.page} data-juz={value.meta.juz} data-hizb={value.meta.hizb} use:inview on:inview_enter={() => updateSettings({ type: 'lastRead', value: value.meta })}>
+	<div id={key} class="verse flex flex-col py-8 space-y-8 verse-{value.meta.chapter}-{value.meta.verse}" class:last-read-anchor={isManualLastRead} data-words={value.meta.words} data-page={value.meta.page} data-juz={value.meta.juz} data-hizb={value.meta.hizb} use:readingAnchor={value.meta} use:inview on:inview_enter={() => updateSettings({ type: 'lastRead', value: value.meta })}>
 		<VerseOptionButtons {key} {value} />
 
 		<div class="grid {gridCols} gap-x-8">

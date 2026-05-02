@@ -1,9 +1,14 @@
 import { showAlert } from '$utils/confirmationAlertHandler';
 import { base } from '$app/paths';
+import { dev } from '$app/environment';
 
 export const dataUnavailableWhileOfflineMessage = 'Data unavailable offline';
 
 export async function registerServiceWorker() {
+	if (dev) {
+		return { success: false, error: 'Service worker is disabled in development' };
+	}
+
 	if (!('serviceWorker' in navigator)) {
 		return { success: false, error: 'Not supported' };
 	}
@@ -52,6 +57,11 @@ export async function registerServiceWorker() {
 		console.warn(error);
 		return { success: false, error: error.message };
 	}
+}
+
+export async function disableServiceWorkerInDevelopment() {
+	if (!dev || !('serviceWorker' in navigator)) return;
+	await unregisterServiceWorkerAndClearCache();
 }
 
 // Function to unregister all service workers and delete caches
