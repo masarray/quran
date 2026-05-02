@@ -720,3 +720,34 @@ svg {
 			0 18px 48px rgb(var(--theme-accent-rgb) / 0.08);
 	}
 }
+
+/* ================================
+   PATCH: Disable text selection (Quran reading UX)
+   ================================ */
+
+/* Disable selection globally */
+body {
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* Extra safety for Quran text containers (kalau ada class ini) */
+.verse,
+.ayah,
+.word,
+.v4-words,
+.quran-text {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* KEEP selection for inputs (IMPORTANT) */
+input,
+textarea,
+[contenteditable='true'] {
+	-webkit-user-select: text !important;
+	user-select: text !important;
+	-webkit-touch-callout: default !important;
+}
