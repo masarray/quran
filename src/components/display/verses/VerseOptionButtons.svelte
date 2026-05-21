@@ -12,9 +12,10 @@
 	import Eye from '$svgs/Eye.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import { playVerseAudio, resetAudioSettings, showAudioModal, playButtonHandler, prepareVersesToPlay } from '$utils/audioController';
-	import { __currentPage, __userSettings, __audioSettings, __verseKey, __userNotes, __notesModalVisible, __playButtonsFunctionality, __displayType, __verseWordBlocks } from '$utils/stores';
+	import { __currentPage, __userSettings, __audioSettings, __verseKey, __userNotes, __notesModalVisible, __playButtonsFunctionality, __displayType, __verseWordBlocks, __readingMarks } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { term } from '$utils/terminologies';
+	import { getReadingMarkLabel } from '$utils/readingMarks';
 
 	import { getChapterDisplayMeta } from '$utils/chapterLocalization';
 
@@ -29,6 +30,7 @@
 	$: userBookmarks = JSON.parse($__userSettings).userBookmarks;
 	$: lastReadManual = JSON.parse($__userSettings).lastReadManual || {};
 	$: isManualLastRead = lastReadManual.chapter === chapter && lastReadManual.verse === verse;
+	$: verseReadingMarks = $__readingMarks.filter((mark) => mark.chapter === chapter && mark.verse === verse);
 
 	async function audioHandler(key) {
 		// Stop any audio if something is playing
@@ -89,6 +91,11 @@
 					Terakhir Dibaca
 				</div>
 			{/if}
+			{#each verseReadingMarks as mark (mark.id)}
+				<div class="hidden md:inline-flex items-center rounded-full px-3 text-[11px] font-medium text-theme-accent border border-theme-accent/20 bg-theme-accent/5">
+					{getReadingMarkLabel(mark)}
+				</div>
+			{/each}
 			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">{term('verse')} {key}</Tooltip>
 		</div>
 

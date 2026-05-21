@@ -16,12 +16,13 @@
 	import Search2Bold from '$svgs/Search2Bold.svelte';
 	import Edit2 from '$svgs/Edit2.svelte';
 	import UserBookmarks from '$display/UserBookmarks.svelte';
+	import ReadingMarks from '$display/ReadingMarks.svelte';
 	import UserNotes from '$display/UserNotes.svelte';
 	import ReadingAnalytics from '$display/ReadingAnalytics.svelte';
 	import QuranDivisionCard from '$display/QuranDivisionCard.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import { websiteTagline } from '$data/websiteSettings';
-	import { __currentPage, __lastRead, __siteNavigationModalVisible, __quranNavigationModalVisible, __userBookmarks, __userNotes, __wideWesbiteLayoutEnabled, __homepageLayoutPreferences, __userFavoriteChapters, __favoriteChaptersModalVisible } from '$utils/stores';
+	import { __currentPage, __lastRead, __siteNavigationModalVisible, __quranNavigationModalVisible, __userBookmarks, __userNotes, __readingMarks, __wideWesbiteLayoutEnabled, __homepageLayoutPreferences, __userFavoriteChapters, __favoriteChaptersModalVisible } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { quranMetaData, juzMeta, hizbMeta, mostRead } from '$data/quranMeta';
 	import { term } from '$utils/terminologies';
@@ -59,8 +60,9 @@
 	$: showDivisionSort = [chaptersTab, juzTab, favoriteChaptersTab, hizbTab].includes(divisionsActiveTab);
 	$: isFriday = new Date().getDay() === 5 && currentHour < 18;
 	$: isNight = currentHour < 4 || currentHour > 18;
+	$: fridayKahfMark = $__readingMarks.find((mark) => mark.id === 'friday-kahf');
 	$: lastReadExists = Object.prototype.hasOwnProperty.call($__lastRead, 'chapter');
-	$: totalBookmarks = $__userBookmarks.length;
+	$: totalSavedItems = $__userBookmarks.length + $__readingMarks.length;
 	$: totalNotes = Object.keys($__userNotes).length;
 	$: hasFavorites = $__userFavoriteChapters.length > 0;
 	$: favoritesSortIsAscending = homepageLayoutPreferences.favoritesSortIsAscending ?? true;
@@ -193,11 +195,11 @@
 			<div class="w-full flex flex-row space-x-4 items-center">
 				<div class="flex flex-row space-x-2 w-full">
 					{#if isFriday}
-						<a href={`${base}/18`} class="{topButtonClasses} truncate w-full" on:click={() => window.umami.track('Al-Kahf Reminder Button')}>
+						<a href={fridayKahfMark ? `${base}/${fridayKahfMark.chapter}?startVerse=${fridayKahfMark.verse}` : `${base}/18`} class="{topButtonClasses} truncate w-full" on:click={() => window.umami.track('Al-Kahf Reminder Button')}>
 							<span class="chapter-icons mb-1 text-2xl md:text-3xl text-theme-accent">{@html `&#xE9${quranMetaData[18].icon};`}</span>
 							<div class="flex flex-row truncate">
 								<span class="hidden md:block mr-1">Pengingat Jumat:</span>
-								<span>Al Kahf</span>
+								<span>{fridayKahfMark ? `Al Kahf ${fridayKahfMark.chapter}:${fridayKahfMark.verse}` : 'Al Kahf'}</span>
 							</div>
 						</a>
 					{/if}
@@ -233,7 +235,7 @@
 				<div class="flex text-sm font-medium text-center justify-center space-x-1 md:space-x-4 rounded-full py-2 {!homepageLayoutPreferences.extrasPanelVisible && disabledClasses}">
 					<button on:click={() => changeTabs('extrasActiveTab', bookmarksTab)} class="{extrasActiveTab === bookmarksTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center truncate" data-umami-event="Bookmarks Tab Button">
 						<span>Tersimpan</span>
-						<span>{totalBookmarks > 0 ? `(${totalBookmarks})` : ''}</span>
+						<span>{totalSavedItems > 0 ? `(${totalSavedItems})` : ''}</span>
 					</button>
 					<button on:click={() => changeTabs('extrasActiveTab', notesTab)} class="{extrasActiveTab === notesTab ? tabActiveBorder : tabDefaultBorder} flex flex-row space-x-1 items-center truncate" data-umami-event="Notes Tab Button">
 						<span>Catatan</span>
@@ -253,6 +255,7 @@
 		<div id="extras-panel" class="mb-4 pt-2 {homepageLayoutPreferences.extrasPanelVisible ? 'block' : 'hidden'}">
 			<!-- bookmarks tab -->
 			<div class="bookmarks-tab-panels space-y-12 {extrasActiveTab === bookmarksTab ? 'block' : 'hidden'}" id="bookmarks-tab-panel" role="tabpanel" aria-labelledby="bookmarks-tab">
+				<ReadingMarks {cardGridClasses} {cardInnerClasses} />
 				<UserBookmarks {cardGridClasses} {cardInnerClasses} />
 			</div>
 

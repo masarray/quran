@@ -4,7 +4,7 @@ import { dev } from '$app/environment';
 
 export const dataUnavailableWhileOfflineMessage = 'Data unavailable offline';
 
-export async function registerServiceWorker() {
+export async function registerServiceWorker({ startCaching = true } = {}) {
 	if (dev) {
 		return { success: false, error: 'Service worker is disabled in development' };
 	}
@@ -49,8 +49,10 @@ export async function registerServiceWorker() {
 			}
 		});
 
-		// Tell the service worker to start caching
-		navigator.serviceWorker.controller?.postMessage({ type: 'START_CACHING' });
+		// Tell the service worker to start caching only when the user explicitly enables offline mode.
+		if (startCaching) {
+			navigator.serviceWorker.controller?.postMessage({ type: 'START_CACHING' });
+		}
 
 		return { success: true, registration };
 	} catch (error) {
@@ -62,6 +64,19 @@ export async function registerServiceWorker() {
 export async function disableServiceWorkerInDevelopment() {
 	if (!dev || !('serviceWorker' in navigator)) return;
 	await unregisterServiceWorkerAndClearCache();
+}
+
+export async function disableHiddenOfflineCaching() {
+	if (dev || !('serviceWorker' in navigator)) return;
+
+	try {
+		const registration = await navigator.serviceWorker.getRegistration();
+		if (!registration) return;
+
+		navigator.serviceWorker.controller?.postMessage({ type: 'DISABLE_CACHING' });
+	} catch (error) {
+		console.warn(error);
+	}
 }
 
 // Function to unregister all service workers and delete caches
@@ -114,7 +129,7 @@ export async function isUserOnline(timeout = 1000) {
 }
 
 export function showOfflineAlert() {
-	showAlert('It looks like you’re offline. Please connect to the internet to use this feature.', 'settings-drawer');
+	showAlert('Perangkat sedang offline. Sambungkan internet atau buka Mode Offline jika data sudah diunduh.', 'settings-drawer');
 	return false;
 }
 

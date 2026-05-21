@@ -31,11 +31,12 @@ import {
 	__wideWesbiteLayoutEnabled,
 	__signLanguageModeEnabled,
 	__offlineModeSettings,
-	__homepageLayoutPreferences
-	,
+	__homepageLayoutPreferences,
+	__readingMarks,
 	__readingAnalytics
 } from '$utils/stores';
 import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
+import { deleteReadingMark, normalizeReadingMarks, upsertReadingMark } from '$utils/readingMarks';
 
 // function to update website settings
 export function updateSettings(props) {
@@ -203,6 +204,13 @@ export function updateSettings(props) {
 			}
 
 			__userBookmarks.set(userBookmarks);
+			break;
+
+		case 'readingMark':
+			userSettings.readingMarks = props.delete
+				? deleteReadingMark(userSettings.readingMarks, props.id)
+				: upsertReadingMark(userSettings.readingMarks, props.id, props.value);
+			__readingMarks.set(userSettings.readingMarks);
 			break;
 
 		case 'userFavoriteChapters':
@@ -455,6 +463,8 @@ function ensureLastReadCompatibility(userSettings) {
 			lastTrackedAt: null
 		};
 	}
+
+	userSettings.readingMarks = normalizeReadingMarks(userSettings.readingMarks);
 
 	if (!Array.isArray(userSettings.readingAnalytics.entries)) {
 		userSettings.readingAnalytics.entries = [];

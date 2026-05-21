@@ -43,6 +43,8 @@ let __currentPage,
 	__verseTranslationModalVisible,
 	__morphologyModalVisible,
 	__copyShareVerseModalVisible,
+	__readingMarkModalVisible,
+	__readingMarkTarget,
 	__favoriteChaptersModalVisible,
 	__confirmationAlertModal,
 	__wakeLockEnabled,
@@ -60,6 +62,7 @@ let __currentPage,
 	__offlineModeSettings,
 	__homepageLayoutPreferences,
 	__fullVersesDisplayKeys,
+	__readingMarks,
 	__readingAnalytics;
 
 if (browser) {
@@ -172,6 +175,8 @@ if (browser) {
 	__verseTranslationModalVisible = writable(false);
 	__morphologyModalVisible = writable(false);
 	__copyShareVerseModalVisible = writable(false);
+	__readingMarkModalVisible = writable(false);
+	__readingMarkTarget = writable(null);
 	__favoriteChaptersModalVisible = writable(false);
 	__confirmationAlertModal = writable({
 		visible: false,
@@ -229,6 +234,9 @@ if (browser) {
 
 	// to store lightweight reading analytics
 	__readingAnalytics = writable(userSettings.readingAnalytics);
+
+	// to store movable reading mark slots
+	__readingMarks = writable(userSettings.readingMarks || []);
 }
 
 export {
@@ -274,6 +282,8 @@ export {
 	__verseTranslationModalVisible,
 	__morphologyModalVisible,
 	__copyShareVerseModalVisible,
+	__readingMarkModalVisible,
+	__readingMarkTarget,
 	__favoriteChaptersModalVisible,
 	__confirmationAlertModal,
 	__wakeLockEnabled,
@@ -291,5 +301,6 @@ export {
 	__offlineModeSettings,
 	__homepageLayoutPreferences,
 	__fullVersesDisplayKeys,
+	__readingMarks,
 	__readingAnalytics
 };

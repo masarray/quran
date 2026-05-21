@@ -62,6 +62,7 @@ export const defaultSettings = {
 		lastTrackedVerseKey: null,
 		lastTrackedAt: null
 	},
+	readingMarks: [],
 	userBookmarks: [],
 	userFavoriteChapters: [],
 	userNotes: {},

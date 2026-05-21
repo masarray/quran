@@ -18,13 +18,15 @@
 	import CopyShareVerseModal from '$ui/Modals/CopyShareVerseModal.svelte';
 	import ConfirmationAlertModal from '$ui/Modals/ConfirmationAlertModal.svelte';
 	import FavoriteChaptersModal from '$ui/Modals/FavoriteChaptersModal.svelte';
+	import ReadingMarkModal from '$ui/Modals/ReadingMarkModal.svelte';
+	import PwaRecoveryBanner from '$ui/PwaRecoveryBanner.svelte';
 
 	import { __userSettings, __currentPage, __chapterNumber, __settingsDrawerHidden, __wakeLockEnabled, __fontType, __wordTranslation, __mushafMinimalModeEnabled, __topNavbarVisible, __bottomToolbarVisible, __displayType, __wideWesbiteLayoutEnabled, __signLanguageModeEnabled, __wordTransliterationEnabled } from '$utils/stores';
 	import { debounce } from '$utils/debounce';
 	import { toggleNavbarToolbarOnScroll } from '$utils/toggleNavbarToolbarOnScroll';
 	import { resetAudioSettings } from '$utils/audioController';
 	import { updateSettings } from '$utils/updateSettings';
-	import { disableServiceWorkerInDevelopment, registerServiceWorker } from '$utils/offlineModeHandler';
+	import { disableHiddenOfflineCaching, disableServiceWorkerInDevelopment, registerServiceWorker } from '$utils/offlineModeHandler';
 	import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 	import { fade } from 'svelte/transition';
 	import { onMount } from 'svelte';
@@ -50,11 +52,15 @@
 				const currentVersion = __APP_VERSION__.split(' ')[0];
 				const coreCacheKey = `readerCoreCachePrimed:${currentVersion}`;
 				if (localStorage.getItem(coreCacheKey) !== 'true') {
-					const result = await registerServiceWorker();
+					const result = await registerServiceWorker({ startCaching: false });
 					if (result.success) localStorage.setItem(coreCacheKey, 'true');
 				}
 
 				const settings = JSON.parse(localStorage.getItem('userSettings'));
+				if (!settings?.offlineModeSettings?.serviceWorker?.downloaded) {
+					await disableHiddenOfflineCaching();
+				}
+
 				const lastRead = settings?.lastReadManual?.chapter ? settings.lastReadManual : settings?.lastRead;
 				if (lastRead?.chapter) {
 					await fetchChapterData({ chapter: lastRead.chapter, preventStoreUpdate: true });
@@ -223,8 +229,10 @@
 	<VerseTranslationModal />
 	<MorphologyModal />
 	<CopyShareVerseModal />
+	<ReadingMarkModal />
 	<FavoriteChaptersModal />
 	<ConfirmationAlertModal />
+	<PwaRecoveryBanner />
 
 	{#key $page.url.pathname}
 		<div in:fade={{ duration: 300 }}>

@@ -50,6 +50,7 @@ const staticRoutesToCache = ['/about', '/bookmarks', '/changelog', '/duas', '/ga
 // CRITICAL: This must be loaded from cache on startup!
 let cachingEnabled = false;
 let cachingStatusLoaded = false; // Track if we've loaded the status
+const networkTimeout = 10000;
 
 /**
  * CHECK IF USER PREVIOUSLY ENABLED OFFLINE MODE
@@ -122,6 +123,7 @@ self.addEventListener('activate', (event) => {
 		(async () => {
 			// CRITICAL: Load caching status immediately
 			await ensureCachingStatusLoaded();
+			await self.clients.claim();
 
 			// If they did, automatically recache everything with the new version
 			if (cachingEnabled) {
@@ -133,26 +135,27 @@ self.addEventListener('activate', (event) => {
 					client.postMessage({ type: 'CACHE_UPDATE_STARTED' });
 				});
 
-				// Download and cache all content (WAIT for this to complete)
-				await performCaching();
+				performCaching()
+					.then(async () => {
+						// Tell the website we're done updating
+						const finalClients = await self.clients.matchAll();
+						finalClients.forEach((client) => {
+							client.postMessage({ type: 'CACHE_UPDATE_COMPLETE' });
+						});
 
-				// Tell the website we're done updating
-				const finalClients = await self.clients.matchAll();
-				finalClients.forEach((client) => {
-					client.postMessage({ type: 'CACHE_UPDATE_COMPLETE' });
-				});
-
-				// NOW delete old caches (only after new cache is complete)
-				const keys = await caches.keys();
-				await Promise.all(
-					keys.map((key) => {
-						// Delete any cache that starts with 'quranwbw-cache-' but is not the current version
-						if (key.startsWith('quranwbw-cache-') && key !== cacheNames.core) {
-							console.log('[SW] Deleting old versioned cache:', key);
-							return caches.delete(key);
-						}
+						// NOW delete old caches (only after new cache is complete)
+						const keys = await caches.keys();
+						await Promise.all(
+							keys.map((key) => {
+								// Delete any cache that starts with 'quranwbw-cache-' but is not the current version
+								if (key.startsWith('quranwbw-cache-') && key !== cacheNames.core) {
+									console.log('[SW] Deleting old versioned cache:', key);
+									return caches.delete(key);
+								}
+							})
+						);
 					})
-				);
+					.catch((error) => console.warn(error));
 			} else {
 				// If caching was not enabled, just delete old caches immediately
 				const keys = await caches.keys();
@@ -167,11 +170,20 @@ self.addEventListener('activate', (event) => {
 				);
 			}
 
-			// Take control of all pages immediately
-			await self.clients.claim();
 		})()
 	);
 });
+
+async function fetchWithTimeout(request, timeout = networkTimeout) {
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeout);
+
+	try {
+		return await fetch(request, { signal: controller.signal });
+	} finally {
+		clearTimeout(timer);
+	}
+}
 
 /**
  * PERFORM CACHING
@@ -361,7 +373,7 @@ self.addEventListener('fetch', (event) => {
 
 			// Not in cache, try network
 			try {
-				const networkResponse = await fetch(event.request);
+				const networkResponse = await fetchWithTimeout(event.request);
 
 				// If request failed, just return the error
 				if (!networkResponse || networkResponse.status !== 200) {
@@ -407,11 +419,12 @@ self.addEventListener('fetch', (event) => {
 					return new Response(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), { headers: { 'Content-Type': 'image/gif' } });
 				}
 
-				// For fonts, return empty response
+				// For fonts, fail explicitly so the app can offer a visible recovery path.
 				if (event.request.destination === 'font') {
-					return new Response('', {
-						status: 200,
-						headers: new Headers({ 'Content-Type': 'font/woff2' })
+					return new Response('Font unavailable offline', {
+						status: 503,
+						statusText: 'Service Unavailable',
+						headers: new Headers({ 'Content-Type': 'text/plain' })
 					});
 				}
 

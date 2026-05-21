@@ -17,7 +17,7 @@
 	import Copy from '$svgs/Copy.svelte';
 	import { showAudioModal } from '$utils/audioController';
 	import { selectableDisplays } from '$data/options';
-	import { __userSettings, __verseKey, __notesModalVisible, __tafsirModalVisible, __morphologyModalVisible, __verseTranslationModalVisible, __copyShareVerseModalVisible, __currentPage, __displayType, __userNotes, __fontType, __morphologyKey, __chapterData } from '$utils/stores';
+	import { __userSettings, __verseKey, __notesModalVisible, __tafsirModalVisible, __morphologyModalVisible, __verseTranslationModalVisible, __copyShareVerseModalVisible, __readingMarkModalVisible, __readingMarkTarget, __currentPage, __displayType, __userNotes, __fontType, __morphologyKey, __chapterData } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { term } from '$utils/terminologies';
 	import { sineIn } from 'svelte/easing';
@@ -82,6 +82,14 @@
 		const verseMeta = meta || $__chapterData?.[$__verseKey]?.meta;
 		if (!verseMeta) return;
 		updateSettings({ type: 'lastRead', value: verseMeta, source: 'manual' });
+		dropdownOpen = false;
+	};
+
+	const handleReadingMark = () => {
+		const verseMeta = meta || $__chapterData?.[$__verseKey]?.meta;
+		if (!verseMeta) return;
+		__readingMarkTarget.set(verseMeta);
+		__readingMarkModalVisible.set(true);
 		dropdownOpen = false;
 	};
 
@@ -154,6 +162,14 @@
 			text: isManualLastRead ? 'Tanda Terakhir Dibaca' : 'Jadikan Tanda Terakhir Dibaca',
 			handler: handleSetLastRead,
 			analyticsEvent: 'Set Last Read Button',
+			show: true
+		},
+		{
+			id: 'reading-mark',
+			icon: Bookmark,
+			text: 'Simpan ke Penanda Bacaan',
+			handler: handleReadingMark,
+			analyticsEvent: 'Reading Mark Button',
 			show: true
 		}
 	];
