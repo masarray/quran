@@ -15,8 +15,25 @@
 		return $__readingMarks.find((mark) => mark.id === slotId);
 	}
 
+	function isCurrentTarget(existingMark) {
+		return existingMark?.chapter === target?.chapter && existingMark?.verse === target?.verse;
+	}
+
 	function saveToSlot(slotId) {
 		if (!target) return;
+		const existingMark = getExistingMark(slotId);
+
+		if (isCurrentTarget(existingMark)) {
+			updateSettings({
+				type: 'readingMark',
+				id: slotId,
+				delete: true
+			});
+			__readingMarkModalVisible.set(false);
+			window.umami?.track('Release Reading Mark');
+			return;
+		}
+
 		updateSettings({
 			type: 'readingMark',
 			id: slotId,
@@ -43,12 +60,13 @@
 	<div class="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1">
 		{#each readingMarkSlots as slot (slot.id)}
 			{@const existingMark = getExistingMark(slot.id)}
+			{@const currentTarget = isCurrentTarget(existingMark)}
 			<button on:click={() => saveToSlot(slot.id)} class="w-full rounded-xl border border-theme-accent/10 bg-theme-accent/5 px-4 py-3 text-left transition hover:border-theme-accent/30 hover:bg-theme-accent/10">
 				<div class="flex items-center justify-between gap-3">
 					<div class="min-w-0">
 						<div class="flex items-center gap-2">
 							<span class="text-sm font-semibold">{slot.label}</span>
-							{#if existingMark?.chapter === target?.chapter && existingMark?.verse === target?.verse}
+							{#if currentTarget}
 								<span class="inline-flex items-center rounded-full border border-theme-accent/20 bg-theme-accent/10 px-2 py-0.5 text-[11px] text-theme-accent">
 									<Check size={3} />
 								</span>
@@ -63,7 +81,7 @@
 						</div>
 					</div>
 					<span class="shrink-0 rounded-full border border-theme-accent/20 px-3 py-1 text-[11px] text-theme-accent">
-						{existingMark ? 'Pindahkan' : 'Pakai'}
+						{currentTarget ? 'Lepas Penanda' : existingMark ? 'Pindahkan' : 'Pakai'}
 					</span>
 				</div>
 			</button>
