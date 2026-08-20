@@ -10,6 +10,13 @@ function normalizeFootnoteContent(value) {
 	}
 
 	if (typeof value === 'object') {
+		if (value.status === 404 || value.error === 'Not Found') return null;
+
+		if (value.foot_note && typeof value.foot_note === 'object') {
+			const nestedContent = normalizeFootnoteContent(value.foot_note);
+			if (nestedContent) return nestedContent;
+		}
+
 		for (const key of ['text', 'content', 'body', 'footnote', 'value', 'html']) {
 			if (typeof value[key] === 'string' && value[key].trim() !== '') return value[key];
 		}
@@ -21,8 +28,13 @@ function normalizeFootnoteContent(value) {
 function getEmbeddedFootnoteId(value) {
 	if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
 
+	if (value.foot_note && typeof value.foot_note === 'object') {
+		const nestedId = getEmbeddedFootnoteId(value.foot_note);
+		if (nestedId !== null) return nestedId;
+	}
+
 	for (const key of ['id', 'foot_note', 'footnote_id', 'footNoteId']) {
-		if (value[key] !== null && value[key] !== undefined) return String(value[key]);
+		if (value[key] !== null && value[key] !== undefined && typeof value[key] !== 'object') return String(value[key]);
 	}
 
 	return null;
@@ -33,7 +45,75 @@ function getArrayCandidate(footnotes, index) {
 	return footnotes[index];
 }
 
-export function resolveFootnote(footnotes, footnoteId, displayNumber) {
+function getFootnoteEntries(footnotes) {
+	if (Array.isArray(footnotes)) return footnotes;
+	if (footnotes && typeof footnotes === 'object') return Object.values(footnotes);
+	return [];
+}
+
+function cleanRecoveredSection(section) {
+	return section.replace(/^\s*\*\s*/, '').trim();
+}
+
+export function splitCompositeFootnote(content, markerCount) {
+	if (typeof content !== 'string' || content.trim() === '') return null;
+	if (!Number.isInteger(markerCount) || markerCount < 2 || markerCount > 10) return null;
+
+	// Resource 33 commonly stores later footnotes inside the first footnote using
+	// sequential source-note numbers such as "254) ... 255) ...". Recovery is
+	// intentionally strict: exactly markerCount - 1 boundaries must exist and
+	// every boundary number must be sequential.
+	const boundaryRegex = /(?:^|\s)(\d{2,5})\)\s+/g;
+	const boundaries = [];
+	let match;
+
+	while ((match = boundaryRegex.exec(content)) !== null) {
+		boundaries.push({
+			number: Number(match[1]),
+			start: match.index,
+			contentStart: boundaryRegex.lastIndex
+		});
+	}
+
+	if (boundaries.length !== markerCount - 1) return null;
+	if (!boundaries.every((boundary, index) => index === 0 || boundary.number === boundaries[index - 1].number + 1)) return null;
+
+	const firstSection = cleanRecoveredSection(content.slice(0, boundaries[0].start));
+	if (firstSection.length < 8) return null;
+
+	const sections = [firstSection];
+	for (let index = 0; index < boundaries.length; index += 1) {
+		const current = boundaries[index];
+		const next = boundaries[index + 1];
+		const section = cleanRecoveredSection(content.slice(current.contentStart, next?.start ?? content.length));
+		if (section.length < 8) return null;
+		sections.push(section);
+	}
+
+	return sections.length === markerCount ? sections : null;
+}
+
+export function recoverCompositeFootnotes(footnotes, markerCount) {
+	if (!Number.isInteger(markerCount) || markerCount < 2) return null;
+
+	const populatedEntries = getFootnoteEntries(footnotes)
+		.map((entry) => normalizeFootnoteContent(entry))
+		.filter(Boolean);
+
+	// Do not attempt recovery if the source already provides multiple usable
+	// entries. In that case normal ID/index resolution remains authoritative.
+	if (populatedEntries.length !== 1) return null;
+
+	const sections = splitCompositeFootnote(populatedEntries[0], markerCount);
+	if (!sections) return null;
+
+	return {
+		sections,
+		strategy: 'composite-sequential-boundaries'
+	};
+}
+
+export function resolveFootnote(footnotes, footnoteId, displayNumber, options = {}) {
 	if (!footnotes) return null;
 
 	const id = footnoteId === null || footnoteId === undefined ? '' : String(footnoteId);
@@ -52,17 +132,7 @@ export function resolveFootnote(footnotes, footnoteId, displayNumber) {
 		const byDisplayNumber = getArrayCandidate(footnotes, displayIndex);
 		const displayContent = normalizeFootnoteContent(byDisplayNumber);
 		if (displayContent) return { content: displayContent, strategy: 'display-number' };
-
-		if (legacyIndex !== displayIndex) {
-			const byLegacyIndex = getArrayCandidate(footnotes, legacyIndex);
-			const legacyContent = normalizeFootnoteContent(byLegacyIndex);
-			if (legacyContent) return { content: legacyContent, strategy: 'legacy-id-index' };
-		}
-
-		return null;
-	}
-
-	if (typeof footnotes === 'object') {
+	} else if (typeof footnotes === 'object') {
 		if (id !== '') {
 			const directById = normalizeFootnoteContent(footnotes[id]);
 			if (directById) return { content: directById, strategy: 'id-map' };
@@ -77,11 +147,30 @@ export function resolveFootnote(footnotes, footnoteId, displayNumber) {
 			const directByDisplayIndex = normalizeFootnoteContent(footnotes[String(displayIndex)]);
 			if (directByDisplayIndex) return { content: directByDisplayIndex, strategy: 'display-index-map' };
 		}
+	}
 
-		if (legacyIndex !== null && legacyIndex !== displayIndex) {
-			const directByLegacyIndex = normalizeFootnoteContent(footnotes[String(legacyIndex)]);
-			if (directByLegacyIndex) return { content: directByLegacyIndex, strategy: 'legacy-id-index-map' };
+	if (displayIndex !== null && Number.isInteger(options.markerCount) && options.markerCount >= 2) {
+		const recovered = recoverCompositeFootnotes(footnotes, options.markerCount);
+		const recoveredContent = recovered?.sections?.[displayIndex];
+		if (recoveredContent) {
+			return {
+				content: recoveredContent,
+				strategy: recovered.strategy,
+				recovered: true
+			};
 		}
+	}
+
+	// Legacy ID-as-index lookup stays last as a compatibility fallback only.
+	if (Array.isArray(footnotes) && legacyIndex !== displayIndex) {
+		const byLegacyIndex = getArrayCandidate(footnotes, legacyIndex);
+		const legacyContent = normalizeFootnoteContent(byLegacyIndex);
+		if (legacyContent) return { content: legacyContent, strategy: 'legacy-id-index' };
+	}
+
+	if (footnotes && typeof footnotes === 'object' && !Array.isArray(footnotes) && legacyIndex !== null && legacyIndex !== displayIndex) {
+		const directByLegacyIndex = normalizeFootnoteContent(footnotes[String(legacyIndex)]);
+		if (directByLegacyIndex) return { content: directByLegacyIndex, strategy: 'legacy-id-index-map' };
 	}
 
 	return null;
@@ -160,8 +249,11 @@ export function auditTranslationFootnotes(translationData) {
 		markers2Plus: 0,
 		resolved: 0,
 		resolved2Plus: 0,
+		compositeRecovered: 0,
+		compositeRecovered2Plus: 0,
 		recoveredFromLegacyFailure: 0,
 		recovered2PlusFromLegacyFailure: 0,
+		ambiguousComposite: 0,
 		missing: 0,
 		missing2Plus: 0,
 		empty: 0,
@@ -179,17 +271,25 @@ export function auditTranslationFootnotes(translationData) {
 		if (markers.length === 0) continue;
 		summary.versesWithFootnotes += 1;
 
+		const compositeCandidate = markers.length >= 2 && getFootnoteEntries(verseData.footnotes).map((entry) => normalizeFootnoteContent(entry)).filter(Boolean).length === 1;
+		const recoveredComposite = compositeCandidate ? recoverCompositeFootnotes(verseData.footnotes, markers.length) : null;
+		if (compositeCandidate && !recoveredComposite) summary.ambiguousComposite += 1;
+
 		for (const marker of markers) {
 			summary.markers += 1;
 			const is2Plus = marker.displayNumber >= 2;
 			if (is2Plus) summary.markers2Plus += 1;
 
-			const resolved = resolveFootnote(verseData.footnotes, marker.footnoteId, marker.displayNumber);
+			const resolved = resolveFootnote(verseData.footnotes, marker.footnoteId, marker.displayNumber, { markerCount: markers.length });
 			const legacy = resolveLegacyFootnote(verseData.footnotes, marker.footnoteId);
 
 			if (resolved?.content) {
 				summary.resolved += 1;
 				if (is2Plus) summary.resolved2Plus += 1;
+				if (resolved.recovered) {
+					summary.compositeRecovered += 1;
+					if (is2Plus) summary.compositeRecovered2Plus += 1;
+				}
 				if (!legacy) {
 					summary.recoveredFromLegacyFailure += 1;
 					if (is2Plus) summary.recovered2PlusFromLegacyFailure += 1;
@@ -205,7 +305,7 @@ export function auditTranslationFootnotes(translationData) {
 				verseKey,
 				displayNumber: marker.displayNumber,
 				footnoteId: marker.footnoteId,
-				status,
+				status: compositeCandidate && !recoveredComposite ? 'ambiguous-composite' : status,
 				footnotesType: Array.isArray(verseData.footnotes) ? 'array' : typeof verseData.footnotes,
 				footnotesCount: Array.isArray(verseData.footnotes) ? verseData.footnotes.length : verseData.footnotes && typeof verseData.footnotes === 'object' ? Object.keys(verseData.footnotes).length : 0
 			});
