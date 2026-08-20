@@ -37,19 +37,22 @@ function parseArguments(argv) {
 
 function printSummary(translationId, summary) {
 	console.log(`\nTranslation ${translationId}`);
-	console.log('='.repeat(44));
-	console.log(`Verses scanned                 : ${summary.versesScanned}`);
-	console.log(`Verses with footnotes          : ${summary.versesWithFootnotes}`);
-	console.log(`Footnote markers               : ${summary.markers}`);
-	console.log(`Footnote markers #2+           : ${summary.markers2Plus}`);
-	console.log(`Resolved                       : ${summary.resolved}`);
-	console.log(`Resolved #2+                   : ${summary.resolved2Plus}`);
-	console.log(`Recovered from legacy lookup   : ${summary.recoveredFromLegacyFailure}`);
-	console.log(`Recovered #2+                  : ${summary.recovered2PlusFromLegacyFailure}`);
-	console.log(`Missing                        : ${summary.missing}`);
-	console.log(`Missing #2+                    : ${summary.missing2Plus}`);
-	console.log(`Empty                          : ${summary.empty}`);
-	console.log(`Empty #2+                      : ${summary.empty2Plus}`);
+	console.log('='.repeat(48));
+	console.log(`Verses scanned                   : ${summary.versesScanned}`);
+	console.log(`Verses with footnotes            : ${summary.versesWithFootnotes}`);
+	console.log(`Footnote markers                 : ${summary.markers}`);
+	console.log(`Footnote markers #2+             : ${summary.markers2Plus}`);
+	console.log(`Resolved                         : ${summary.resolved}`);
+	console.log(`Resolved #2+                     : ${summary.resolved2Plus}`);
+	console.log(`Composite recovered              : ${summary.compositeRecovered}`);
+	console.log(`Composite recovered #2+          : ${summary.compositeRecovered2Plus}`);
+	console.log(`Recovered from legacy lookup     : ${summary.recoveredFromLegacyFailure}`);
+	console.log(`Recovered #2+ from legacy lookup : ${summary.recovered2PlusFromLegacyFailure}`);
+	console.log(`Ambiguous composite verses       : ${summary.ambiguousComposite}`);
+	console.log(`Missing                          : ${summary.missing}`);
+	console.log(`Missing #2+                      : ${summary.missing2Plus}`);
+	console.log(`Empty                            : ${summary.empty}`);
+	console.log(`Empty #2+                        : ${summary.empty2Plus}`);
 }
 
 function printProblems(problems, limit) {
@@ -59,11 +62,11 @@ function printProblems(problems, limit) {
 	}
 
 	console.log(`\nUnresolved footnotes (showing ${Math.min(limit, problems.length)} of ${problems.length})`);
-	console.log('-'.repeat(84));
+	console.log('-'.repeat(100));
 
 	for (const problem of problems.slice(0, limit)) {
 		console.log(
-			`${problem.verseKey.padEnd(9)} footnote #${String(problem.displayNumber).padEnd(3)} id=${String(problem.footnoteId).padEnd(10)} ${problem.status.padEnd(7)} source=${problem.footnotesType}(${problem.footnotesCount})`
+			`${problem.verseKey.padEnd(9)} footnote #${String(problem.displayNumber).padEnd(3)} id=${String(problem.footnoteId).padEnd(10)} ${problem.status.padEnd(21)} source=${problem.footnotesType}(${problem.footnotesCount})`
 		);
 	}
 }
