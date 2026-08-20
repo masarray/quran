@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-20T11:36:57.925Z",
+  "generatedAt": "2026-08-20T12:31:12.387Z",
   "endpoint": "https://static.quranwbw.com/data/v4",
   "translations": {
     "33": {
@@ -9,28 +9,19 @@
         "versesWithFootnotes": 825,
         "markers": 930,
         "markers2Plus": 105,
-        "resolved": 929,
-        "resolved2Plus": 104,
-        "compositeRecovered": 103,
-        "compositeRecovered2Plus": 103,
-        "recoveredFromLegacyFailure": 103,
-        "recovered2PlusFromLegacyFailure": 103,
-        "ambiguousComposite": 1,
+        "resolved": 930,
+        "resolved2Plus": 105,
+        "compositeRecovered": 104,
+        "compositeRecovered2Plus": 104,
+        "recoveredFromLegacyFailure": 104,
+        "recovered2PlusFromLegacyFailure": 104,
+        "ambiguousComposite": 0,
         "missing": 0,
         "missing2Plus": 0,
-        "empty": 1,
-        "empty2Plus": 1
+        "empty": 0,
+        "empty2Plus": 0
       },
-      "problems": [
-        {
-          "verseKey": "35:10",
-          "displayNumber": 2,
-          "footnoteId": "2",
-          "status": "ambiguous-composite",
-          "footnotesType": "array",
-          "footnotesCount": 2
-        }
-      ]
+      "problems": []
     }
   }
 }

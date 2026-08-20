@@ -9,20 +9,18 @@ Verses scanned                   : 6236
 Verses with footnotes            : 825
 Footnote markers                 : 930
 Footnote markers #2+             : 105
-Resolved                         : 929
-Resolved #2+                     : 104
-Composite recovered              : 103
-Composite recovered #2+          : 103
-Recovered from legacy lookup     : 103
-Recovered #2+ from legacy lookup : 103
-Ambiguous composite verses       : 1
+Resolved                         : 930
+Resolved #2+                     : 105
+Composite recovered              : 104
+Composite recovered #2+          : 104
+Recovered from legacy lookup     : 104
+Recovered #2+ from legacy lookup : 104
+Ambiguous composite verses       : 0
 Missing                          : 0
 Missing #2+                      : 0
-Empty                            : 1
-Empty #2+                        : 1
+Empty                            : 0
+Empty #2+                        : 0
 
-Unresolved footnotes (showing 1 of 1)
-----------------------------------------------------------------------------------------------------
-35:10     footnote #2   id=2          ambiguous-composite   source=array(2)
+No unresolved footnotes detected.
 
 JSON report written to footnote-audit-33.json
