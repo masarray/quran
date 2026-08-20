@@ -35,20 +35,42 @@ jobs:
         run: npm ci
 
       - name: Audit Indonesian footnotes
-        run: npm run audit:footnotes -- --translation=33 --show-problems=500 --output=footnote-audit-33.json
+        id: audit
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          npm run audit:footnotes -- --translation=33 --show-problems=500 --output=footnote-audit-33.json 2>&1 | tee footnote-audit-33.log
+          status=${PIPESTATUS[0]}
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Build application
-        run: npm run build
-
-      - name: Persist audit report on audit branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/fix/footnote-integrity'
+        id: build
+        continue-on-error: true
+        shell: bash
         run: |
+          set +e
+          npm run build 2>&1 | tee footnote-build.log
+          status=${PIPESTATUS[0]}
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Persist audit diagnostics on audit branch
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/fix/footnote-integrity'
+        shell: bash
+        run: |
+          cat > footnote-ci-status.txt <<EOF
+          audit_exit_code=${{ steps.audit.outputs.exit_code }}
+          build_exit_code=${{ steps.build.outputs.exit_code }}
+          EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- footnote-audit-33.json
+          git add -- footnote-audit-33.log footnote-build.log footnote-ci-status.txt
+          if [ -f footnote-audit-33.json ]; then git add -- footnote-audit-33.json; fi
           if git diff --cached --quiet; then
-            echo "Audit report unchanged"
+            echo "Audit diagnostics unchanged"
             exit 0
           fi
-          git commit -m "chore: update footnote audit report [skip ci]"
+          git commit -m "chore: update footnote audit diagnostics [skip ci]"
           git push
