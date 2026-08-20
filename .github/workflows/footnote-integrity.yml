@@ -1,0 +1,38 @@
+name: Footnote Integrity
+
+on:
+  push:
+    branches:
+      - fix/footnote-integrity
+  pull_request:
+    paths:
+      - 'src/components/display/verses/VerseTranslations.svelte'
+      - 'src/utils/footnotes.js'
+      - 'scripts/audit-footnotes.mjs'
+      - 'package.json'
+      - '.github/workflows/footnote-integrity.yml'
+  workflow_dispatch:
+
+jobs:
+  audit-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit Indonesian footnotes
+        run: npm run audit:footnotes -- --translation=33 --show-problems=200
+
+      - name: Build application
+        run: npm run build
