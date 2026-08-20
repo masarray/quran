@@ -60,17 +60,22 @@ export function splitCompositeFootnote(content, markerCount) {
 	if (!Number.isInteger(markerCount) || markerCount < 2 || markerCount > 10) return null;
 
 	// Resource 33 commonly stores later footnotes inside the first footnote using
-	// sequential source-note numbers such as "254) ... 255) ...". Recovery is
-	// intentionally strict: exactly markerCount - 1 boundaries must exist and
-	// every boundary number must be sequential.
-	const boundaryRegex = /(?:^|\s)(\d{2,5})\)\s+/g;
+	// sequential source-note numbers such as "254) ... 255) ...". Some source
+	// records omit the space before the next number (for example ".708) ...").
+	// Recovery stays strict: a boundary must follow whitespace or safe sentence
+	// punctuation, exactly markerCount - 1 boundaries must exist, and the source
+	// note numbers must be sequential.
+	const boundaryRegex = /(^|[\s.;:!?])(\d{2,5})\)\s+/g;
 	const boundaries = [];
 	let match;
 
 	while ((match = boundaryRegex.exec(content)) !== null) {
+		const separator = match[1] ?? '';
 		boundaries.push({
-			number: Number(match[1]),
-			start: match.index,
+			number: Number(match[2]),
+			// Keep punctuation with the preceding footnote while excluding the
+			// source-note number from the recovered text.
+			start: match.index + separator.length,
 			contentStart: boundaryRegex.lastIndex
 		});
 	}
