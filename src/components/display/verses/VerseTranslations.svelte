@@ -5,7 +5,7 @@
 	import Skeleton from '$ui/FlowbiteSvelte/skeleton/Skeleton.svelte';
 	import { __currentPage, __verseTranslations, __verseTranslationData, __userSettings } from '$utils/stores';
 	import { fetchVerseTranslationData } from '$utils/fetchData';
-	import { resolveFootnote } from '$utils/footnotes';
+	import { extractFootnoteMarkers, resolveFootnote } from '$utils/footnotes';
 	import { selectableVerseTranslations } from '$data/options';
 
 	$: fontSizes = JSON.parse($__userSettings).displaySettings.fontSizes;
@@ -54,8 +54,11 @@
 		footnoteTranslation = newFootnoteTranslation;
 		footnoteNumber = newFootnoteNumber;
 
-		const footnotes = $__verseTranslationData?.[footnoteTranslation]?.[`${footnoteChapter}:${footnoteVerse}`]?.footnotes;
-		const resolvedFootnote = resolveFootnote(footnotes, footnoteId, footnoteNumber);
+		const verseKey = `${footnoteChapter}:${footnoteVerse}`;
+		const verseData = $__verseTranslationData?.[footnoteTranslation]?.[verseKey];
+		const footnotes = verseData?.footnotes;
+		const markerCount = extractFootnoteMarkers(verseData?.text ?? '').length;
+		const resolvedFootnote = resolveFootnote(footnotes, footnoteId, footnoteNumber, { markerCount });
 		footnoteText = resolvedFootnote?.content || 'Catatan kaki tidak tersedia.';
 
 		if (!resolvedFootnote) {
@@ -64,7 +67,8 @@
 				verse: footnoteVerse,
 				translation: footnoteTranslation,
 				footnoteId,
-				footnoteNumber
+				footnoteNumber,
+				markerCount
 			});
 		}
 
