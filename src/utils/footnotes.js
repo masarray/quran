@@ -72,6 +72,16 @@ export function resolveFootnote(footnotes, footnoteId, displayNumber) {
 			const directByDisplayNumber = normalizeFootnoteContent(footnotes[String(number)]);
 			if (directByDisplayNumber) return { content: directByDisplayNumber, strategy: 'display-number-map' };
 		}
+
+		if (displayIndex !== null) {
+			const directByDisplayIndex = normalizeFootnoteContent(footnotes[String(displayIndex)]);
+			if (directByDisplayIndex) return { content: directByDisplayIndex, strategy: 'display-index-map' };
+		}
+
+		if (legacyIndex !== null && legacyIndex !== displayIndex) {
+			const directByLegacyIndex = normalizeFootnoteContent(footnotes[String(legacyIndex)]);
+			if (directByLegacyIndex) return { content: directByLegacyIndex, strategy: 'legacy-id-index-map' };
+		}
 	}
 
 	return null;
@@ -114,21 +124,29 @@ function candidateExistsButEmpty(footnotes, footnoteId, displayNumber) {
 
 	const id = footnoteId === null || footnoteId === undefined ? '' : String(footnoteId);
 	const number = Number(displayNumber);
+	const displayIndex = Number.isInteger(number) && number > 0 ? number - 1 : null;
+	const numericId = Number(id);
+	const legacyIndex = Number.isInteger(numericId) && numericId > 0 ? numericId - 1 : null;
 
 	if (Array.isArray(footnotes)) {
 		const embedded = footnotes.find((entry) => getEmbeddedFootnoteId(entry) === id);
 		if (embedded !== undefined && normalizeFootnoteContent(embedded) === null) return true;
 
-		if (Number.isInteger(number) && number > 0 && number - 1 < footnotes.length) {
-			return normalizeFootnoteContent(footnotes[number - 1]) === null;
+		if (displayIndex !== null && displayIndex < footnotes.length) {
+			return normalizeFootnoteContent(footnotes[displayIndex]) === null;
 		}
 
 		return false;
 	}
 
 	if (typeof footnotes === 'object') {
-		if (id !== '' && Object.prototype.hasOwnProperty.call(footnotes, id)) return normalizeFootnoteContent(footnotes[id]) === null;
-		if (Number.isInteger(number) && number > 0 && Object.prototype.hasOwnProperty.call(footnotes, String(number))) return normalizeFootnoteContent(footnotes[String(number)]) === null;
+		const candidateKeys = [id, Number.isInteger(number) && number > 0 ? String(number) : null, displayIndex !== null ? String(displayIndex) : null, legacyIndex !== null ? String(legacyIndex) : null].filter(
+			(key, index, keys) => key !== null && key !== '' && keys.indexOf(key) === index
+		);
+
+		for (const key of candidateKeys) {
+			if (Object.prototype.hasOwnProperty.call(footnotes, key) && normalizeFootnoteContent(footnotes[key]) === null) return true;
+		}
 	}
 
 	return false;
