@@ -5,6 +5,7 @@
 	import Skeleton from '$ui/FlowbiteSvelte/skeleton/Skeleton.svelte';
 	import { __currentPage, __verseTranslations, __verseTranslationData, __userSettings } from '$utils/stores';
 	import { fetchVerseTranslationData } from '$utils/fetchData';
+	import { extractFootnoteMarkers, resolveFootnote } from '$utils/footnotes';
 	import { selectableVerseTranslations } from '$data/options';
 
 	$: fontSizes = JSON.parse($__userSettings).displaySettings.fontSizes;
@@ -28,14 +29,16 @@
 
 	// Toggles a footnote open or closed when its superscript number is clicked
 	async function supClick(event) {
-		const newFootnoteId = +event.getAttribute('foot_note');
+		const newFootnoteId = event.getAttribute('foot_note') ?? '';
 		const newFootnoteChapter = +event.getAttribute('data-chapter');
 		const newFootnoteVerse = +event.getAttribute('data-verse');
 		const newFootnoteTranslation = +event.getAttribute('data-translation');
+		const parsedFootnoteNumber = Number.parseInt(event.textContent?.trim() ?? '', 10);
+		const newFootnoteNumber = Number.isFinite(parsedFootnoteNumber) ? parsedFootnoteNumber : 1;
 
 		const selector = `.footnote-${newFootnoteChapter}-${newFootnoteVerse}-${newFootnoteTranslation}`;
 		const footnoteBlock = document.querySelector(selector);
-		const isCurrentlyOpen = footnoteBlock.classList.contains('block');
+		const isCurrentlyOpen = footnoteBlock?.classList.contains('block') ?? false;
 		const isSameFootnote = newFootnoteId === footnoteId && newFootnoteChapter === footnoteChapter && newFootnoteVerse === footnoteVerse && newFootnoteTranslation === footnoteTranslation;
 
 		// Toggle closed if clicking the same open footnote
@@ -49,25 +52,43 @@
 		footnoteChapter = newFootnoteChapter;
 		footnoteVerse = newFootnoteVerse;
 		footnoteTranslation = newFootnoteTranslation;
-		footnoteNumber = +event.innerText;
+		footnoteNumber = newFootnoteNumber;
 
-		const footnotes = $__verseTranslationData?.[footnoteTranslation]?.[`${footnoteChapter}:${footnoteVerse}`]?.footnotes;
-		footnoteText = footnotes?.[footnoteId - 1] || 'Footnote not available.';
+		const verseKey = `${footnoteChapter}:${footnoteVerse}`;
+		const verseData = $__verseTranslationData?.[footnoteTranslation]?.[verseKey];
+		const footnotes = verseData?.footnotes;
+		const markerCount = extractFootnoteMarkers(verseData?.text ?? '').length;
+		const resolvedFootnote = resolveFootnote(footnotes, footnoteId, footnoteNumber, { markerCount });
+		footnoteText = resolvedFootnote?.content || 'Catatan kaki tidak tersedia.';
 
-		window.umami.track('Verse Footnote Button');
+		if (!resolvedFootnote) {
+			console.warn('[footnote] unresolved footnote', {
+				chapter: footnoteChapter,
+				verse: footnoteVerse,
+				translation: footnoteTranslation,
+				footnoteId,
+				footnoteNumber,
+				markerCount
+			});
+		}
+
+		window.umami?.track?.('Verse Footnote Button');
 	}
 
 	$: {
 		if (footnoteId !== undefined) {
 			const selector = `.footnote-${footnoteChapter}-${footnoteVerse}-${footnoteTranslation}`;
 			const footnoteBlock = document.querySelector(selector);
-			const footnoteBlockNumber = footnoteBlock.querySelector('.footnote-header .title .footnote-number');
-			const footnoteBlockText = footnoteBlock.querySelector('.text');
 
-			footnoteBlockNumber.innerText = footnoteNumber;
-			footnoteBlockText.innerHTML = footnoteText;
-			footnoteBlock.classList.remove('hidden');
-			footnoteBlock.classList.add('block');
+			if (footnoteBlock) {
+				const footnoteBlockNumber = footnoteBlock.querySelector('.footnote-header .title .footnote-number');
+				const footnoteBlockText = footnoteBlock.querySelector('.text');
+
+				if (footnoteBlockNumber) footnoteBlockNumber.innerText = footnoteNumber;
+				if (footnoteBlockText) footnoteBlockText.innerHTML = footnoteText;
+				footnoteBlock.classList.remove('hidden');
+				footnoteBlock.classList.add('block');
+			}
 		}
 	}
 

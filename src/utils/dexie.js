@@ -2,13 +2,24 @@ import Dexie from 'dexie';
 
 export const db = new Dexie('quranwbw');
 
-db.version(1).stores({
+const cacheSchema = {
 	word_data: 'key',
 	verse_translation_data: 'key',
 	morphology_data: 'key',
 	tafsir_data: 'key',
 	other_data: 'key'
-});
+};
+
+db.version(1).stores(cacheSchema);
+
+// P1 footnote hardening: invalidate only cached Indonesian Ministry translation
+// records from pre-recovery builds. The CDN URL/version remains unchanged; users
+// refetch resource 33 once while every other cached translation stays intact.
+db.version(2)
+	.stores(cacheSchema)
+	.upgrade(async (transaction) => {
+		await transaction.table('verse_translation_data').where('key').startsWith('verse-translations/33.json').delete();
+	});
 
 export const cacheTableMap = {
 	word: db.word_data,
