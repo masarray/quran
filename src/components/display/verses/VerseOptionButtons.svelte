@@ -5,6 +5,7 @@
 	import VerseOptionsDropdown from '$display/verses/VerseOptionsDropdown.svelte';
 	import Bookmark from '$svgs/Bookmark.svelte';
 	import BookmarkFilled from '$svgs/BookmarkFilled.svelte';
+	import BookmarkAdd from '$svgs/BookmarkAdd.svelte';
 	import Play from '$svgs/Play.svelte';
 	import Pause from '$svgs/Pause.svelte';
 	import NotesFilled from '$svgs/NotesFilled.svelte';
@@ -12,7 +13,7 @@
 	import Eye from '$svgs/Eye.svelte';
 	import Tooltip from '$ui/FlowbiteSvelte/tooltip/Tooltip.svelte';
 	import { playVerseAudio, resetAudioSettings, showAudioModal, playButtonHandler, prepareVersesToPlay } from '$utils/audioController';
-	import { __currentPage, __userSettings, __audioSettings, __verseKey, __userNotes, __notesModalVisible, __playButtonsFunctionality, __displayType, __verseWordBlocks, __readingMarks } from '$utils/stores';
+	import { __currentPage, __userSettings, __audioSettings, __verseKey, __userNotes, __notesModalVisible, __playButtonsFunctionality, __displayType, __verseWordBlocks, __readingMarks, __readingMarkModalVisible, __readingMarkTarget } from '$utils/stores';
 	import { updateSettings } from '$utils/updateSettings';
 	import { term } from '$utils/terminologies';
 	import { getReadingMarkLabel } from '$utils/readingMarks';
@@ -62,6 +63,14 @@
 		else playVerseAudio({ key, language: 'arabic', timesToRepeat: 1 });
 	}
 
+	function readingMarkHandler() {
+		const verseMeta = value?.meta;
+		if (!verseMeta) return;
+		__verseKey.set(key);
+		__readingMarkTarget.set(verseMeta);
+		__readingMarkModalVisible.set(true);
+	}
+
 	// Function to toggle words block for display mode #7
 	function wordsBlockToggler(chapter, verse) {
 		const key = `${chapter}:${verse}`;
@@ -108,6 +117,12 @@
 				</div>
 			</button>
 			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Play</Tooltip>
+
+			<!-- fast reading mark button -->
+			<button on:click={readingMarkHandler} class={buttonClasses} aria-label="Simpan ke Penanda Bacaan" data-umami-event="Reading Mark Fast Button">
+				<div><BookmarkAdd size={3.5} /></div>
+			</button>
+			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Simpan ke Penanda Bacaan</Tooltip>
 
 			<!-- notes button -->
 			{#if Object.prototype.hasOwnProperty.call($__userNotes, key)}
