@@ -18,7 +18,10 @@
 	const params = new URLSearchParams(window.location.search);
 	const searchQuery = params.get('query') === null ? '' : params.get('query');
 
-	const footnoteSupClasses = 'ml-1 mt-1 px-2 py-1 rounded-full font-semibold cursor-pointer system-font border border-transparent hover:border-theme-accent bg-theme-accent/5';
+	// Keep footnote markers compact and visually above the reading baseline without
+	// creating a bulky pill that interrupts translation line rhythm.
+	const footnoteSupClasses =
+		'ml-1 inline-flex min-w-6 h-6 items-center justify-center px-1.5 rounded-full align-super text-[0.58em] leading-none font-semibold cursor-pointer system-font text-theme-accent border border-theme-accent/10 bg-theme-accent/5 transition-colors hover:border-theme-accent/30 hover:bg-theme-accent/10';
 
 	let footnoteId;
 	let footnoteChapter;
@@ -141,30 +144,38 @@
 				{@const verseKey = `${value.meta.chapter}:${value.meta.verse}`}
 				{#if $__verseTranslationData[verseTranslationID] && $__verseTranslationData[verseTranslationID][verseKey]}
 					{@const verseTranslation = $__verseTranslationData[verseTranslationID][verseKey]}
-					{@const translationFootnoteClasses = `hidden my-2 footnote-block px-2 py-2 border-2 border-theme-accent/20 rounded-2xl footnote-${value.meta.chapter}-${value.meta.verse}-${verseTranslationID}`}
+					{@const translationFootnoteClasses = `hidden mx-5 mt-4 mb-4 footnote-block px-4 py-3.5 border border-theme-accent/20 bg-theme-accent/[0.025] rounded-xl footnote-${value.meta.chapter}-${value.meta.verse}-${verseTranslationID}`}
 
 					<div class="flex flex-col print:break-inside-avoid">
-						<span class="pl-5 {isTranslationRTL(verseTranslationID) && 'direction-rtl'} {selectableVerseTranslations[verseTranslationID].font} break-words">
+						<!-- Translation and inline secondary content share one reading column. -->
+						<span class="px-5 {isTranslationRTL(verseTranslationID) && 'direction-rtl'} {selectableVerseTranslations[verseTranslationID].font} break-words">
 							{@html verseTextModifier(verseTranslation, verseTranslationID)}
 						</span>
 
 						<!-- translation footnotes -->
 						<div class={translationFootnoteClasses}>
-							<div class="footnote-header flex flex-row justify-between font-semibold">
-								<div class="title">
-									<span>Footnote #</span>
+							<div class="footnote-header flex flex-row items-center justify-between gap-3 text-sm font-medium text-theme-accent">
+								<div class="title system-font leading-none">
+									<span>Footnote </span>
 									<span class="footnote-number">...</span>
 								</div>
 
-								<!-- close footnote button -->
-								<button on:click={() => hideFootnote(value.meta.chapter, value.meta.verse, verseTranslationID, true)} title="Close footnote"><CrossSolid size={6} /></button>
+								<!-- Keep a generous touch target while reducing the visual weight of close. -->
+								<button
+									on:click={() => hideFootnote(value.meta.chapter, value.meta.verse, verseTranslationID, true)}
+									title="Tutup catatan kaki"
+									aria-label="Tutup catatan kaki"
+									class="-mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full opacity-60 transition hover:bg-theme-accent/5 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-theme-accent/20"
+								>
+									<CrossSolid size={4} />
+								</button>
 							</div>
-							<div class="text {isTranslationRTL(verseTranslationID) && 'direction-rtl'} {selectableVerseTranslations[verseTranslationID].font}">...</div>
+							<div class="text mt-2 text-[0.92em] leading-relaxed opacity-90 {isTranslationRTL(verseTranslationID) && 'direction-rtl'} {selectableVerseTranslations[verseTranslationID].font}">...</div>
 						</div>
 
 						<!-- show translaton author name only if more than 1 was selected -->
 						{#if $__verseTranslations.length > 1}
-							<span class="opacity-70 text-sm {isTranslationRTL(verseTranslationID) && 'direction-rtl'}">&mdash; {selectableVerseTranslations[verseTranslationID].resource_name}</span>
+							<span class="px-5 opacity-70 text-sm {isTranslationRTL(verseTranslationID) && 'direction-rtl'}">&mdash; {selectableVerseTranslations[verseTranslationID].resource_name}</span>
 						{/if}
 					</div>
 				{/if}
