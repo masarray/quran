@@ -8,6 +8,7 @@ on:
     paths:
       - 'src/components/display/verses/VerseTranslations.svelte'
       - 'src/utils/footnotes.js'
+      - 'src/utils/dexie.js'
       - 'scripts/audit-footnotes.mjs'
       - 'scripts/test-footnotes.mjs'
       - 'package.json'
@@ -15,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   audit-and-build:
@@ -36,54 +37,34 @@ jobs:
         run: npm ci
 
       - name: Test footnote recovery
-        id: test
-        continue-on-error: true
         shell: bash
         run: |
-          set +e
+          set -o pipefail
           npm run test:footnotes 2>&1 | tee footnote-test.log
-          status=${PIPESTATUS[0]}
-          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
-          exit 0
 
       - name: Audit Indonesian footnotes
-        id: audit
-        continue-on-error: true
+        if: always()
         shell: bash
         run: |
-          set +e
-          npm run audit:footnotes -- --translation=33 --show-problems=500 --output=footnote-audit-33.json 2>&1 | tee footnote-audit-33.log
-          status=${PIPESTATUS[0]}
-          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
-          exit 0
+          set -o pipefail
+          npm run audit:footnotes -- --translation=33 --show-problems=500 --output=footnote-audit-33.json --fail-on-missing 2>&1 | tee footnote-audit-33.log
 
       - name: Build application
-        id: build
-        continue-on-error: true
+        if: always()
         shell: bash
         run: |
-          set +e
+          set -o pipefail
           npm run build 2>&1 | tee footnote-build.log
-          status=${PIPESTATUS[0]}
-          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
-          exit 0
 
-      - name: Persist audit diagnostics on audit branch
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/fix/footnote-integrity'
-        shell: bash
-        run: |
-          cat > footnote-ci-status.txt <<EOF
-          test_exit_code=${{ steps.test.outputs.exit_code }}
-          audit_exit_code=${{ steps.audit.outputs.exit_code }}
-          build_exit_code=${{ steps.build.outputs.exit_code }}
-          EOF
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- footnote-test.log footnote-audit-33.log footnote-build.log footnote-ci-status.txt
-          if [ -f footnote-audit-33.json ]; then git add -- footnote-audit-33.json; fi
-          if git diff --cached --quiet; then
-            echo "Audit diagnostics unchanged"
-            exit 0
-          fi
-          git commit -m "chore: update footnote audit diagnostics [skip ci]"
-          git push
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: footnote-integrity-${{ github.sha }}
+          path: |
+            footnote-test.log
+            footnote-audit-33.log
+            footnote-audit-33.json
+            footnote-build.log
+          if-no-files-found: ignore
+          retention-days: 7
