@@ -18,10 +18,10 @@
 	const params = new URLSearchParams(window.location.search);
 	const searchQuery = params.get('query') === null ? '' : params.get('query');
 
-	// Keep footnote markers compact and visually above the reading baseline without
-	// creating a bulky pill that interrupts translation line rhythm.
+	// Keep footnote markers compact and editorial: clearly tappable, but visually
+	// subordinate to the translation and positioned like a true superscript.
 	const footnoteSupClasses =
-		'ml-1 inline-flex min-w-6 h-6 items-center justify-center px-1.5 rounded-full align-super text-[0.58em] leading-none font-semibold cursor-pointer system-font text-theme-accent border border-theme-accent/10 bg-theme-accent/5 transition-colors hover:border-theme-accent/30 hover:bg-theme-accent/10';
+		'ml-1 relative -top-[0.08em] inline-flex min-w-5 h-5 items-center justify-center px-1 rounded-full align-super text-[0.52em] leading-none font-semibold cursor-pointer system-font text-theme-accent border border-theme-accent/10 bg-theme-accent/5 transition-colors hover:border-theme-accent/30 hover:bg-theme-accent/10';
 
 	let footnoteId;
 	let footnoteChapter;
@@ -144,7 +144,7 @@
 				{@const verseKey = `${value.meta.chapter}:${value.meta.verse}`}
 				{#if $__verseTranslationData[verseTranslationID] && $__verseTranslationData[verseTranslationID][verseKey]}
 					{@const verseTranslation = $__verseTranslationData[verseTranslationID][verseKey]}
-					{@const translationFootnoteClasses = `hidden mx-5 mt-4 mb-4 footnote-block px-4 py-3.5 border border-theme-accent/20 bg-theme-accent/[0.025] rounded-xl footnote-${value.meta.chapter}-${value.meta.verse}-${verseTranslationID}`}
+					{@const translationFootnoteClasses = `hidden mx-5 mt-3.5 mb-4 footnote-block px-4 py-3 border border-theme-accent/15 bg-theme-accent/[0.02] rounded-xl footnote-${value.meta.chapter}-${value.meta.verse}-${verseTranslationID}`}
 
 					<div class="flex flex-col print:break-inside-avoid">
 						<!-- Translation and inline secondary content share one reading column. -->
@@ -165,12 +165,12 @@
 									on:click={() => hideFootnote(value.meta.chapter, value.meta.verse, verseTranslationID, true)}
 									title="Tutup catatan kaki"
 									aria-label="Tutup catatan kaki"
-									class="-mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full opacity-60 transition hover:bg-theme-accent/5 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-theme-accent/20"
+									class="-mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full opacity-55 transition hover:bg-theme-accent/5 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-theme-accent/20"
 								>
 									<CrossSolid size={4} />
 								</button>
 							</div>
-							<div class="text mt-2 text-[0.92em] leading-relaxed opacity-90 {isTranslationRTL(verseTranslationID) && 'direction-rtl'} {selectableVerseTranslations[verseTranslationID].font}">...</div>
+							<div class="text mt-1.5 text-[0.92em] leading-relaxed opacity-90 {isTranslationRTL(verseTranslationID) && 'direction-rtl'} {selectableVerseTranslations[verseTranslationID].font}">...</div>
 						</div>
 
 						<!-- show translaton author name only if more than 1 was selected -->
