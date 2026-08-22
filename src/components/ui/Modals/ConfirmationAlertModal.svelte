@@ -23,7 +23,7 @@
 
 <Modal id="confirmationAlertModal" bind:open={$__confirmationAlertModal.visible} transitionParams={getModalTransition('bottom')} size="sm" class="!rounded-b-none md:!rounded-3xl z-[21]" bodyClass="p-6" position="bottom" center outsideclose>
 	<h3 class="mb-6 text-xl font-medium">
-		{$__confirmationAlertModal.type === 'confirm' ? 'Confirmation' : 'Alert'}
+		{$__confirmationAlertModal.type === 'confirm' ? 'Konfirmasi' : 'Pemberitahuan'}
 	</h3>
 
 	<div class="flex flex-col">
@@ -38,11 +38,13 @@
 						$__confirmationAlertModal.visible = false;
 					}}
 				>
-					Confirm
+					Konfirmasi
 				</button>
 			{/if}
 
-			<button class="w-full {buttonClasses}" on:click={() => ($__confirmationAlertModal.visible = false)}> {$__confirmationAlertModal.type === 'confirm' ? 'Cancel' : 'Got it'} </button>
+			<button class="w-full {buttonClasses}" on:click={() => ($__confirmationAlertModal.visible = false)}>
+				{$__confirmationAlertModal.type === 'confirm' ? 'Batal' : 'Mengerti'}
+			</button>
 		</div>
 	</div>
 </Modal>
