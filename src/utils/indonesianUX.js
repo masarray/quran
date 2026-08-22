@@ -1,6 +1,7 @@
 import {
 	selectableDisplays,
 	selectableFontTypes,
+	fontTypes,
 	selectableThemes,
 	verseTranslationsLanguages,
 	selectableWordTranslations,
@@ -33,6 +34,11 @@ const fontNames = {
 	9: 'Font Digital Isep Misbah Indonesia'
 };
 
+const fontTypeNames = {
+	Uthmanic: 'Utsmani',
+	'Indopak / Nastaleeq': 'Indopak / Nastaliq'
+};
+
 const themeNames = {
 	1: 'Kilau Emas',
 	2: 'Terang Klasik',
@@ -47,16 +53,23 @@ const themeNames = {
 
 const languageNames = {
 	Albanian: 'Albania',
+	Arabic: 'Arab',
 	Bangla: 'Bengali',
 	Chinese: 'Mandarin',
+	Divehi: 'Divehi',
 	English: 'Inggris',
 	French: 'Prancis',
 	German: 'Jerman',
+	Hindi: 'Hindi',
 	Indonesian: 'Indonesia',
+	Malayalam: 'Malayalam',
 	Persian: 'Persia',
 	Russian: 'Rusia',
+	Sindhi: 'Sindhi',
+	Tamil: 'Tamil',
 	Transliteration: 'Transliterasi',
 	Turkish: 'Turki',
+	Urdu: 'Urdu',
 	'Sign Language': 'Bahasa Isyarat',
 	'Chinese (Traditional)': 'Mandarin (Tradisional)',
 	'Chinese (Zhuyin)': 'Mandarin (Zhuyin)',
@@ -72,6 +85,13 @@ Object.entries(displayNames).forEach(([id, name]) => {
 
 Object.entries(fontNames).forEach(([id, name]) => {
 	if (selectableFontTypes[id]) selectableFontTypes[id].font = name;
+});
+
+fontTypes.forEach((type, index) => {
+	fontTypes[index] = fontTypeNames[type] || type;
+});
+Object.values(selectableFontTypes).forEach((item) => {
+	item.type = fontTypeNames[item.type] || item.type;
 });
 
 Object.entries(themeNames).forEach(([id, name]) => {
