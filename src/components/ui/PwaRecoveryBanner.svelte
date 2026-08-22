@@ -56,7 +56,7 @@
 			<button class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-theme-accent/20 bg-theme-accent/5 text-theme-accent" on:click={refreshPage} aria-label="Muat ulang halaman">
 				<Refresh size={4} />
 			</button>
-			<a href={`${base}/offline`} class="hidden rounded-full border border-theme-accent/20 bg-theme-accent/5 px-3 py-2 text-xs text-theme-accent sm:inline-flex">Offline</a>
+			<a href={`${base}/offline`} class="hidden rounded-full border border-theme-accent/20 bg-theme-accent/5 px-3 py-2 text-xs text-theme-accent sm:inline-flex">Mode Offline</a>
 		</div>
 	</div>
 {/if}
