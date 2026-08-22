@@ -16,15 +16,12 @@
 	import { selectableTafsirs } from '$data/selectableTafsirs';
 	import { clearDexieTable } from '$utils/dexie';
 
-	// Common messages
-	const errorAlertMessage = 'Something went wrong. Please try again in a few moments.';
-	const mismatchMessage = 'Settings changed. Re-download to ensure offline access works correctly.';
+	const errorAlertMessage = 'Terjadi kesalahan. Silakan coba lagi beberapa saat lagi.';
+	const mismatchMessage = 'Pengaturan telah berubah. Unduh ulang agar akses offline tetap bekerja dengan benar.';
 
-	// Chapter and Quran pages count
 	const totalChapters = 114;
 	const totalPages = 604;
 
-	// Track download state
 	let isRegistering = false;
 	let isDownloadingChapter = false;
 	let isDownloadingMushaf = false;
@@ -32,7 +29,6 @@
 	let isDownloadingTafsir = false;
 	let downloadProgressPercentage = 0;
 
-	// Initialize structures on component load
 	ensureOfflineSettingsStructure('serviceWorker');
 	ensureOfflineSettingsStructure('chapterData');
 	ensureOfflineSettingsStructure('mushafData');
@@ -46,32 +42,22 @@
 		tafsirs: []
 	});
 
-	// Reactive statement for local reference
 	$: offlineModeSettings = $__offlineModeSettings;
-
-	// Reactive variables for basic checks
 	$: isServiceWorkerRegistered = offlineModeSettings?.serviceWorker?.downloaded ?? false;
 	$: isChapterDataDownloaded = offlineModeSettings?.chapterData?.downloaded ?? false;
 	$: isMushafDataDownloaded = offlineModeSettings?.mushafData?.downloaded ?? false;
 	$: isMorphologyDataDownloaded = offlineModeSettings?.morphologyData?.downloaded ?? false;
 	$: isTafsirDataDownloaded = offlineModeSettings?.tafsirData?.downloaded ?? false;
-
-	// Track if ANY download is in progress
 	$: isDownloading = isRegistering || isDownloadingChapter || isDownloadingMushaf || isDownloadingMorphology || isDownloadingTafsir;
-
-	// Check for specific data type mismatches (reactive to all relevant stores)
 	$: mismatchStatus = getOfflineSettingsMismatch($__fontType, $__wordTranslation, $__wordTransliteration, $__verseTranslations, $__verseTafsir, $__offlineModeSettings);
-
-	// Check if tafsir data has mismatch
 	$: hasTafsirMismatch = mismatchStatus.verseTafsir;
 
-	// Define data sections configuration
 	$: dataSections = [
 		{
 			id: 'chapterData',
-			title: `${term('chapter')} Data`,
+			title: `Data ${term('chapter')}`,
 			dataSizeInMB: 20,
-			description: `These files download the Quran text data and allow you to read all 114 ${term('chapters')} offline. The content follows your selected reading settings, such as translations and transliterations. Any special Mushaf font files are not included and must be downloaded separately.`,
+			description: `Berkas ini menyimpan data teks Al Quran agar seluruh 114 ${term('chapters')} dapat dibaca secara offline. Konten mengikuti pengaturan bacaan yang dipilih, seperti terjemah dan transliterasi. Berkas font khusus Mushaf tidak termasuk dan perlu diunduh secara terpisah.`,
 			isDataDownloaded: isChapterDataDownloaded,
 			isDownloading: isDownloadingChapter,
 			showMismatchBanner: false,
@@ -81,24 +67,22 @@
 		},
 		{
 			id: 'mushafData',
-			title: 'Mushaf Data',
+			title: 'Data Mushaf',
 			dataSizeInMB: 60,
-			description: 'These files let you open the Mushaf (page) view offline. All 604 pages, the required font files, and the Mushaf text content are included.',
+			description: 'Berkas ini memungkinkan tampilan Mushaf per halaman dibuka secara offline. Seluruh 604 halaman, berkas font yang diperlukan, dan teks Mushaf akan disimpan.',
 			isDataDownloaded: isMushafDataDownloaded,
 			isDownloading: isDownloadingMushaf,
 			showMismatchBanner: false,
 			onDownload: handleDownloadMushafData,
 			onDelete: () => handleDeleteSpecificData('quranwbw-mushaf-data', 'mushafData'),
 			onRedownload: () => handleRedownloadData('mushafData'),
-
-			// Disabled on iOS/macOS because the current OT-SVG fallback fonts are significantly large (~190 MB), making downloads impractical.
 			isSectionDisabled: () => isIOSorMac()
 		},
 		{
 			id: 'morphologyData',
-			title: 'Morphology Data',
+			title: 'Data Morfologi',
 			dataSizeInMB: 90,
-			description: 'These files allow you to view detailed word information in the Morphology section. This includes word meanings, roots, verb forms, and related words used across the Quran.',
+			description: 'Berkas ini memungkinkan informasi kata terperinci pada bagian Morfologi dibuka secara offline, termasuk makna kata, akar kata, bentuk kata kerja, dan kata terkait di seluruh Al Quran.',
 			isDataDownloaded: isMorphologyDataDownloaded,
 			isDownloading: isDownloadingMorphology,
 			showMismatchBanner: false,
@@ -108,9 +92,9 @@
 		},
 		{
 			id: 'tafsirData',
-			title: 'Tafsir Data',
+			title: 'Data Tafsir',
 			dataSizeInMB: 90,
-			description: `These files let you read ${term('tafsir')} for all ${term('chapters')} offline, based on the ${term('tafsir')} you have selected in your settings.`,
+			description: `Berkas ini memungkinkan ${term('tafsir')} untuk seluruh ${term('chapters')} dibaca secara offline sesuai ${term('tafsir')} yang dipilih di Pengaturan.`,
 			isDataDownloaded: isTafsirDataDownloaded,
 			isDownloading: isDownloadingTafsir,
 			showMismatchBanner: hasTafsirMismatch,
@@ -120,48 +104,32 @@
 		}
 	];
 
-	// Listen for cache started
 	window.addEventListener('sw-cache-started', () => {
 		isRegistering = true;
 	});
 
-	// Listen for cache completion
 	window.addEventListener('sw-cache-complete', () => {
 		isRegistering = false;
-
-		// Update using helper function
 		updateOfflineSettingsStructure('serviceWorker', {
 			downloaded: true,
 			downloadedAt: new Date().toISOString()
 		});
 	});
 
-	// Helper function to ensure nested structure exists with custom properties
 	function ensureOfflineSettingsStructure(key, defaultStructure = { downloaded: false, downloadedAt: null }) {
-		if (!$__offlineModeSettings) {
-			$__offlineModeSettings = {};
-		}
-
-		if (!$__offlineModeSettings[key]) {
-			$__offlineModeSettings[key] = { ...defaultStructure };
-		}
+		if (!$__offlineModeSettings) $__offlineModeSettings = {};
+		if (!$__offlineModeSettings[key]) $__offlineModeSettings[key] = { ...defaultStructure };
 	}
 
-	// Helper function to update a specific structure and save to localStorage
 	function updateOfflineSettingsStructure(key, updates) {
 		ensureOfflineSettingsStructure(key);
-
-		// Merge updates into existing structure
 		offlineModeSettings[key] = {
 			...offlineModeSettings[key],
 			...updates
 		};
-
-		// Save to localStorage
 		updateSettings({ type: 'offlineModeSettings', value: offlineModeSettings });
 	}
 
-	// Helper to cache URL to specific cache
 	async function cacheUrlToCache(url, cacheName) {
 		if (navigator.serviceWorker.controller) {
 			navigator.serviceWorker.controller.postMessage({
@@ -169,12 +137,10 @@
 				url: url,
 				cacheName: cacheName
 			});
-			// Small delay to ensure caching completes
 			await new Promise((resolve) => setTimeout(resolve, 50));
 		}
 	}
 
-	// Helper to delete specific cache
 	async function deleteSpecificCache(cacheName) {
 		if (navigator.serviceWorker.controller) {
 			navigator.serviceWorker.controller.postMessage({
@@ -186,9 +152,7 @@
 		window.umami?.track(`Delete Specific Cache (${cacheName})`);
 	}
 
-	// Helper function to add downloaded data settings
 	function addDownloadedDataSettings({ fontTypes, wordTranslation, wordTransliteration, verseTranslations, tafsir }) {
-		// Ensure structure exists
 		ensureOfflineSettingsStructure('downloadedDataSettings', {
 			fontTypes: [],
 			wordTranslations: [],
@@ -197,68 +161,36 @@
 			tafsirs: []
 		});
 
-		// Get current settings
 		const currentSettings = offlineModeSettings.downloadedDataSettings;
-
-		// Helper to merge arrays without duplicates
 		const mergeArrays = (current, newItems) => {
 			const itemsArray = Array.isArray(newItems) ? newItems : [newItems];
 			return [...new Set([...current, ...itemsArray])];
 		};
 
-		// Update font types if provided
-		if (fontTypes !== undefined && fontTypes !== null) {
-			currentSettings.fontTypes = mergeArrays(currentSettings.fontTypes, fontTypes);
-		}
+		if (fontTypes !== undefined && fontTypes !== null) currentSettings.fontTypes = mergeArrays(currentSettings.fontTypes, fontTypes);
+		if (wordTranslation !== undefined && wordTranslation !== null) currentSettings.wordTranslations = mergeArrays(currentSettings.wordTranslations, wordTranslation);
+		if (wordTransliteration !== undefined && wordTransliteration !== null) currentSettings.wordTransliterations = mergeArrays(currentSettings.wordTransliterations, wordTransliteration);
+		if (verseTranslations !== undefined && verseTranslations !== null) currentSettings.verseTranslations = mergeArrays(currentSettings.verseTranslations, verseTranslations);
+		if (tafsir !== undefined && tafsir !== null) currentSettings.tafsirs = mergeArrays(currentSettings.tafsirs, tafsir);
 
-		// Update word translations if provided
-		if (wordTranslation !== undefined && wordTranslation !== null) {
-			currentSettings.wordTranslations = mergeArrays(currentSettings.wordTranslations, wordTranslation);
-		}
-
-		// Update word transliterations if provided
-		if (wordTransliteration !== undefined && wordTransliteration !== null) {
-			currentSettings.wordTransliterations = mergeArrays(currentSettings.wordTransliterations, wordTransliteration);
-		}
-
-		// Update verse translations if provided
-		if (verseTranslations !== undefined && verseTranslations !== null) {
-			currentSettings.verseTranslations = mergeArrays(currentSettings.verseTranslations, verseTranslations);
-		}
-
-		//  Update tafsirs if provided
-		if (tafsir !== undefined && tafsir !== null) {
-			currentSettings.tafsirs = mergeArrays(currentSettings.tafsirs, tafsir);
-		}
-
-		// Save to localStorage
 		updateSettings({ type: 'offlineModeSettings', value: offlineModeSettings });
 	}
 
-	// Helper function to update the download progress percentage
 	function updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress) {
 		downloadProgressPercentage = Math.round((completedStepsInDownloadProgress / totalStepsInDownloadProgress) * 100);
 	}
 
-	// Download and cache all chapter and verse translation/transliteration data files
 	async function downloadChapterAndVerseTranslationData({ fontType, wordTranslation, wordTransliteration, verseTranslations }) {
 		try {
-			// Use provided values or fall back to current user settings
 			const activeFontType = fontType ?? $__fontType;
 			const activeWordTranslation = wordTranslation ?? $__wordTranslation;
 			const activeWordTransliteration = wordTransliteration ?? $__wordTransliteration;
 			const activeVerseTranslations = verseTranslations ?? $__verseTranslations;
-
-			// If fontType is an array, use the first item for fetching
 			const fontTypeForFetch = Array.isArray(activeFontType) ? activeFontType[0] : activeFontType;
 
-			// Fetch chapter data with the specified font type
 			await fetchChapterData({ chapter: 1, fontType: fontTypeForFetch, preventStoreUpdate: true });
-
-			// Fetch verse translations
 			await fetchVerseTranslationData({ preventStoreUpdate: true });
 
-			// Track what was downloaded (use original activeFontType which could be array)
 			addDownloadedDataSettings({
 				fontTypes: activeFontType,
 				wordTranslation: activeWordTranslation,
@@ -271,14 +203,10 @@
 		}
 	}
 
-	// Checks whether the user's current settings match downloaded offline data
-	// Returns an object with mismatch status for each data type
 	function getOfflineSettingsMismatch(fontType, wordTranslation, wordTransliteration, verseTranslations, verseTafsir, offlineSettings) {
 		try {
 			const downloadedDataSettings = offlineSettings.downloadedDataSettings;
-			if (!downloadedDataSettings) {
-				return { fontType: false, wordTranslation: false, wordTransliteration: false, verseTafsir: false, verseTranslations: false };
-			}
+			if (!downloadedDataSettings) return { fontType: false, wordTranslation: false, wordTransliteration: false, verseTafsir: false, verseTranslations: false };
 
 			const { fontTypes = [], wordTranslations = [], wordTransliterations = [], verseTranslations: downloadedVerseTranslations = [], tafsirs = [] } = downloadedDataSettings;
 
@@ -295,36 +223,21 @@
 		}
 	}
 
-	// Ensure core data is downloaded (auto-download if not)
 	async function ensureCoreDataDownloaded() {
-		if (isServiceWorkerRegistered) {
-			return; // Already downloaded
-		}
+		if (isServiceWorkerRegistered) return;
 
-		// Download core data
 		const result = await registerServiceWorker();
+		if (!result.success) throw new Error(result.error);
 
-		if (!result.success) {
-			throw new Error(result.error);
-		}
-
-		// Download and cache all essential CDN static data files
 		await downloadAllCdnStaticData();
-
-		// Download all bismillah fonts
 		await downloadAllBismillahFonts();
-
-		// Download chapter header font
 		await downloadChapterHeaderFont();
 	}
 
-	// Delete specific cache data
 	async function handleDeleteSpecificData(cacheName, objectName) {
 		try {
-			// 1. Remove cached data
 			await Promise.all([deleteSpecificCache(cacheName), clearDexieTable(cacheName)]);
 
-			// 2. Update offline download state
 			updateOfflineSettingsStructure(objectName, {
 				downloaded: false,
 				downloadedAt: null
@@ -332,15 +245,12 @@
 
 			const downloadedDataSettings = offlineModeSettings.downloadedDataSettings;
 
-			// 3. Handle related settings cleanup
 			switch (objectName) {
 				case 'tafsirData': {
 					downloadedDataSettings.tafsirs = [];
 					break;
 				}
-
 				case 'chapterData': {
-					// Clear shared text-related data only if both are deleted
 					if (!isChapterDataDownloaded) {
 						downloadedDataSettings.fontTypes = [];
 						downloadedDataSettings.wordTranslations = [];
@@ -349,44 +259,28 @@
 					}
 					break;
 				}
-
 				case 'mushafData': {
-					// Remove Mushaf-specific font types (2 and 3)
 					downloadedDataSettings.fontTypes = (downloadedDataSettings.fontTypes || []).filter((fontId) => fontId !== 2 && fontId !== 3);
 					break;
 				}
 			}
 
-			// Clears all downloadedDataSettings arrays if no offline data is marked as downloaded
 			await clearDownloadedDataSettingsIfNoOfflineData();
-
-			// 4. Persist updated settings
-			updateSettings({
-				type: 'offlineModeSettings',
-				value: offlineModeSettings
-			});
+			updateSettings({ type: 'offlineModeSettings', value: offlineModeSettings });
 		} catch (error) {
 			console.warn(error);
 			showAlert(errorAlertMessage, '');
 		}
 	}
 
-	// Clears all downloadedDataSettings arrays if no content offline data is downloaded
 	async function clearDownloadedDataSettingsIfNoOfflineData() {
 		try {
 			if (!offlineModeSettings?.downloadedDataSettings) return;
 
-			console.log('running clearDownloadedDataSettingsIfNoOfflineData');
-
-			// Dynamically detect all content-related offline data keys
 			const offlineContentKeys = Object.keys(offlineModeSettings).filter((key) => key !== 'serviceWorker' && key !== 'downloadedDataSettings' && typeof offlineModeSettings[key] === 'object' && Object.prototype.hasOwnProperty.call(offlineModeSettings[key], 'downloaded'));
-
-			// Check if any content data is still downloaded
 			const hasAnyContentDownloaded = offlineContentKeys.some((key) => offlineModeSettings[key]?.downloaded === true);
-
 			if (hasAnyContentDownloaded) return;
 
-			// Delete and reset everything
 			await unregisterServiceWorkerAndClearCache();
 			$__offlineModeSettings = {};
 			updateSettings({ type: 'offlineModeSettings', value: {} });
@@ -395,7 +289,6 @@
 		}
 	}
 
-	// Redownload specific data (deletes and reinstalls)
 	async function handleRedownloadData(dataType) {
 		try {
 			switch (dataType) {
@@ -403,17 +296,14 @@
 					await handleDeleteSpecificData('quranwbw-chapter-data', 'chapterData');
 					await handleDownloadChaptersData();
 					break;
-
 				case 'mushafData':
 					await handleDeleteSpecificData('quranwbw-mushaf-data', 'mushafData');
 					await handleDownloadMushafData();
 					break;
-
 				case 'morphologyData':
 					await handleDeleteSpecificData('morphology_data', 'morphologyData');
 					await handleDownloadMorphologyData();
 					break;
-
 				case 'tafsirData':
 					await handleDeleteSpecificData('tafsir_data', 'tafsirData');
 					await handleDownloadTafsirData();
@@ -429,24 +319,18 @@
 		}
 	}
 
-	// Cache all 114 chapter routes and download chapter data
 	async function handleDownloadChaptersData() {
 		if (!(await checkOnlineAndAlert())) return;
 
 		isDownloadingChapter = true;
 		downloadProgressPercentage = 0;
-
-		ensureOfflineSettingsStructure('chapterData', {
-			downloaded: false,
-			downloadedAt: null
-		});
+		ensureOfflineSettingsStructure('chapterData', { downloaded: false, downloadedAt: null });
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
 			const totalStepsInDownloadProgress = coreSteps + totalChapters + 1 + 1;
 			let completedStepsInDownloadProgress = 0;
 
-			// Ensure core is downloaded first
 			await ensureCoreDataDownloaded(() => {
 				completedStepsInDownloadProgress++;
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
@@ -463,11 +347,7 @@
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 
-			updateOfflineSettingsStructure('chapterData', {
-				downloaded: true,
-				downloadedAt: new Date().toISOString()
-			});
-
+			updateOfflineSettingsStructure('chapterData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Chapter Data Download');
 		} catch (error) {
 			console.warn(error);
@@ -478,30 +358,23 @@
 		}
 	}
 
-	// Cache all 604 mushaf pages and fonts
 	async function handleDownloadMushafData() {
 		if (!(await checkOnlineAndAlert())) return;
 
 		isDownloadingMushaf = true;
 		downloadProgressPercentage = 0;
-
-		ensureOfflineSettingsStructure('mushafData', {
-			downloaded: false,
-			downloadedAt: null
-		});
+		ensureOfflineSettingsStructure('mushafData', { downloaded: false, downloadedAt: null });
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
 			const totalStepsInDownloadProgress = coreSteps + totalPages + 1 + 1;
 			let completedStepsInDownloadProgress = 0;
 
-			// Ensure core is downloaded first
 			await ensureCoreDataDownloaded(() => {
 				completedStepsInDownloadProgress++;
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			});
 
-			// Download all fonts
 			for (let page = 1; page <= totalPages; page++) {
 				await cacheUrlToCache(getMushafWordFontLink(page), 'quranwbw-mushaf-data');
 				completedStepsInDownloadProgress++;
@@ -512,11 +385,7 @@
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 
-			updateOfflineSettingsStructure('mushafData', {
-				downloaded: true,
-				downloadedAt: new Date().toISOString()
-			});
-
+			updateOfflineSettingsStructure('mushafData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Mushaf Data Download');
 		} catch (error) {
 			console.warn(error);
@@ -527,24 +396,18 @@
 		}
 	}
 
-	// Cache all morphology data files
 	async function handleDownloadMorphologyData() {
 		if (!(await checkOnlineAndAlert())) return;
 
 		isDownloadingMorphology = true;
 		downloadProgressPercentage = 0;
-
-		ensureOfflineSettingsStructure('morphologyData', {
-			downloaded: false,
-			downloadedAt: null
-		});
+		ensureOfflineSettingsStructure('morphologyData', { downloaded: false, downloadedAt: null });
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
 			const totalStepsInDownloadProgress = coreSteps + totalChapters + 4 + 1 + 1;
 			let completedStepsInDownloadProgress = 0;
 
-			// Ensure core is downloaded first
 			await ensureCoreDataDownloaded(() => {
 				completedStepsInDownloadProgress++;
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
@@ -559,28 +422,20 @@
 			await fetchAndCacheJson(morphologyDataUrls.wordVerbs, 'morphology');
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-
 			await fetchAndCacheJson(morphologyDataUrls.wordsWithSameRootKeys, 'morphology');
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-
 			await fetchAndCacheJson(morphologyDataUrls.wordUthmaniAndRoots, 'morphology');
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-
 			await fetchAndCacheJson(morphologyDataUrls.exactWordsKeys, 'morphology');
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-
 			await downloadChapterAndVerseTranslationData({});
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 
-			updateOfflineSettingsStructure('morphologyData', {
-				downloaded: true,
-				downloadedAt: new Date().toISOString()
-			});
-
+			updateOfflineSettingsStructure('morphologyData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Morphology Data Download');
 		} catch (error) {
 			console.warn(error);
@@ -591,24 +446,18 @@
 		}
 	}
 
-	// Cache all tafsir data files
 	async function handleDownloadTafsirData() {
 		if (!(await checkOnlineAndAlert())) return;
 
 		isDownloadingTafsir = true;
 		downloadProgressPercentage = 0;
-
-		ensureOfflineSettingsStructure('tafsirData', {
-			downloaded: false,
-			downloadedAt: null
-		});
+		ensureOfflineSettingsStructure('tafsirData', { downloaded: false, downloadedAt: null });
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
 			const totalStepsInDownloadProgress = coreSteps + totalChapters + 1;
 			let completedStepsInDownloadProgress = 0;
 
-			// Ensure core is downloaded first
 			await ensureCoreDataDownloaded(() => {
 				completedStepsInDownloadProgress++;
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
@@ -623,16 +472,8 @@
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			}
 
-			// Track downloaded tafsir
-			addDownloadedDataSettings({
-				tafsir: selectedTafirId
-			});
-
-			updateOfflineSettingsStructure('tafsirData', {
-				downloaded: true,
-				downloadedAt: new Date().toISOString()
-			});
-
+			addDownloadedDataSettings({ tafsir: selectedTafirId });
+			updateOfflineSettingsStructure('tafsirData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Tafsir Data Download');
 		} catch (error) {
 			console.warn(error);
@@ -643,13 +484,9 @@
 		}
 	}
 
-	// Download and cache all essential CDN static data files
 	async function downloadAllCdnStaticData() {
 		try {
-			const cachePromises = Object.entries(cdnStaticDataUrls).map(([_, url]) => {
-				return fetchAndCacheJson(url, 'other');
-			});
-
+			const cachePromises = Object.entries(cdnStaticDataUrls).map(([_, url]) => fetchAndCacheJson(url, 'other'));
 			await Promise.all(cachePromises);
 			console.log('All CDN static data cached successfully');
 		} catch (error) {
@@ -658,14 +495,12 @@
 		}
 	}
 
-	// Download all bismillah fonts
 	async function downloadAllBismillahFonts() {
 		try {
 			const fontPromises = Object.values(bismillahFonts).map(({ file, version }) => {
 				const url = `${staticEndpoint}/fonts/Extras/bismillah/${file}.woff2?version=${version}`;
 				return fetch(url);
 			});
-
 			await Promise.all(fontPromises);
 			console.log('All bismillah fonts cached successfully');
 		} catch (error) {
@@ -674,7 +509,6 @@
 		}
 	}
 
-	// Download chapter header font
 	async function downloadChapterHeaderFont() {
 		try {
 			await fetch(chapterHeaderFontLink);
@@ -685,7 +519,7 @@
 		}
 	}
 
-	__currentPage.set('Offline Mode (Beta)');
+	__currentPage.set('offline');
 </script>
 
 <PageHead title={'Mode Offline (Beta)'} />
@@ -694,22 +528,18 @@
 	<div class="markdown mx-auto">
 		<h3>Mode Offline (Beta)</h3>
 		<p>
-			Offline mode lets you use parts of QuranWBW without an internet connection by saving some website data on your device. This is optional and you can update or remove the saved data at any time. Please note that enabling offline mode downloads the core website files, which may use a noticeable amount of data and take some time, especially on slower connections or mobile data. It's best to use
-			a stable Wi-Fi connection if possible.
+			Mode offline memungkinkan sebagian fitur Al Quran digunakan tanpa koneksi internet dengan menyimpan data yang diperlukan di perangkat. Fitur ini opsional; data yang tersimpan dapat diperbarui atau dihapus kapan saja. Mengaktifkan mode offline akan mengunduh berkas inti aplikasi, sehingga dapat menggunakan cukup banyak data dan memerlukan waktu, terutama pada koneksi lambat atau data seluler. Sebaiknya gunakan koneksi Wi-Fi yang stabil.
 		</p>
 	</div>
 
-	<!-- Individual Download Options -->
 	<div class="my-6 flex flex-col space-y-4 overflow-auto">
 		{#each dataSections as section, index}
-			<!-- Data Section -->
 			<div class="flex flex-col space-y-2 text-sm {(isDownloading && !section.isDownloading) || (section.isSectionDisabled && section.isSectionDisabled()) ? disabledClasses : ''}">
 				<div>
 					<span class="text-theme-accent">{section.title}</span>
 					<span class="opacity-70"> (~{section.dataSizeInMB} MB)</span>
 				</div>
 
-				<!-- Mismatch banner with re-download button -->
 				{#if section.isDataDownloaded && section.showMismatchBanner}
 					<div class="mt-4 p-3 rounded-md flex flex-row space-x-1 items-start text-sm bg-theme-accent/5">
 						<span class="flex-shrink-0 w-5 h-5 mt-1 md:mt-0.5"><Info /></span>
@@ -722,8 +552,7 @@
 
 					<div class="flex flex-row space-x-2">
 						{#if section.isDataDownloaded}
-							<!-- Re-download button (only shown when data is downloaded) -->
-							<button class="text-sm space-x-2 h-max whitespace-nowrap {buttonClasses}" on:click={section.onRedownload} disabled={isDownloading}>
+							<button class="text-sm space-x-2 h-max whitespace-nowrap {buttonClasses}" on:click={section.onRedownload} disabled={isDownloading} aria-label="Unduh ulang {section.title}">
 								{#if section.isDownloading}
 									<span>{downloadProgressPercentage}%</span>
 								{:else}
@@ -731,13 +560,11 @@
 								{/if}
 							</button>
 
-							<!-- Delete button (only shown when data is downloaded) -->
-							<button class="text-sm space-x-2 h-max whitespace-nowrap {buttonClasses}" on:click={() => showConfirm('Are you sure you want to delete this data?', '', section.onDelete)} disabled={isDownloading}>
+							<button class="text-sm space-x-2 h-max whitespace-nowrap {buttonClasses}" on:click={() => showConfirm('Yakin ingin menghapus data ini?', '', section.onDelete)} disabled={isDownloading} aria-label="Hapus {section.title}">
 								<Trash size={4} />
 							</button>
 						{:else}
-							<!-- Download button (only shown when data is NOT downloaded) -->
-							<button class="text-sm space-x-2 h-max whitespace-nowrap {buttonClasses}" on:click={section.onDownload} disabled={isDownloading}>
+							<button class="text-sm space-x-2 h-max whitespace-nowrap {buttonClasses}" on:click={section.onDownload} disabled={isDownloading} aria-label="Unduh {section.title}">
 								{#if section.isDownloading}
 									<span>{downloadProgressPercentage}%</span>
 								{:else}
@@ -749,7 +576,6 @@
 				</div>
 			</div>
 
-			<!-- Divider (only between sections, not after the last one) -->
 			{#if index < dataSections.length - 1}
 				<div class="border-b border-theme-accent/20"></div>
 			{/if}
