@@ -5,14 +5,13 @@
 	import { __currentPage } from '$utils/stores';
 	import { marked } from 'marked';
 
-	// Parse the markdown into HTML
 	const html = marked.parse(markdown);
 
 	__currentPage.set('changelog');
 </script>
 
-<PageHead title={'Changelog'} />
+<PageHead title={'Pembaruan'} />
 
-<div class="markdown mx-auto">
+<div class="markdown changelog mx-auto">
 	{@html html}
 </div>
