@@ -9,12 +9,12 @@
 
 <div class="flex flex-col space-y-4 items-center justify-center text-center pt-28">
 	{#if $page.status === 404}
-		<span>The content you were looking for was not found.</span>
+		<span>Konten yang Anda cari tidak ditemukan.</span>
 	{:else}
-		<span>There was an error while loading the content. Please try again later.</span>
+		<span>Terjadi kendala saat memuat konten. Silakan coba lagi nanti.</span>
 	{/if}
 
-	<span>If you think this error shouldn't occur, please let us know via <a class={linkClasses} href="mailto:quranwbw@gmail.com">email</a>.</span>
+	<span>Jika menurut Anda kendala ini seharusnya tidak terjadi, silakan beri tahu kami melalui <a class={linkClasses} href="mailto:quranwbw@gmail.com">email</a>.</span>
 
 	<a class="{linkClasses} pt-8" href={`${base}/`}>Kembali ke beranda.</a>
 </div>
