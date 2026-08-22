@@ -7,28 +7,32 @@
 	import { selectedRadioOrCheckboxClasses, individualRadioClasses } from '$data/commonClasses';
 	import { dataUnavailableWhileOfflineMessage, isUserOnline } from '$utils/offlineModeHandler';
 
-	// Get downloaded tafsirs from offline settings
 	$: downloadedTafsirs = $__offlineModeSettings?.downloadedDataSettings?.tafsirs ?? [];
 
-	// Network tracker
 	let userOnline = false;
 	let networkCheckPerformed = false;
 
-	// Check online status on component mount
+	const languageLabels = {
+		Albanian: 'Albania',
+		Arabic: 'Arab',
+		Bangla: 'Bengali',
+		English: 'Inggris',
+		Russian: 'Rusia',
+		Urdu: 'Urdu'
+	};
+
 	onMount(async () => {
 		userOnline = await isUserOnline();
 		networkCheckPerformed = true;
 	});
 
-	// Helper function to check if a tafsir should be shown
 	function shouldShowTafsir(tafsirId) {
-		// If user is online, show all tafsirs
-		if (userOnline) {
-			return true;
-		}
-
-		// If user is offline, only show downloaded tafsirs
+		if (userOnline) return true;
 		return downloadedTafsirs.includes(tafsirId);
+	}
+
+	function localizeLanguage(language) {
+		return languageLabels[language] || language;
 	}
 </script>
 
@@ -36,9 +40,9 @@
 	<div class="grid gap-3 w-full">
 		{#each Object.entries(verseTafsirLanguages) as [_, language]}
 			<div class="flex flex-col space-y-2 pb-6">
-				<div id="translation-name" class="text-md font-medium">{language.language}</div>
+				<div id="translation-name" class="text-md font-medium">{localizeLanguage(language.language)}</div>
 				<div id="translation-list" class="space-y-3">
-					{#if shouldShowTafsir(language.language)}
+					{#if userOnline || Object.values(selectableTafsirs).some((tafsir) => tafsir.language === language.language && shouldShowTafsir(tafsir.id))}
 						{#each Object.entries(selectableTafsirs) as [_, tafsir]}
 							{#if tafsir.language === language.language && shouldShowTafsir(tafsir.id)}
 								<div class="flex items-center w-full">
@@ -46,7 +50,6 @@
 										<div class="{individualRadioClasses} {$__verseTafsir === tafsir.id && selectedRadioOrCheckboxClasses}">
 											<div class="flex flex-col space-y-2 w-full">
 												<span>{tafsir.name}</span>
-												<!-- <span class="text-xs font-normal">{tafsir.author}</span> -->
 											</div>
 										</div>
 									</Radio>
