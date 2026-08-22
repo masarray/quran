@@ -4,7 +4,6 @@
 	import { linkClasses } from '$data/commonClasses';
 	import { websiteFAQs } from '$data/faq';
 
-	// https://stackoverflow.com/a/59862556
 	function linkMarkdown(string) {
 		return string.replace(/\[.*?\]\(.*?\)/g, (text) => {
 			let [_, name, link] = /\[(.*?)\]\((.*?)\)/g.exec(text);
@@ -19,7 +18,7 @@
 
 <div class="theme">
 	<div class="my-6 space-y-4 pb-4 border-b-2 border-theme-accent/20">
-		<h1 class="text-2xl">Frequently Asked Questions</h1>
+		<h1 class="text-2xl">Pertanyaan yang Sering Diajukan</h1>
 	</div>
 
 	<div class="text-sm">
