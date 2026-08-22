@@ -5,8 +5,8 @@
 	import { __settingsSelectorModal } from '$utils/stores';
 </script>
 
-<button id="changeDisplayButton" type="button" title="Display Type" class="inline-flex flex-col items-center justify-center px-5 relative inline-flex items-center group hover:bg-theme-accent/5" on:click={() => __settingsSelectorModal.set({ component: DisplayTypeSelector, visible: true, title: 'Display Type' })} data-umami-event="Toolbar Display Change Button">
+<button id="changeDisplayButton" type="button" title="Jenis Tampilan" class="inline-flex flex-col items-center justify-center px-5 relative inline-flex items-center group hover:bg-theme-accent/5" on:click={() => __settingsSelectorModal.set({ component: DisplayTypeSelector, visible: true, title: 'Jenis Tampilan' })} data-umami-event="Toolbar Display Change Button">
 	<EyeFilled size={5} />
-	<span class="sr-only">Display Type</span>
+	<span class="sr-only">Jenis Tampilan</span>
 </button>
-<Tooltip triggeredBy="#changeDisplayButton" arrow={false} type="light" class="hidden md:block font-normal">Display Type</Tooltip>
+<Tooltip triggeredBy="#changeDisplayButton" arrow={false} type="light" class="hidden md:block font-normal">Jenis Tampilan</Tooltip>
