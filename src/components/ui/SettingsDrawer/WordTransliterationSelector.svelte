@@ -7,27 +7,18 @@
 	import { selectedRadioOrCheckboxClasses, individualRadioClasses } from '$data/commonClasses';
 	import { isUserOnline } from '$utils/offlineModeHandler';
 
-	// Get downloaded word transliterations from offline settings
 	$: downloadedWordTransliterations = $__offlineModeSettings?.downloadedDataSettings?.wordTransliterations ?? [];
 
-	// Network tracker
 	let userOnline = false;
 	let networkCheckPerformed = false;
 
-	// Check online status on component mount
 	onMount(async () => {
 		userOnline = await isUserOnline();
 		networkCheckPerformed = true;
 	});
 
-	// Helper function to check if a transliteration should be shown
 	function shouldShowTransliteration(transliterationId) {
-		// If user is online, show all transliterations
-		if (userOnline) {
-			return true;
-		}
-
-		// If user is offline, only show downloaded transliterations
+		if (userOnline) return true;
 		return downloadedWordTransliterations.includes(transliterationId);
 	}
 </script>
@@ -45,5 +36,5 @@
 		{/each}
 	</div>
 
-	<div class="text-xs pt-6 opacity-70">Relying solely on transliteration to recite the Quran is not recommended, as it can lead to pronunciation errors. To fully appreciate and receive the reward and blessings of recitation, one should learn to read the Quran in Arabic.</div>
+	<div class="text-xs pt-6 opacity-70">Jangan hanya mengandalkan transliterasi untuk membaca Al Quran karena pelafalan dapat menjadi kurang tepat. Untuk memperoleh bacaan yang lebih baik, pelajari membaca Al Quran langsung dalam tulisan Arab.</div>
 {/if}
