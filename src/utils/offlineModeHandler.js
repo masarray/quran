@@ -2,19 +2,18 @@ import { showAlert } from '$utils/confirmationAlertHandler';
 import { base } from '$app/paths';
 import { dev } from '$app/environment';
 
-export const dataUnavailableWhileOfflineMessage = 'Data unavailable offline';
+export const dataUnavailableWhileOfflineMessage = 'Data tidak tersedia saat offline.';
 
 export async function registerServiceWorker({ startCaching = true } = {}) {
 	if (dev) {
-		return { success: false, error: 'Service worker is disabled in development' };
+		return { success: false, error: 'Service worker dinonaktifkan pada mode pengembangan.' };
 	}
 
 	if (!('serviceWorker' in navigator)) {
-		return { success: false, error: 'Not supported' };
+		return { success: false, error: 'Fitur ini tidak didukung oleh browser.' };
 	}
 
 	try {
-		// Get or register the service worker
 		let registration = await navigator.serviceWorker.getRegistration();
 
 		if (!registration) {
@@ -23,10 +22,8 @@ export async function registerServiceWorker({ startCaching = true } = {}) {
 			});
 		}
 
-		// Wait for it to be ready
 		await navigator.serviceWorker.ready;
 
-		// Listen for messages from service worker
 		navigator.serviceWorker.addEventListener('message', (event) => {
 			if (event.data.type === 'CACHE_STARTED') {
 				window.dispatchEvent(
@@ -49,7 +46,6 @@ export async function registerServiceWorker({ startCaching = true } = {}) {
 			}
 		});
 
-		// Tell the service worker to start caching only when the user explicitly enables offline mode.
 		if (startCaching) {
 			navigator.serviceWorker.controller?.postMessage({ type: 'START_CACHING' });
 		}
@@ -79,15 +75,11 @@ export async function disableHiddenOfflineCaching() {
 	}
 }
 
-// Function to unregister all service workers and delete caches
 export async function unregisterServiceWorkerAndClearCache() {
 	try {
 		const registrations = await navigator.serviceWorker.getRegistrations();
-
-		// Unregister all active service workers
 		await Promise.all(registrations.map((registration) => registration.unregister()));
 
-		// Delete all caches
 		const cacheNames = await caches.keys();
 		await Promise.all(cacheNames.map((cache) => caches.delete(cache)));
 
@@ -97,17 +89,13 @@ export async function unregisterServiceWorkerAndClearCache() {
 	}
 }
 
-// Returns true if the user has actual internet connectivity.
-// Uses `navigator.onLine` plus a small uncached network ping to avoid false positives.
 export async function isUserOnline(timeout = 1000) {
-	// Quick fail: browser explicitly says offline
 	if (!navigator.onLine) return false;
 
 	const controller = new AbortController();
 	const id = setTimeout(() => controller.abort(), timeout);
 
 	try {
-		// Use a lightweight, no-cors, cache-busted request
 		const response = await fetch('https://www.gstatic.com/generate_204?cacheBust=' + Date.now(), {
 			method: 'GET',
 			mode: 'no-cors',
@@ -116,10 +104,6 @@ export async function isUserOnline(timeout = 1000) {
 		});
 
 		clearTimeout(id);
-
-		// Check if response is actually successful
-		// Note: no-cors mode always returns opaque responses (status 0)
-		// so we check for either 0 (opaque success) or 200-299 range
 		return response.type === 'opaque' || (response.status >= 200 && response.status < 300);
 	} catch (error) {
 		clearTimeout(id);
@@ -133,8 +117,6 @@ export function showOfflineAlert() {
 	return false;
 }
 
-// Checks internet connectivity and shows the offline alert if unavailable.
-// Returns true if online, false if offline.
 export async function checkOnlineAndAlert() {
 	const online = await isUserOnline();
 	if (online) return true;
