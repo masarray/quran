@@ -31,26 +31,16 @@
 	let lines = [];
 	let pageBlock;
 
-	// Store parsed page data in a variable instead of reading from localStorage on every render
 	let pageDataStore = {};
-
-	// Track prefetched pages to avoid redundant fetches
 	const prefetchedPages = new Set();
-
-	// Store named handler references so they can be properly removed
 	let swipedLeftHandler = null;
 	let swipedRightHandler = null;
-
-	// Stale request guard — only the latest request's result is applied
 	let currentLoadId = 0;
 
-	// Pages for which we need to center align rather than justify (format: page:line)
 	const centeredPageLines = ['1:9', '1:10', '1:11', '1:12', '1:13', '1:14', '1:15', '2:10', '2:11', '2:12', '2:13', '2:14', '2:15', '255:2', '528:9', '534:6', '545:6', '586:1', '593:2', '594:5', '600:10', '602:5', '602:11', '602:15', '603:10', '603:15', '604:4', '604:9', '604:14', '604:15'];
 
-	// Set the page number
 	$: page = +data.id;
 
-	// Guarded font prefetching — skip already-fetched pages and out-of-range pages
 	$: if ([2, 3].includes($__fontType)) {
 		for (let thisPage = +page - 2; thisPage <= +page + 2; thisPage++) {
 			if (thisPage > 0 && thisPage <= 604 && !prefetchedPages.has(thisPage)) {
@@ -67,37 +57,27 @@
 		pageDataStore = {};
 
 		pageData = (async () => {
-			// Capture the current load ID; discard result if a newer load has started
 			const thisLoadId = ++currentLoadId;
-
 			const data = await fetchVersesByPage(page, selectableFontTypes[$__fontType].id, $__wordTranslation);
 			const verseData = data.verses;
 
-			// Stale check — if a newer navigation happened, discard this result
 			if (thisLoadId !== currentLoadId) return;
 
-			// Store parsed data in memory and in localStorage
 			pageDataStore = verseData;
 			localStorage.setItem('pageData', JSON.stringify(verseData));
 
-			// Get the first line, of the first word, of the first verse
 			const firstVerse = Object.keys(verseData)[0];
 			startingLine = verseData[firstVerse].words.line[0];
 
-			// Get the last line, of the last word, of the last verse
 			const lastVerse = Object.keys(verseData)[Object.keys(verseData).length - 1];
 			const lastWord = verseData[lastVerse].words.line;
 			endingLine = lastWord[lastWord.length - 1];
 
-			// Get chapter numbers
 			for (const key of Object.keys(verseData)) {
 				const chapter = +key.split(':')[0];
-				if (!chapters.includes(chapter)) {
-					chapters.push(chapter);
-				}
+				if (!chapters.includes(chapter)) chapters.push(chapter);
 			}
 
-			// Get the first verse of each chapter
 			chapters.forEach((chapter) => {
 				for (let verse = 1; verse <= quranMetaData[chapter].verses; verse++) {
 					if (verseData[`${chapter}:${verse}`]) {
@@ -107,66 +87,42 @@
 				}
 			});
 
-			// Get line numbers for chapters
 			chapters.forEach((chapter, index) => {
 				lines.push(+verseData[`${chapter}:${verses[index]}`].words.line[0]);
 			});
 
-			// Set the mushaf page divisions
 			__mushafPageDivisions.set({
 				chapters: chapters,
 				juz: verseData[Object.keys(verseData)[0]].meta.juz
 			});
 
-			// Update the last read page
 			updateSettings({ type: 'lastRead', value: verseData[Object.keys(verseData)[0]].meta });
-
 			return verseData;
 		})();
 
-		// Update the page number
 		__pageNumber.set(page);
 	}
 
-	/**
-	 * This function retrieves and processes Quranic verses for a given page number.
-	 * It first gets the specific verse keys required for the given page.
-	 * After identifying the necessary chapters, it fetches their complete data
-	 * and filters out only the requested verses. The function then ensures that the verses
-	 * are sorted in ascending order based on chapter and verse numbers before returning
-	 * the final structured object. This provides well-organized data for further use.
-	 */
 	async function fetchVersesByPage(page) {
 		try {
-			// Get keys for the given page
 			const data = await getSegmentKeys('page');
 			const keysInPage = data[page];
-
-			// Parse keys into chapters and verses
 			const chaptersWithVerses = {};
+
 			keysInPage.split(',').forEach((key) => {
 				const [chapter, verse] = key.split(':').map(Number);
-				if (!chaptersWithVerses[chapter]) {
-					chaptersWithVerses[chapter] = [];
-				}
-				if (!chaptersWithVerses[chapter].includes(verse)) {
-					chaptersWithVerses[chapter].push(verse);
-				}
+				if (!chaptersWithVerses[chapter]) chaptersWithVerses[chapter] = [];
+				if (!chaptersWithVerses[chapter].includes(verse)) chaptersWithVerses[chapter].push(verse);
 			});
 
-			// Fetch data for each chapter and filter required verses
 			let stitchedVerses = {};
-
 			const fetchPromises = Object.entries(chaptersWithVerses).map(async ([chapter, verses]) => {
 				try {
 					const data = await fetchChapterData({ chapter, preventStoreUpdate: true });
 
-					// Filter only the required verses
 					verses.forEach((verse) => {
 						const verseKey = `${chapter}:${verse}`;
-						if (data[verseKey]) {
-							stitchedVerses[verseKey] = data[verseKey];
-						}
+						if (data[verseKey]) stitchedVerses[verseKey] = data[verseKey];
 					});
 				} catch (error) {
 					console.warn(error);
@@ -175,7 +131,6 @@
 
 			await Promise.all(fetchPromises);
 
-			// Sort the verses in ascending order before returning
 			const sortedVerses = Object.keys(stitchedVerses)
 				.sort((a, b) => {
 					const [chapterA, verseA] = a.split(':').map(Number);
@@ -194,13 +149,10 @@
 		}
 	}
 
-	// Attach swipe listeners with named handlers so old ones can be removed before re-attaching
 	$: if (pageBlock) {
-		// Remove any previously attached listeners first
 		if (swipedLeftHandler) pageBlock.removeEventListener('swiped-left', swipedLeftHandler);
 		if (swipedRightHandler) pageBlock.removeEventListener('swiped-right', swipedRightHandler);
 
-		// Define named handlers referencing the current page value
 		swipedLeftHandler = () => goto(`${base}/page?id=${page === 1 ? 1 : page - 1}`, { replaceState: false });
 		swipedRightHandler = () => goto(`${base}/page?id=${page === 604 ? 604 : page + 1}`, { replaceState: false });
 
@@ -208,7 +160,6 @@
 		pageBlock.addEventListener('swiped-right', swipedRightHandler);
 	}
 
-	// Cleanup when the component is destroyed
 	onDestroy(() => {
 		if (pageBlock) {
 			if (swipedLeftHandler) pageBlock.removeEventListener('swiped-left', swipedLeftHandler);
@@ -216,13 +167,11 @@
 		}
 	});
 
-	// Mushaf page should reflect the actual saved Mushaf display mode.
 	$__displayType = 6;
-
 	__currentPage.set('mushaf');
 </script>
 
-<PageHead title={`Page ${page}`} />
+<PageHead title={`Halaman ${page}`} />
 
 {#await pageData}
 	<Spinner />
@@ -240,10 +189,8 @@
 				</div>
 			{/if}
 
-			<!-- single page -->
 			<div class="max-w-3xl md:max-w-[40rem] pb-2 mx-auto text-[5.4vw] md:text-[36px] lg:text-[36px] {+page === 1 ? 'space-y-1' : 'space-y-2'}">
 				{#each Array.from(Array(endingLine + 1).keys()).slice(startingLine) as line}
-					<!-- show the chapter header if it's the first verse of that chapter -->
 					{#if chapters.length > 0 && lines.includes(line) && verses[lines.indexOf(line)] === 1}
 						<div class="flex flex-col my-2">
 							<ChapterHeader chapter={chapters[lines.indexOf(line)]} />
@@ -259,7 +206,6 @@
 				{/each}
 			</div>
 
-			<!-- page number -->
 			<div class="max-w-3xl md:max-w-[40rem] mx-auto justify-center text-sm">
 				<div class="flex items-center">
 					<div class="flex-1 border-t-2 border-theme-accent/20"></div>
@@ -273,12 +219,11 @@
 	<ErrorLoadingData {error} />
 {/await}
 
-<!-- only show the minimize minimal mode button when it is enabled -->
 {#if $__mushafMinimalModeEnabled}
 	<div class="flex justify-center -mt-12 pb-16">
 		<button class="w-fit flex flex-row space-x-2 py-3 px-3 rounded-xl items-center cursor-pointer border border-transparent hover:border-theme-accent bg-theme-accent/5" on:click={toggleMushafMinimalMode} data-umami-event="Mushaf Minimal Mode Button">
 			<Minimize size={3} />
 		</button>
-		<Tooltip arrow={false} type="light" class="z-30 hidden md:block font-normal">Minimal Mode</Tooltip>
+		<Tooltip arrow={false} type="light" class="z-30 hidden md:block font-normal">Mode Minimal</Tooltip>
 	</div>
 {/if}
