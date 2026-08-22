@@ -40,16 +40,13 @@
 		// For these pages, perform action depending on the play button functionality set by the user
 		if (['chapter', 'mushaf', 'supplications', 'bookmarks', 'juz', 'hizb'].includes($__currentPage)) {
 			switch ($__playButtonsFunctionality.verse) {
-				// Play Verse
 				case 1:
 					prepareVersesToPlay(key);
 					playButtonHandler(key);
 					break;
-				// Show Advance Options
 				case 2:
 					showAudioModal(key);
 					break;
-				// Show Advance Options
 				case 3:
 					showAudioModal(key);
 					break;
@@ -57,10 +54,7 @@
 					showAudioModal(key);
 					break;
 			}
-		}
-
-		// For all other pages, just play the audio directly
-		else playVerseAudio({ key, language: 'arabic', timesToRepeat: 1 });
+		} else playVerseAudio({ key, language: 'arabic', timesToRepeat: 1 });
 	}
 
 	function readingMarkHandler() {
@@ -71,7 +65,6 @@
 		__readingMarkModalVisible.set(true);
 	}
 
-	// Function to toggle words block for display mode #7
 	function wordsBlockToggler(chapter, verse) {
 		const key = `${chapter}:${verse}`;
 		__verseWordBlocks.update((blocks) => {
@@ -84,7 +77,6 @@
 
 <div class="verseButtons flex flex-row justify-between">
 	<div class="flex flex-row w-full space-x-2">
-		<!-- verse key -->
 		<div class="flex flex-row space-x-2">
 			<a href={`${base}/${chapter}?startVerse=${verse}`} class={verseKeyClasses}>
 				<div class="text-xs">
@@ -96,35 +88,25 @@
 				</div>
 			</a>
 			{#if isManualLastRead}
-				<div class="inline-flex items-center rounded-full px-3 text-[11px] font-medium text-theme-accent border border-theme-accent/20 bg-theme-accent/10">
-					Terakhir Dibaca
-				</div>
+				<div class="inline-flex items-center rounded-full px-3 text-[11px] font-medium text-theme-accent border border-theme-accent/20 bg-theme-accent/10">Terakhir Dibaca</div>
 			{/if}
 			{#each verseReadingMarks as mark (mark.id)}
-				<div class="hidden md:inline-flex items-center rounded-full px-3 text-[11px] font-medium text-theme-accent border border-theme-accent/20 bg-theme-accent/5">
-					{getReadingMarkLabel(mark)}
-				</div>
+				<div class="hidden md:inline-flex items-center rounded-full px-3 text-[11px] font-medium text-theme-accent border border-theme-accent/20 bg-theme-accent/5">{getReadingMarkLabel(mark)}</div>
 			{/each}
 			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">{term('verse')} {key}</Tooltip>
 		</div>
 
-		<!-- other verse buttons -->
 		<div class="flex flex-row space-x-2">
-			<!-- play verse button -->
-			<button on:click={() => audioHandler(key)} class={buttonClasses} aria-label="Play">
-				<div>
-					<svelte:component this={$__audioSettings.isPlaying && $__audioSettings.playingKey === key ? Pause : Play} size={3.5} />
-				</div>
+			<button on:click={() => audioHandler(key)} class={buttonClasses} aria-label="Putar">
+				<div><svelte:component this={$__audioSettings.isPlaying && $__audioSettings.playingKey === key ? Pause : Play} size={3.5} /></div>
 			</button>
-			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Play</Tooltip>
+			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Putar</Tooltip>
 
-			<!-- fast reading mark button -->
 			<button on:click={readingMarkHandler} class={buttonClasses} aria-label="Simpan ke Penanda Bacaan" data-umami-event="Reading Mark Fast Button">
 				<div><BookmarkAdd size={3.5} /></div>
 			</button>
 			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Simpan ke Penanda Bacaan</Tooltip>
 
-			<!-- notes button -->
 			{#if Object.prototype.hasOwnProperty.call($__userNotes, key)}
 				<button
 					on:click={() => {
@@ -132,43 +114,34 @@
 						__notesModalVisible.set(true);
 					}}
 					class={buttonClasses}
-					aria-label="Note"
+					aria-label="Catatan"
 				>
 					<div><NotesFilled size={3.5} /></div>
 				</button>
-				<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Notes</Tooltip>
+				<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Catatan</Tooltip>
 			{/if}
 
-			<!-- bookmark/unbookmark button -->
 			{#if userBookmarks.includes(key)}
-				<button on:click={() => updateSettings({ type: 'userBookmarks', key, set: true })} class={buttonClasses} aria-label="Bookmark">
-					<div>
-						<svelte:component this={userBookmarks.includes(key) ? BookmarkFilled : Bookmark} size={3.5} />
-					</div>
+				<button on:click={() => updateSettings({ type: 'userBookmarks', key, set: true })} class={buttonClasses} aria-label="Penanda Ayat">
+					<div><svelte:component this={userBookmarks.includes(key) ? BookmarkFilled : Bookmark} size={3.5} /></div>
 				</button>
-				<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Bookmark</Tooltip>
+				<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Penanda Ayat</Tooltip>
 			{/if}
 
-			<!-- verses option dropdown -->
-			<button id="verse-options-{verse}" class={buttonClasses} aria-label="Options" on:mouseenter={__verseKey.set(key)} on:click={__verseKey.set(key)}>
-				<div>
-					<DotsHorizontal size={6} />
-				</div>
+			<button id="verse-options-{verse}" class={buttonClasses} aria-label="Pilihan" on:mouseenter={__verseKey.set(key)} on:click={__verseKey.set(key)}>
+				<div><DotsHorizontal size={6} /></div>
 			</button>
 			<VerseOptionsDropdown page={value.meta.page} meta={value.meta} />
-			<Tooltip triggeredBy="#verse-options-{verse}" arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Options</Tooltip>
+			<Tooltip triggeredBy="#verse-options-{verse}" arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Pilihan</Tooltip>
 		</div>
 	</div>
 
-	<!-- words block toggle button for display #7 -->
 	{#if $__displayType === 7}
 		<div class="flex flex-row">
-			<button class={buttonClasses} aria-label="Toggle Words" on:click={() => wordsBlockToggler(chapter, verse)}>
-				<div>
-					<Eye />
-				</div>
+			<button class={buttonClasses} aria-label="Tampilkan atau sembunyikan kata" on:click={() => wordsBlockToggler(chapter, verse)}>
+				<div><Eye /></div>
 			</button>
-			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Toggle Words</Tooltip>
+			<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Tampilkan/Sembunyikan Kata</Tooltip>
 		</div>
 	{/if}
 </div>
