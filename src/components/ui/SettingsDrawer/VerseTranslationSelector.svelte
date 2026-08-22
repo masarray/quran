@@ -7,31 +7,21 @@
 	import { selectedRadioOrCheckboxClasses, individualCheckboxClasses } from '$data/commonClasses';
 	import { dataUnavailableWhileOfflineMessage, isUserOnline } from '$utils/offlineModeHandler';
 
-	// Get downloaded verse translations from offline settings
 	$: downloadedVerseTranslations = $__offlineModeSettings?.downloadedDataSettings?.verseTranslations ?? [];
 
-	// Network tracker
 	let userOnline = false;
 	let networkCheckPerformed = false;
 
-	// Check online status on component mount
 	onMount(async () => {
 		userOnline = await isUserOnline();
 		networkCheckPerformed = true;
 	});
 
-	// Helper function to check if a translation should be shown
 	function shouldShowTranslation(translationId) {
-		// If user is online, show all translations
-		if (userOnline) {
-			return true;
-		}
-
-		// If user is offline, only show downloaded translations
+		if (userOnline) return true;
 		return downloadedVerseTranslations.includes(translationId);
 	}
 
-	// Helper function to check if a language has any visible translations
 	function hasVisibleTranslations(languageId) {
 		return Object.values(selectableVerseTranslations).some((translation) => {
 			return translation.language_id === languageId && shouldShowTranslation(translation.resource_id);
@@ -67,5 +57,5 @@
 		{/each}
 	</div>
 
-	<div class="text-xs opacity-70 pb-8">The translations appear in the order you select them. To rearrange the sequence, simply deselect all options and then reselect them in your desired order.</div>
+	<div class="text-xs opacity-70 pb-8">Terjemahan tampil sesuai urutan saat Anda memilihnya. Untuk mengubah urutan, batalkan semua pilihan lalu pilih kembali sesuai urutan yang diinginkan.</div>
 {/if}
