@@ -19,7 +19,24 @@
 	let mushafJuz = '...';
 	let mushafChapterInfo = [];
 
-	// Classes for the navbar
+	const pageLabels = {
+		home: 'Beranda',
+		bookmarks: 'Penanda Ayat',
+		search: 'Cari',
+		topics: 'Topik',
+		morphology: 'Morfologi',
+		about: 'Tentang',
+		changelog: 'Pembaruan',
+		offline: 'Mode Offline',
+		'Offline Mode (Beta)': 'Mode Offline (Beta)',
+		games: 'Permainan',
+		'Tebak Kata': 'Tebak Kata'
+	};
+
+	function getPageLabel(pageName) {
+		return pageLabels[pageName] || pageName;
+	}
+
 	$: navbarClasses = `bg-theme-bg border-b border-theme-accent/20 fixed w-full z-20 top-0 left-0 print:hidden ${$__currentPage === 'home' ? 'hidden' : 'block'}`;
 	$: topNavClasses = `
 		${getWebsiteWidth($__wideWesbiteLayoutEnabled)}
@@ -28,7 +45,6 @@
 		flex flex-row items-center justify-between mx-auto px-4 py-2
 	`;
 
-	// Update last read details
 	$: try {
 		const lastReadElement = document.getElementById(`${$__lastRead.chapter}:${$__lastRead.verse}`);
 		lastReadPage = lastReadElement?.getAttribute('data-page');
@@ -37,7 +53,6 @@
 		console.warn(error);
 	}
 
-	// Get the revelation type of the current chapter
 	$: chapterRevelation = quranMetaData[$__chapterNumber].revelation;
 
 	let RevelationIcon;
@@ -45,49 +60,37 @@
 	$: revelationTerm = term(revelation.termKey);
 	$: RevelationIcon = revelation.Icon;
 
-	// Calculates reading progress (0–100%) — by verse fraction on chapter pages, or by position within the displayed verse keys on all other pages.
 	$: readingProgress = (() => {
-		// No progress if the user hasn't started reading yet
 		if (!Object.prototype.hasOwnProperty.call($__lastRead, 'chapter')) return 0;
 
-		// On the chapter page, progress = verses read / total verses in chapter
 		if ($__currentPage === 'chapter') {
 			return ($__lastRead.verse / quranMetaData[$__lastRead.chapter].verses) * 100;
 		}
 
-		// On other pages, progress is derived from the ordered list of displayed verse keys
 		if ($__fullVersesDisplayKeys?.length) {
-			// The store may hold a comma-separated string or an array — normalise to array
 			const keys = typeof $__fullVersesDisplayKeys === 'string' ? $__fullVersesDisplayKeys.split(',') : $__fullVersesDisplayKeys;
 
-			// Find the last key that is at or before the user's current read position
 			const index = keys.findLastIndex((k) => {
 				const [kChap, kVerse] = k.split(':').map(Number);
 				return kChap < $__lastRead.chapter || (kChap === $__lastRead.chapter && kVerse <= $__lastRead.verse);
 			});
 
-			// If no key is before the last read position, the user hasn't reached this page yet
 			if (index === -1) return 0;
-
-			// Progress = position of last read key / total keys on this page
 			return ((index + 1) / keys.length) * 100;
 		}
 
 		return 0;
 	})();
 
-	// Get the chapter name for the navbar
 	$: {
 		const chapterMeta = getChapterDisplayMeta($__chapterNumber);
 		navbarChapterName = chapterMeta.transliteration;
 
-		// Only show the translation if it's different from the transliteration
 		if (chapterMeta.transliteration !== chapterMeta.translation) {
 			navbarChapterName += `<span class="hidden md:inline-block">&nbsp;(${chapterMeta.translation})</span>`;
 		}
 	}
 
-	// Update chapter names for the mushaf page
 	$: if ($__mushafPageDivisions?.juz && $__mushafPageDivisions?.chapters) {
 		try {
 			mushafJuz = `${term('juz')} ${$__mushafPageDivisions.juz}`;
@@ -101,47 +104,39 @@
 		}
 	}
 
-	// Set the Juz or Hizb Id
 	$: juzOrHizbId = Number($page.url.searchParams.get('id')) || 1;
 </script>
 
 <nav id="navbar" class={navbarClasses}>
-	<div id="top-nav" class={topNavClasses} aria-label="Home">
-		<a href={`${base}/`} class="flex flex-row items-center p-3 cursor-pointer rounded-3xl border border-transparent hover:border-theme-accent bg-theme-accent/5" aria-label="Home">
+	<div id="top-nav" class={topNavClasses} aria-label="Beranda">
+		<a href={`${base}/`} class="flex flex-row items-center p-3 cursor-pointer rounded-3xl border border-transparent hover:border-theme-accent bg-theme-accent/5" aria-label="Beranda">
 			<Home />
-			<span class="text-xs pl-2 hidden md:block">Home</span>
+			<span class="text-xs pl-2 hidden md:block">Beranda</span>
 		</a>
 
 		<button class="flex items-center p-3 text-sm w-auto p-2 rounded-3xl border border-transparent hover:border-theme-accent hover:bg-theme-accent/5" on:click={() => __quranNavigationModalVisible.set(true)} data-umami-event="Navbar Navigation Button">
-			<!-- display the chapter name on chapter page -->
 			{#if $__currentPage === 'chapter'}
 				{@html navbarChapterName}
 				<ChevronDown />
 			{/if}
 
-			<!-- display only the page name for mushaf page -->
 			{#if $__currentPage === 'mushaf'}
-				Page {$__pageNumber}
+				Halaman {$__pageNumber}
 				<ChevronDown />
 			{/if}
 
-			<!-- display only the division title for juz/hizb page -->
 			{#if ['juz', 'hizb'].includes($__currentPage)}
 				{term($__currentPage)}
 				{juzOrHizbId}
 				<ChevronDown />
 			{/if}
 
-			<!-- display Quranic+supplication term for supplications page -->
 			{#if $__currentPage === 'supplications'}
-				Quranic {term('supplications')}
+				Doa Al-Quran
 			{/if}
 
-			<!-- display only the page name for non-chapter page -->
 			{#if !['chapter', 'mushaf', 'supplications', 'juz', 'hizb'].includes($__currentPage)}
-				{$__currentPage === 'morphology' ? 'Morfologi' : $__currentPage[0].toUpperCase() + $__currentPage.slice(1)}
-
-				<!-- if it's the morphology page, show morphology key as well -->
+				{getPageLabel($__currentPage)}
 				{#if $__currentPage === 'morphology'}
 					{$__morphologyKey}
 				{/if}
@@ -154,7 +149,6 @@
 		</button>
 	</div>
 
-	<!-- mini nav for chapter page -->
 	{#if $__currentPage === 'chapter'}
 		<div id="bottom-nav" class={`${getWebsiteWidth($__wideWesbiteLayoutEnabled)} flex flex-row items-center justify-between text-xs mx-auto px-6`}>
 			<div id="navbar-bottom-chapter-revalation" class="flex flex-row items-center py-2">
@@ -168,24 +162,22 @@
 				</span>
 			</div>
 			<div class="flex flex-row items-center py-2">
-				<span>{lastReadPage ? `Page ${lastReadPage}` : '...'}</span>
+				<span>{lastReadPage ? `Halaman ${lastReadPage}` : '...'}</span>
 				<span class="px-1 opacity-30">&#8226;</span>
 				<span>{lastReadJuz ? `${term('juz')} ${lastReadJuz}` : '...'}</span>
 			</div>
 		</div>
 	{/if}
 
-	<!-- Show the progress tracker for specific pages only -->
 	{#if ['chapter', 'juz', 'hizb'].includes($__currentPage)}
 		<div id="progress-bar" class="fixed inset-x-0 z-20 h-1 rounded-r-3xl bg-theme-accent" style="width: {readingProgress}%" />
 	{/if}
 
-	<!-- mini nav for mushaf page -->
 	{#if $__currentPage === 'mushaf'}
 		<div id="bottom-nav" class={`${getWebsiteWidth($__wideWesbiteLayoutEnabled)} flex flex-row items-center justify-between border-t border-theme-accent/20 text-xs mx-auto px-6`}>
 			<div class="flex flex-row items-center py-2 truncate">
 				{#if !$__topNavbarVisible}
-					<span>Page {$__pageNumber} -&nbsp;</span>
+					<span>Halaman {$__pageNumber} -&nbsp;</span>
 				{/if}
 				<span class="flex items-center">
 					{#if mushafChapterInfo.length ?? false}
