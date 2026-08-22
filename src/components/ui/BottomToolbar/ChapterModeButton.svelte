@@ -17,6 +17,6 @@
 
 <a href={`${base}/${chapter}/${verse}`} class="inline-flex flex-col items-center justify-center px-5 group hover:bg-theme-accent/5">
 	<List />
-	<span class="sr-only">{term('chapter')} Mode</span>
+	<span class="sr-only">Mode {term('chapter')}</span>
 </a>
-<Tooltip arrow={false} type="light" class="hidden md:block font-normal">{term('chapter')} Mode</Tooltip>
+<Tooltip arrow={false} type="light" class="hidden md:block font-normal">Mode {term('chapter')}</Tooltip>
