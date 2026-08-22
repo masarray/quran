@@ -16,15 +16,13 @@
 
 	$: dividerItems = [];
 
-	// Computes the divider label items (page, juz, hizb numbers) for a given key
-	// when the current view is chapter, juz, or hizb — otherwise clears them.
 	$: if (['chapter', 'juz', 'hizb'].includes($__currentPage)) {
 		const items = [];
 		const pageIndex = pageNumberKeys.indexOf(key);
 		const juzIndex = juzNumberKeys.indexOf(key);
 		const hizbIndex = hizbNumberKeys.indexOf(key);
 
-		if (pageIndex > -1) items.push(`Page ${pageIndex + 1}`);
+		if (pageIndex > -1) items.push(`Halaman ${pageIndex + 1}`);
 		if (juzIndex > -1) items.push(`${term('juz')} ${juzIndex + 1}`);
 		if (hizbIndex > -1) items.push(`${term('hizb')} ${hizbIndex + 1}`);
 
@@ -34,7 +32,6 @@
 	}
 </script>
 
-<!-- if the current key is the start of a page, juz, or hizb -->
 {#if dividerItems.length > 0}
 	<div class={dividerClasses}>
 		{#each dividerItems as item, index}
