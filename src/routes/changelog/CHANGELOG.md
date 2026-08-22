@@ -1,255 +1,254 @@
-### Apr 5, 2026
+### 5 Apr 2026
 
-- **Hizb (Division) Pages:** Added dedicated Hizb pages, allowing you to navigate the Qur'an by its 60 Hizb divisions. These pages are accessible via URLs like [quranwbw.com/hizb/1](https://quranwbw.com/hizb/1), [quranwbw.com/hizb/60](https://quranwbw.com/hizb/60), and so on, making structured reading and revision even easier.
-
----
-
-### Mar 27, 2026
-
-- **Chapter Favorites:** You can now add any chapter to your favorites. A new favorites tab has been added to the homepage, where you can easily select which surahs to add or remove from your favorites list for quick access.
+- **Halaman Hizb:** Menambahkan halaman Hizb khusus sehingga Al Quran dapat dinavigasi berdasarkan 60 pembagian Hizb. Halaman ini dapat dibuka melalui alamat seperti [quranwbw.com/hizb/1](https://quranwbw.com/hizb/1), [quranwbw.com/hizb/60](https://quranwbw.com/hizb/60), dan seterusnya, agar membaca serta mengulang bacaan lebih terstruktur.
 
 ---
 
-### Mar 14, 2026
+### 27 Mar 2026
 
-- **Homepage Tabs & Sorting Persistence:** The selected homepage tab (Chapters, Juz, etc.) is now remembered and persisted, along with its sort order for each tab. After refreshing or revisiting the site, your previously selected tab and sorting preferences will no longer reset to defaults.
-
----
-
-### Feb 22, 2026
-
-- **New Albanian Tafsirs Added:** Two new Albanian-language tafsirs have been added for deeper understanding — **Tafsir Ibn Kathir** and **Tafsir As-Sa'di**, expanding tafsir availability for Albanian-speaking readers.
+- **Surah Favorit:** Kini Anda dapat menambahkan surah apa pun ke daftar favorit. Tab Favorit baru tersedia di beranda untuk menambah atau menghapus surah favorit dengan cepat.
 
 ---
 
-### Feb 18, 2026
+### 14 Mar 2026
 
-- **Offline Mode (Beta):** QuranWBW now includes an optional Offline Mode, currently in beta. This feature allows access to key parts of the website without an internet connection by downloading essential data such as core site files, chapters, and juz, with optional advanced content like Mushaf pages, tafsir, and morphology. As a beta feature, you may encounter bugs or incomplete behavior, but we are actively improving stability, performance, and coverage with ongoing updates. A stable Wi-Fi connection is recommended for larger downloads.
-
----
-
-### Feb 11, 2026
-
-- **Advanced Tajweed & Syllables Transliteration:** Added two new word-by-word transliterations — **Advanced Tajweed** and **Syllables** — along with one new verse-by-verse transliteration (**Advanced Tajweed**). Existing transliterations have also been updated with improvements and fixes for better accuracy and readability.
+- **Tab Beranda & Urutan Tersimpan:** Tab beranda yang dipilih (Surah, Juz, dan lainnya) kini diingat bersama urutan sortir tiap tab. Setelah halaman dimuat ulang atau dibuka kembali, pilihan tersebut tidak lagi kembali ke pengaturan awal.
 
 ---
 
-### Feb 6, 2026
+### 22 Feb 2026
 
-- **All-New Topics Page:** Introducing a brand-new Topics page that organizes the Qur'an into topics, concepts, names, and themes (A–Z) for easier exploration and study. Each entry provides relevant Qur’anic references, even when the exact keyword may not appear in the verse, helping you discover verses based on meaning and context rather than just words. You can access the Topics page from the top of the homepage, via the main navigation menu, or by clicking [here](/topics).
-
----
-
-### Nov 10, 2025
-
-- **Improved Homepage Bookmarks & Notes Management:** The homepage bookmarks and notes sections have been redesigned with a new 3-dot menu for easier control. Previously, items could only be deleted using an “X” icon. Now, bookmarks include a “Delete” option, while notes offer both “Edit” and “Delete” — all accessible directly from the homepage.
+- **Tafsir Albania Baru:** Menambahkan dua tafsir berbahasa Albania, yaitu **Tafsir Ibn Kathir** dan **Tafsir As-Sa'di**, untuk memperluas pilihan tafsir bagi pembaca berbahasa Albania.
 
 ---
 
-### Oct 31, 2025
+### 18 Feb 2026
 
-- **Enhanced Repeat Options:** You can now repeat verses from **1 to 10 times individually** (1, 2, 3... up to 10), giving you more precise control for memorization. Previously, the minimum step was 5.
-
----
-
-### Sep 28, 2025
-
-- **Manual Backup & Restore:** You can now **save and download a copy of your website settings** (including bookmarks and notes) and **restore them anytime**. This way, you’ll never have to worry about losing your important data again.
+- **Mode Offline (Beta):** QuranWBW kini memiliki Mode Offline opsional yang masih dalam tahap beta. Fitur ini memungkinkan bagian penting aplikasi digunakan tanpa internet dengan mengunduh data inti situs, surah, dan juz, serta konten tambahan seperti halaman Mushaf, tafsir, dan morfologi. Karena masih beta, beberapa fungsi mungkin belum sempurna. Stabilitas, performa, dan cakupan terus ditingkatkan. Koneksi Wi-Fi yang stabil disarankan untuk unduhan berukuran besar.
 
 ---
 
-### Sep 25, 2025
+### 11 Feb 2026
 
-- **Arabic Sign Language Mode:** We've introduced a brand-new **Arabic Sign Language** mode to make the Quran more accessible.
-- **New Font:** Added the elegant **Isep Misbah Digital** font for an even richer reading experience.
-
----
-
-### Sep 22, 2025
-
-- **Smooth Transitions:** Navigating the website now feels smoother and more natural, thanks to new **page transitions** added throughout the site.
+- **Transliterasi Tajwid Lanjutan & Suku Kata:** Menambahkan dua transliterasi kata per kata baru, yaitu **Tajwid Lanjutan** dan **Suku Kata**, serta satu transliterasi ayat baru (**Tajwid Lanjutan**). Transliterasi yang sudah ada juga diperbarui untuk meningkatkan akurasi dan keterbacaan.
 
 ---
 
-### Sep 21, 2025
+### 6 Feb 2026
 
-- **Font Fixes:** Resolved issues with **Mushaf fonts** in Firefox dark mode and fixed the **cropping problem**, ensuring the text displays perfectly.
-
----
-
-### Sep 9, 2025
-
-- **Auto-Scroll During Playback:** While listening to recitation, the website now **auto-scrolls** to keep the **highlighted words in view**, making it easier to follow along.
+- **Halaman Topik Baru:** Menambahkan halaman Topik yang mengelompokkan isi Al Quran berdasarkan topik, konsep, nama, dan tema A–Z agar lebih mudah dipelajari. Setiap entri menampilkan referensi ayat yang relevan berdasarkan makna dan konteks, meskipun kata yang dicari tidak selalu tertulis persis di dalam ayat. Halaman Topik dapat dibuka dari bagian atas beranda, menu utama, atau [di sini](/topics).
 
 ---
 
-### Sep 1, 2025
+### 10 Nov 2025
 
-- **Juz Page Enhancements:** Juz pages now include a **beautiful Surah header** (like in the Mushaf page) and show the **page number** for easier navigation.
-
----
-
-### Aug 26, 2025
-
-- **Revelation Icons:** We've added **Makki and Madani icons** to the mini navigation bar so you can instantly know where each Surah was revealed.
+- **Pengelolaan Penanda & Catatan di Beranda:** Bagian penanda dan catatan di beranda didesain ulang dengan menu tiga titik. Penanda kini memiliki opsi **Hapus**, sedangkan catatan memiliki opsi **Ubah** dan **Hapus**, semuanya dapat diakses langsung dari beranda.
 
 ---
 
-### Aug 25, 2025
+### 31 Okt 2025
 
-- **New Duas Added:** Two more Duas are now available on the Duas page: **Surah 17:80** and **Surah 23:97**.
-
----
-
-### Aug 6, 2025
-
-- **Extra Wide Layout:** You can now make the website even wider! Perfect for big screens and easier reading.
+- **Opsi Pengulangan Lebih Fleksibel:** Ayat kini dapat diulang **1 hingga 10 kali secara individual** (1, 2, 3, hingga 10), sehingga lebih sesuai untuk kebutuhan hafalan. Sebelumnya kenaikan minimum adalah 5.
 
 ---
 
-### Jul 28, 2025
+### 28 Sep 2025
 
-- **Faster & More Reliable Quran Loading:** The website is now quicker and more stable because Quran data is loaded directly from our own built-in files instead of relying on external servers. This means fewer delays, fewer errors, and a smoother experience every time you use the site.
-
----
-
-### Jul 15, 2025
-
-- **Audio Repeat Range Increased:** You can now repeat verses up to 50 times (in steps of 5), great for deep memorization.
+- **Cadangkan & Pulihkan Manual:** Kini Anda dapat **menyimpan salinan pengaturan aplikasi** (termasuk penanda dan catatan), mengunduhnya, lalu **memulihkannya kapan saja** agar data penting lebih mudah dijaga.
 
 ---
 
-### Jun 25, 2025
+### 25 Sep 2025
 
-- **Smarter Caching:** We've upgraded how the website stores data using **IndexedDB**, making pages load faster and feel smoother — especially when you return.
-- **Instant Footnotes:** Verse translations now come from **static files with footnotes built in**, so footnotes appear instantly without waiting for extra loading.
-- **New Transliteration Option:** We've added a **normal verse transliteration**, joining Tajweed and Syllables — giving you more ways to follow and recite accurately.
-
----
-
-### Mar 15, 2025
-
-- **New Font:** Added **Nastaleeq Hafs Bold**, a bold version of the standard **Nastaleeq Hafs** font for enhanced readability.
+- **Mode Bahasa Isyarat Arab:** Menambahkan mode **Bahasa Isyarat Arab** untuk meningkatkan aksesibilitas Al Quran.
+- **Font Baru:** Menambahkan font **Isep Misbah Digital** untuk memperkaya pengalaman membaca.
 
 ---
 
-### Mar 7, 2025
+### 22 Sep 2025
 
-- **New Font:** Added **Uthmanic Digital Bold**, the bold version of the **Uthmanic Digital** font, providing a clearer and stronger text display.
-
----
-
-### Mar 1, 2025
-
-- **Re-added Persian Word-by-Word Language:** The **Persian word-by-word translation** is back after being temporarily removed in a previous update. Thank you for your patience!
+- **Transisi Lebih Halus:** Navigasi antarhalaman kini terasa lebih halus dan alami berkat transisi halaman baru di seluruh aplikasi.
 
 ---
 
-### Feb 27, 2025
+### 21 Sep 2025
 
-- **Enhanced Audio Playback:** We've brought back the much-loved feature to **repeat custom verse ranges** — perfect for memorization and focused listening.
-- **Custom Repeat Delay:** Now you can set a **delay between repeats**, giving you time to reflect or recite along, just like in the previous version of the website.
-- **Faster Verse Selection:** The **From/To verse input** now features a **dropdown with search**, making it quicker and easier to find the verse you're looking for.
+- **Perbaikan Font:** Memperbaiki masalah font Mushaf pada mode gelap Firefox dan masalah teks terpotong agar tampilan lebih konsisten.
 
 ---
 
-### Feb 22, 2025
+### 9 Sep 2025
 
-- **New Font Types:** Added **Nastaleeq Hafs Digital** and **Indopak Hanafi** fonts for improved readability and customization.
-
----
-
-### Feb 17, 2025
-
-- **New Reciter:** Sheikh **Bandar Baleelah** joins our collection. Enjoy his melodious recitation!
+- **Gulir Otomatis Saat Audio Diputar:** Saat mendengarkan tilawah, halaman kini otomatis mengikuti kata yang sedang disorot agar bacaan lebih mudah diikuti.
 
 ---
 
-### Feb 16, 2025
+### 1 Sep 2025
 
-- **New Verse & Word-by-Word Languages:** Added support for **Albanian** and **Sindhi** translations, expanding accessibility for more users.
-
----
-
-### Feb 15, 2025
-
-- **Enhancement:** Added an option to change the reciter directly within the audio modal, making it easier to switch between reciters.
-- **New Reciters:** We are pleased to introduce **Abdullah Matroud, Ali Jaber, and Nabil Ar Rifay**. Enjoy their beautiful recitations!
+- **Penyempurnaan Halaman Juz:** Halaman Juz kini memiliki header Surah seperti pada Mushaf dan menampilkan nomor halaman agar navigasi lebih mudah.
 
 ---
 
-### Jan 26, 2025
+### 26 Agu 2025
 
-- **Word Morphology Feature:** Added the option to view word morphology when clicking on a word, just like the previous website. This feature is off by default and can be enabled from the settings under the "Miscellaneous" options.
-- **Improved Search Page Logic:** Enhanced the search functionality to show results more accurately, ensuring a smoother and more effective search experience.
-
----
-
-### Jan 19, 2025
-
-- **Homepage Redesign:**
-  - Introduced a new search bar for easier navigation.
-  - Added a reminder for Surah Al-Waaqia on the homepage.
-  - Included Surah and Juz panels for better accessibility.
-  - Added an option to hide the extras panel (which includes bookmarks, notes, and suggestions tabs).
-- **"Goto Verse" Button:** Added a button in the morphology page to directly navigate to specific verses.
-- **Juz Pages:** Introduced dedicated Juz pages accessible via URLs like [quranwbw.com/juz/1](https://quranwbw.com/juz/1), [quranwbw.com/juz/30](https://quranwbw.com/juz/30), etc.
-- **Bookmark Deletion Confirmation:** Added a confirmation alert when attempting to delete a bookmark from the homepage, preventing accidental deletions.
+- **Ikon Tempat Turun Wahyu:** Menambahkan ikon Makkiyah dan Madaniyah pada navigasi mini agar pengguna dapat mengetahui tempat turunnya setiap surah dengan cepat.
 
 ---
 
-### Dec 29, 2024
+### 25 Agu 2025
 
-In this update, we’ve enhanced audio playback with translation support and settings memory, introduced new reciters Ayman Suwayd and Ibrahim Al Akhdar, added custom chapter slugs for easy navigation, enabled simple Arabic verse copying, ensured verse translations display in your selected order, and added a button to listen to a word directly on the morphology page. Enjoy these fantastic enhancements!
-
-- **Enhanced Audio Modal:** Now allows translation playback and remembers your settings. Say goodbye to repetitive adjustments!
-- **New Reciters:** We are excited to welcome Ayman Suwayd and Ibrahim Al Akhdar. Enjoy their melodious recitations!
-- **Custom Chapter Slugs:** Jump to any chapter using their translated, transliterated, or Arabic names. For example: [quranwbw.com/cave](https://quranwbw.com/cave), [quranwbw.com/yaseen](https://quranwbw.com/yaseen), [quranwbw.com/هود](https://quranwbw.com/هود), [quranwbw.com/baqarah](https://quranwbw.com/baqarah)...
-- **Effortless Verse Copying:** Added an option to copy Arabic verse text effortlessly. Perfect for sharing and making notes!
-- **Ordered Verse Translations:** Display verse translations in the sequence you selected. Enjoy a seamless reading experience!
-- **Morphology Page Audio:** Added a button to listen to a word directly on the morphology page for enhanced learning and pronunciation.
+- **Doa Baru:** Menambahkan dua doa pada halaman Doa, yaitu **Surah 17:80** dan **Surah 23:97**.
 
 ---
 
-### Dec 7, 2024 - Shine with Golden Glint
+### 6 Agu 2025
 
-Golden Glint has arrived, bringing a dazzling upgrade to our signature gold look. We've infused various elements with shimmering gold accents that'll make your reading experience feel extra special. Not on the new theme yet? No worries! Just head over to settings and switch to bask in the glow.
-
-But wait, there's more! We've polished up other themes and even added a couple of new ones for you to explore. Dive in and let your screen shine bright with our latest update!
+- **Tata Letak Lebih Lebar:** Menambahkan pilihan lebar tampilan ekstra yang nyaman digunakan pada layar besar.
 
 ---
 
-### Dec 2, 2024 - Introducing QuranWBW v4.0
+### 28 Jul 2025
 
-Alhamdulillah, we are thrilled to announce the release of QuranWBW v4, featuring a completely redesigned website with significant performance enhancements and a multitude of new and improved features.
+- **Pemuatan Al Quran Lebih Cepat & Andal:** Data Al Quran kini dimuat langsung dari berkas bawaan aplikasi, tidak lagi bergantung sepenuhnya pada server eksternal. Hasilnya adalah waktu tunggu yang lebih singkat, lebih sedikit kegagalan, dan pengalaman penggunaan yang lebih stabil.
 
-We hope you enjoy the new and improved QuranWBW experience! In case you'd still like to use the old website, you may visit [old.quranwbw.com](https://old.quranwbw.com).
+---
 
-Here are the highlights of this update:
+### 15 Jul 2025
 
-- **Expanded Language Options:** Word-by-word translations now available in Chinese, Divehi, French, German, and Malayalam.
-- **King Fahad Quran Printing Complex Fonts:** Includes Tajweed color-coded support based on Dar Al Marifa Easy Quran Mushaf.
-- **New Themes and Styles:** Fresh themes in Blue, Green, and Sepia, along with enhanced Light and Black themes.
-- **Tooltip and Popup Features:** Tooltips for word meanings and transliterations.
-- **Screen Sleep Prevention:** Option to prevent the screen from sleeping.
-- **Multiple Verse Translations:** Select multiple verse translations simultaneously, an improvement from the previous limit of two.
-- **Comprehensive Footnotes:** Added to verse translations across multiple translations.
-- **Tajweed Transliteration:** New Tajweed transliterations for verses and words, ensuring correct pronunciation.
-- **Tafsir Al Quran:** Access Tafsir by multiple authors in various languages.
-- **Flexible Display Options:** Includes Mushaf (page mode) and other display layouts.
-- **Verse Annotation:** Option to add personal notes to verses.
-- **Morphology Mode:** Provides detailed word information for learning and research.
-- **Sequential Word Playback:** Play words one-by-one for better learning.
-- **Terminology Customization:** Switch website terminologies to fit user preferences.
-- **Tajweed Rules Modal:** Learn about Tajweed rules on the fly without leaving the chapter reading.
-- **Translation Audio:** Experience translation audio alongside Arabic recitation.
-- **Direct Link Sharing:** Share links directly to a verse.
-- **Word Highlight Feature:** Expanded to include more reciters.
-- **Mini Status Bar:** Now displays progress and other relevant information.
-- **Redesigned Homepage:** Features two columns of chapter cards on smaller screens to reduce scrolling.
-- **Search Feature:** Enhanced with additional options.
-- **Duas Page:** Displays only the Dua portion of the verse in focus with the ability to hide non-Dua portions.
-- **Suggested Chapters:** Improved suggestions on the homepage.
-- **Bookmarks Page/Tab:** Enhanced appearance and management of bookmarks.
-- **Font Size and Recitation Speed Adjustment:** Improved user experience.
-- **Advanced Audio Play:** Enhanced audio play features.
+- **Rentang Pengulangan Audio Ditingkatkan:** Ayat kini dapat diulang hingga 50 kali dengan kenaikan 5, cocok untuk latihan hafalan yang intensif.
+
+---
+
+### 25 Jun 2025
+
+- **Cache Lebih Cerdas:** Penyimpanan data menggunakan **IndexedDB** ditingkatkan agar halaman lebih cepat dibuka, terutama saat dikunjungi kembali.
+- **Catatan Kaki Instan:** Terjemahan ayat kini menggunakan berkas statis yang sudah menyertakan catatan kaki sehingga dapat ditampilkan tanpa permintaan tambahan.
+- **Opsi Transliterasi Baru:** Menambahkan transliterasi ayat normal selain Tajwid dan Suku Kata untuk memberi lebih banyak pilihan cara mengikuti bacaan.
+
+---
+
+### 15 Mar 2025
+
+- **Font Baru:** Menambahkan **Nastaleeq Hafs Bold**, versi tebal dari font **Nastaleeq Hafs**, untuk meningkatkan keterbacaan.
+
+---
+
+### 7 Mar 2025
+
+- **Font Baru:** Menambahkan **Uthmanic Digital Bold**, versi tebal dari **Uthmanic Digital**, agar tampilan teks lebih jelas dan kuat.
+
+---
+
+### 1 Mar 2025
+
+- **Terjemahan Persia Kata per Kata Kembali:** Terjemahan Persia kata per kata tersedia kembali setelah sempat dihapus pada pembaruan sebelumnya. Terima kasih atas kesabarannya.
+
+---
+
+### 27 Feb 2025
+
+- **Pemutaran Audio Ditingkatkan:** Fitur untuk mengulang rentang ayat khusus kembali tersedia, sangat berguna untuk hafalan dan mendengarkan bagian tertentu.
+- **Jeda Pengulangan Khusus:** Pengguna kini dapat mengatur jeda di antara pengulangan untuk memberi waktu mengikuti atau merenungkan bacaan.
+- **Pemilihan Ayat Lebih Cepat:** Input ayat Dari/Sampai kini menggunakan daftar pilihan dengan pencarian agar ayat lebih cepat ditemukan.
+
+---
+
+### 22 Feb 2025
+
+- **Jenis Font Baru:** Menambahkan font **Nastaleeq Hafs Digital** dan **Indopak Hanafi** untuk menambah pilihan keterbacaan dan tampilan.
+
+---
+
+### 17 Feb 2025
+
+- **Qari Baru:** Sheikh **Bandar Baleelah** ditambahkan ke koleksi qari.
+
+---
+
+### 16 Feb 2025
+
+- **Bahasa Ayat & Kata per Kata Baru:** Menambahkan dukungan terjemahan **Albania** dan **Sindhi** untuk memperluas akses pengguna.
+
+---
+
+### 15 Feb 2025
+
+- **Penyempurnaan:** Menambahkan opsi untuk mengganti qari langsung dari modal audio agar perpindahan qari lebih cepat.
+- **Qari Baru:** Menambahkan **Abdullah Matroud, Ali Jaber, dan Nabil Ar Rifay** ke koleksi qari.
+
+---
+
+### 26 Jan 2025
+
+- **Fitur Morfologi Kata:** Menambahkan opsi untuk membuka morfologi saat sebuah kata diklik. Fitur ini nonaktif secara bawaan dan dapat diaktifkan dari bagian Lain-lain di Pengaturan.
+- **Logika Pencarian Ditingkatkan:** Pencarian diperbaiki agar hasil yang ditampilkan lebih akurat dan pengalaman pencarian lebih lancar.
+
+---
+
+### 19 Jan 2025
+
+- **Desain Ulang Beranda:**
+  - Menambahkan pencarian baru untuk navigasi yang lebih mudah.
+  - Menambahkan pengingat Surah Al-Waaqia di beranda.
+  - Menambahkan panel Surah dan Juz agar lebih mudah diakses.
+  - Menambahkan pilihan untuk menyembunyikan panel tambahan yang berisi penanda, catatan, dan saran.
+- **Tombol Buka Ayat:** Menambahkan tombol pada halaman morfologi untuk langsung menuju ayat terkait.
+- **Halaman Juz:** Menambahkan halaman Juz khusus yang dapat dibuka melalui alamat seperti [quranwbw.com/juz/1](https://quranwbw.com/juz/1), [quranwbw.com/juz/30](https://quranwbw.com/juz/30), dan seterusnya.
+- **Konfirmasi Penghapusan Penanda:** Menambahkan dialog konfirmasi saat pengguna menghapus penanda dari beranda untuk mencegah penghapusan yang tidak disengaja.
+
+---
+
+### 29 Des 2024
+
+Pada pembaruan ini, pemutaran audio ditingkatkan dengan dukungan terjemahan dan penyimpanan pengaturan. Qari baru Ayman Suwayd dan Ibrahim Al Akhdar ditambahkan, alamat surah khusus diperkenalkan untuk navigasi yang lebih mudah, penyalinan teks Arab dibuat lebih sederhana, urutan terjemahan ayat mengikuti pilihan pengguna, dan tombol audio kata ditambahkan pada halaman morfologi.
+
+- **Modal Audio Ditingkatkan:** Mendukung pemutaran terjemahan dan mengingat pengaturan pengguna.
+- **Qari Baru:** Menambahkan Ayman Suwayd dan Ibrahim Al Akhdar.
+- **Alamat Surah Khusus:** Surah dapat dibuka menggunakan nama terjemahan, transliterasi, atau Arab. Contoh: [quranwbw.com/cave](https://quranwbw.com/cave), [quranwbw.com/yaseen](https://quranwbw.com/yaseen), [quranwbw.com/هود](https://quranwbw.com/هود), [quranwbw.com/baqarah](https://quranwbw.com/baqarah).
+- **Salin Ayat Lebih Mudah:** Menambahkan opsi untuk menyalin teks Arab ayat dengan cepat untuk dibagikan atau dicatat.
+- **Urutan Terjemahan Ayat:** Terjemahan ayat ditampilkan sesuai urutan yang dipilih pengguna.
+- **Audio pada Halaman Morfologi:** Menambahkan tombol untuk mendengarkan sebuah kata langsung dari halaman morfologi.
+
+---
+
+### 7 Des 2024 - Kilau Emas
+
+Tema Kilau Emas hadir sebagai penyempurnaan tampilan emas utama. Berbagai elemen diberi aksen emas yang lebih halus agar pengalaman membaca terasa lebih istimewa. Pengguna dapat memilih tema ini melalui Pengaturan.
+
+Tema lain juga diperbarui dan beberapa pilihan baru ditambahkan untuk memberi variasi tampilan yang lebih luas.
+
+---
+
+### 2 Des 2024 - Memperkenalkan QuranWBW v4.0
+
+Alhamdulillah, QuranWBW v4 dirilis dengan desain ulang menyeluruh, peningkatan performa, serta banyak fitur baru dan penyempurnaan.
+
+Kami berharap pengalaman baru QuranWBW semakin nyaman digunakan. Jika masih ingin menggunakan situs versi lama, Anda dapat mengunjungi [old.quranwbw.com](https://old.quranwbw.com).
+
+Sorotan pembaruan ini:
+
+- **Pilihan Bahasa Lebih Luas:** Terjemahan kata per kata tersedia dalam Mandarin, Divehi, Prancis, Jerman, dan Malayalam.
+- **Font King Fahad Quran Printing Complex:** Termasuk dukungan warna Tajwid berdasarkan Mushaf Dar Al Marifa Easy Quran.
+- **Tema dan Gaya Baru:** Tema Biru, Hijau, dan Sepia ditambahkan, serta tema Terang dan Hitam diperbarui.
+- **Keterangan Kata:** Menampilkan arti dan transliterasi kata melalui keterangan interaktif.
+- **Cegah Layar Tidur:** Menambahkan opsi agar layar tidak tidur saat membaca.
+- **Beberapa Terjemahan Ayat:** Pengguna dapat memilih lebih dari satu terjemahan ayat sekaligus.
+- **Catatan Kaki Lengkap:** Menambahkan catatan kaki pada berbagai sumber terjemahan ayat.
+- **Transliterasi Tajwid:** Menambahkan transliterasi Tajwid untuk ayat dan kata guna membantu pelafalan.
+- **Tafsir Al Quran:** Menyediakan tafsir dari berbagai penulis dan bahasa.
+- **Pilihan Tampilan Fleksibel:** Termasuk Mushaf dan beberapa tata letak bacaan lainnya.
+- **Catatan Ayat:** Pengguna dapat menambahkan catatan pribadi pada ayat.
+- **Mode Morfologi:** Menyediakan informasi kata secara rinci untuk pembelajaran dan penelitian.
+- **Putar Kata Berurutan:** Kata dapat diputar satu per satu untuk membantu pembelajaran.
+- **Aturan Tajwid:** Aturan Tajwid dapat dipelajari melalui modal tanpa meninggalkan halaman bacaan.
+- **Audio Terjemahan:** Audio terjemahan dapat diputar bersama tilawah Arab.
+- **Berbagi Tautan Langsung:** Tautan ke ayat dapat dibagikan secara langsung.
+- **Sorotan Kata:** Dukungan sorotan kata diperluas ke lebih banyak qari.
+- **Bilah Status Mini:** Menampilkan progres dan informasi bacaan yang relevan.
+- **Beranda Didesain Ulang:** Kartu surah menggunakan dua kolom pada layar kecil untuk mengurangi guliran panjang.
+- **Pencarian Ditingkatkan:** Menambahkan lebih banyak pilihan pencarian dan navigasi.
+- **Halaman Doa:** Dapat menampilkan hanya bagian doa dari ayat dan menyembunyikan bagian non-doa.
+- **Saran Surah:** Saran bacaan pada beranda ditingkatkan.
+- **Halaman/Tab Penanda:** Tampilan dan pengelolaan penanda diperbaiki.
+- **Ukuran Font & Kecepatan Tilawah:** Pengaturan tampilan dan kecepatan audio ditingkatkan.
+- **Pemutaran Audio Lanjutan:** Menambahkan lebih banyak kontrol pemutaran audio.
