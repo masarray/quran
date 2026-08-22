@@ -1,4 +1,6 @@
 /* eslint-disable no-prototype-builtins */
+import '$utils/indonesianUX';
+
 export const defaultSettings = {
 	displaySettings: {
 		websiteTheme: 1,
