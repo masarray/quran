@@ -1,7 +1,7 @@
 <script>
 	import { twMerge } from 'tailwind-merge';
 	import ToolbarButton from '../toolbar/ToolbarButton.svelte';
-	export let name = 'Close';
+	export let name = 'Tutup';
 </script>
 
 <ToolbarButton on:click {name} {...$$restProps} class="{twMerge('ms-auto', $$props.class)} border border-transparent hover:border-theme-accent bg-theme-accent/5" let:svgSize>
@@ -14,5 +14,5 @@
 @component
 [Go to docs](https://flowbite-svelte.com/)
 ## Props
-@prop export let name: string = 'Close';
+@prop export let name: string = 'Tutup';
 -->
