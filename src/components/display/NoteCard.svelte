@@ -26,7 +26,6 @@
 	let previousOpen = dropdownOpen;
 	let previousForceClose = forceClose;
 
-	// Parse verse reference
 	const [chapter, verseNumber] = verse.split(':').map(Number);
 	const chapterMeta = quranMetaData[chapter];
 	const maxTextLength = 'max-w-[30vw] md:max-w-[115px]';
@@ -45,7 +44,7 @@
 		previousForceClose = forceClose;
 		if (dropdownOpen) {
 			dropdownOpen = false;
-			buttonElement?.blur(); // Clear focus so Flowbite stays closed
+			buttonElement?.blur();
 		}
 	}
 
@@ -66,7 +65,7 @@
 		event.preventDefault();
 		event.stopPropagation();
 
-		showConfirm(`Are you sure you want to delete this note (${verse})?`, null, () => {
+		showConfirm(`Yakin ingin menghapus catatan (${verse})?`, null, () => {
 			updateSettings({
 				type: 'userNotes',
 				key: verse,
@@ -77,25 +76,18 @@
 	}
 
 	function handleCardClick(event) {
-		if (dropdownOpen) {
-			event.preventDefault();
-		}
+		if (dropdownOpen) event.preventDefault();
 	}
 </script>
 
-<div class="relative note-menu-container {cardInnerClasses} !p-0 overflow-visible {dropdownOpen ? '!border-transparent' : ''}" role="article" aria-label="Note for {chapterMeta.transliteration} verse {verseNumber}">
-	<a href={`${base}/${chapter}?startVerse=${verseNumber}`} class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Go to {chapterMeta.transliteration} verse {verseNumber}" on:click={handleCardClick}>
-		<div class="text-sm truncate {maxTextLength}">
-			{chapterMeta.transliteration} ({verse})
-		</div>
+<div class="relative note-menu-container {cardInnerClasses} !p-0 overflow-visible {dropdownOpen ? '!border-transparent' : ''}" role="article" aria-label="Catatan untuk {chapterMeta.transliteration} ayat {verseNumber}">
+	<a href={`${base}/${chapter}?startVerse=${verseNumber}`} class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Buka {chapterMeta.transliteration} ayat {verseNumber}" on:click={handleCardClick}>
+		<div class="text-sm truncate {maxTextLength}">{chapterMeta.transliteration} ({verse})</div>
 
-		<span class="text-xs truncate opacity-70 mt-2 {maxTextLength}">
-			{note.note}
-		</span>
+		<span class="text-xs truncate opacity-70 mt-2 {maxTextLength}">{note.note}</span>
 	</a>
 
-	<!-- Options menu button -->
-	<button id="note-menu-{verse.replace(':', '-')}" bind:this={buttonElement} on:click|stopPropagation={toggleDropdown} class="absolute top-2 right-2 p-1 rounded-full hover:bg-theme-accent/5 opacity-70 hover:opacity-100 transition-opacity z-10" aria-label={dropdownOpen ? 'Close menu' : 'Open options menu'} aria-expanded={dropdownOpen} aria-haspopup="true">
+	<button id="note-menu-{verse.replace(':', '-')}" bind:this={buttonElement} on:click|stopPropagation={toggleDropdown} class="absolute top-2 right-2 p-1 rounded-full hover:bg-theme-accent/5 opacity-70 hover:opacity-100 transition-opacity z-10" aria-label={dropdownOpen ? 'Tutup menu' : 'Buka menu pilihan'} aria-expanded={dropdownOpen} aria-haspopup="true">
 		<DotsHorizontal size={5} />
 	</button>
 </div>
@@ -105,12 +97,12 @@
 		<Dropdown bind:open={dropdownOpen} triggeredBy="#note-menu-{verse.replace(':', '-')}" strategy="fixed" containerClass={`divide-y z-[1000] shadow-md border border-theme-accent/20`} class="px-2 my-2 w-max text-left font-sans direction-ltr">
 			<DropdownItem class={dropdownItemClasses} on:click={handleEditNote}>
 				<EditIcon size={4} aria-hidden="true" />
-				<span>Edit</span>
+				<span>Ubah</span>
 			</DropdownItem>
 
 			<DropdownItem class={dropdownItemClasses} on:click={handleDeleteNote}>
 				<Trash size={4} aria-hidden="true" />
-				<span>Delete</span>
+				<span>Hapus</span>
 			</DropdownItem>
 		</Dropdown>
 	</Portal>
