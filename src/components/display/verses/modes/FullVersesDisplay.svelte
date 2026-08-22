@@ -18,10 +18,7 @@
 	import { term } from '$utils/terminologies';
 	import { selectableDisplays } from '$data/options';
 
-	// Set this so we can use it for the 'setPlayFromHere' functionality in the audio modal
 	$: $__keysToFetch = keys;
-
-	// Set the keys in this store for progress tracking
 	$__fullVersesDisplayKeys = keys;
 
 	const displayComponents = {
@@ -32,8 +29,6 @@
 	};
 
 	const maxIndexesAllowedToRender = 5;
-
-	// Load button click options
 	const loadButtonOptions = {
 		rootMargin: '2000px',
 		unobserveOnEnter: true
@@ -41,7 +36,7 @@
 
 	const params = new URLSearchParams(window.location.search);
 	let nextVersesProps = {};
-	let versesLoadType; // previous/next
+	let versesLoadType;
 	let keysArray = keys.split(',');
 	let keysArrayLength = keysArray.length - 1;
 	let keysData = {};
@@ -51,18 +46,15 @@
 	let showContinueReadingButton = false;
 	let dataMap = {};
 	let keyToStartWith = null;
-	let isLoading = false; // Tracks the loading state of dataMap
-	let fetchError = null; // Tracks for any data fetch errors
+	let isLoading = false;
+	let fetchError = null;
 
-	// Only allow display types listed in displayComponents, else default to type 1, and don't save the layout in settings if not allowed
 	$: if (!Object.prototype.hasOwnProperty.call(displayComponents, $__displayType)) {
 		$__displayType = 1;
 	}
 
-	// Update the layout for the previous/next verse buttons
 	$: loadPrevNextVerseButtons = `flex ${selectableDisplays[$__displayType].continuous ? 'flex-row-reverse' : 'flex-row'} space-x-4 justify-center`;
 
-	// Checking if a start key was provided
 	const startKey = params.get('startKey');
 
 	if (typeof startKey === 'string' && startKey.length > 0) {
@@ -83,10 +75,8 @@
 		}
 	}
 
-	// Set initial indexes if nothing was set earlier
 	if (startIndex === undefined) startIndex = 0;
 	if (endIndex === undefined) endIndex = keysArrayLength > maxIndexesAllowedToRender ? startIndex + maxIndexesAllowedToRender : keysArrayLength;
-	// Basic checks
 	if (startIndex < 0) startIndex = 0;
 	if (endIndex > keysArrayLength) endIndex = keysArrayLength;
 
@@ -97,13 +87,9 @@
 			nextStartIndex = findKeyIndices(keys, lastRenderedId, maxIndexesAllowedToRender).startIndex;
 			nextEndIndex = findKeyIndices(keys, lastRenderedId, maxIndexesAllowedToRender).endIndex;
 
-			// don't let the end index be more than the data object's length
 			if (nextEndIndex === -1) nextEndIndex = Object.keys(keys).length;
-
-			// Remove the existing button
 			document.getElementById('loadVersesButton').remove();
 
-			// Setting the nextVersesProps
 			nextVersesProps = {
 				keys,
 				startIndex: nextStartIndex,
@@ -117,20 +103,15 @@
 	}
 
 	function findKeyIndices(keyString, key, threshold) {
-		// Convert the comma-separated string into an array
 		let keys = keyString.split(',');
-
-		// Find the index of the given key
 		let keyIndex = keys.indexOf(key);
 
 		if (keyIndex === -1) {
 			return { startIndex: -1, endIndex: -1 };
 		}
 
-		// Calculate start and end indices
 		let startIndex = keyIndex + 1;
 		let endIndex = Math.min(keyIndex + threshold, keys.length - 1);
-
 		return { startIndex, endIndex };
 	}
 
@@ -143,10 +124,7 @@
 
 	function versesRendered() {
 		renderedVerses += 1;
-
-		if (renderedVerses === endIndex + 1 - startIndex) {
-			showContinueReadingButton = true;
-		}
+		if (renderedVerses === endIndex + 1 - startIndex) showContinueReadingButton = true;
 	}
 
 	function gotoPreviousVerse(previousKey) {
@@ -156,31 +134,13 @@
 		__pageURL.set(Math.random());
 	}
 
-	/**
-	 * Fetches chapter data for a given range of verse keys.
-	 *
-	 * This function:
-	 * 1. Extracts the relevant verse keys from `keysArray` using `startIndex` and `endIndex`.
-	 * 2. Identifies unique chapter numbers from those keys.
-	 * 3. Checks if data for each chapter is already cached in `keysData`.
-	 *    - If cached, uses the cached data.
-	 *    - If not, fetches the chapter data using `fetchChapterData`.
-	 * 4. Resolves all chapter data fetches in parallel.
-	 * 5. Maps the full verse keys (e.g., "1:2") to their corresponding data in `dataMap`.
-	 *
-	 * This ensures that each chapter's data is fetched only once, even if multiple verses
-	 * from the same chapter are requested.
-	 */
 	async function fetchAllChapterData() {
 		isLoading = true;
 		fetchError = null;
 
 		try {
-			// Step 1: Slice relevant keys and extract unique chapter keys
 			const relevantKeys = keysArray.slice(startIndex, endIndex + 1);
 			const uniqueChapters = new Set(relevantKeys.map((key) => key.split(':')[0]));
-
-			// Step 2: Build fetch promises for only uncached chapters
 			const chapterFetchPromises = {};
 			for (const chapter of uniqueChapters) {
 				if (Object.prototype.hasOwnProperty.call(keysData, chapter)) {
@@ -190,7 +150,6 @@
 				}
 			}
 
-			// Step 3: Resolve all chapter fetches in parallel
 			const chapterDataEntries = await Promise.all(
 				Object.entries(chapterFetchPromises).map(async ([chapter, promise]) => {
 					const data = await promise;
@@ -198,10 +157,7 @@
 				})
 			);
 
-			// Step 4: Build a map of chapter -> data
 			const fetchedDataMap = Object.fromEntries(chapterDataEntries);
-
-			// Step 5: Map the original keys to the fetched data
 			relevantKeys.forEach((fullKey) => {
 				const chapter = fullKey.split(':')[0];
 				dataMap[fullKey] = fetchedDataMap[chapter][fullKey];
@@ -214,7 +170,6 @@
 		}
 	}
 
-	// Initial fetching / re-fetch the data if any of these changes
 	$: if ($__fontType || $__wordTranslation || $__wordTransliteration) {
 		fetchAllChapterData();
 	}
@@ -232,15 +187,8 @@
 			{@const currentFirstKey = keysArray[currentIndex]}
 			{@const isNextVerseFirst = currentFirstKey && Number(currentFirstKey.split(':')[1]) === 1}
 
-			<!--
-				When the current verse is the first verse of a new chapter (e.g. X:1),
-				a chapter header is rendered immediately after these buttons.
-				The chapter header applies negative margins, which overlap this area
-				and make the buttons partially unclickable. To counteract that layout overlap, 
-				we re-add bottom padding here so the buttons remain fully clickable.
-			-->
 			<div class="{loadPrevNextVerseButtons} {isNextVerseFirst && 'pb-12'}">
-				<button class="text-sm {buttonClasses}" on:click={() => __pageURL.set(Math.random())}>Start of {$__currentPage === 'hizb' ? term('hizb') : term('juz')}</button>
+				<button class="text-sm {buttonClasses}" on:click={() => __pageURL.set(Math.random())}>Awal {$__currentPage === 'hizb' ? term('hizb') : term('juz')}</button>
 				<button class="text-sm {buttonClasses}" on:click={() => gotoPreviousVerse(previousKey)}>Ayat Sebelumnya</button>
 			</div>
 		{/if}
@@ -250,7 +198,6 @@
 				{@const key = keysArray[index]}
 				{@const value = dataMap[key]}
 
-				<!-- Only show chapter header and Bismillah when on a division page -->
 				{#if ['juz', 'hizb'].includes($__currentPage) && +key.split(':')[1] === 1}
 					{@const chapter = +key.split(':')[0]}
 					<div class="mt-4">
