@@ -1,57 +1,57 @@
 export const websiteFAQs = [
 	{
 		id: 1,
-		question: 'What is QuranWBW.com?',
-		answer: "QuranWBW.com is a website where you can read the Holy Quran word by word in multiple translations. You can also see a word's transliteration or morphology, and listen to how it is pronounced."
+		question: 'Apa itu QuranWBW.com?',
+		answer: 'QuranWBW.com adalah situs untuk membaca Al Quran kata per kata dengan berbagai pilihan terjemahan. Anda juga dapat melihat transliterasi atau morfologi sebuah kata serta mendengarkan cara pengucapannya.'
 	},
 	{
 		id: 2,
-		question: 'What languages are available on QuranWBW.com?',
-		answer: 'Word by word translations are available for English, Urdu, Hindi, Indonesian, Bangla, Turkish, German and Tamil. However, the website interface is only available in English at the moment.'
+		question: 'Bahasa apa saja yang tersedia di QuranWBW.com?',
+		answer: 'Terjemahan kata per kata tersedia dalam berbagai bahasa, termasuk Inggris, Urdu, Hindi, Indonesia, Bengali, Turki, Jerman, dan Tamil. Antarmuka aplikasi ini dikhususkan untuk pengguna Indonesia dan menggunakan Bahasa Indonesia.'
 	},
 	{
 		id: 3,
-		question: 'What languages are being planned to be added in the future?',
-		answer: "We have got requests for French, Malayalam, and Japanese, as soon as we get data for these or any other languages, we will add it. In'sha'Allah."
+		question: 'Bahasa apa yang direncanakan untuk ditambahkan?',
+		answer: "Kami menerima permintaan untuk berbagai bahasa. Jika data yang sesuai tersedia dan dapat digunakan, dukungan bahasa dapat ditambahkan pada pembaruan berikutnya, insyaallah."
 	},
 	{
 		id: 4,
-		question: 'Is QuranWBW.com open source?',
-		answer: "Yes, QuranWBW.com's front-end (this website) is open source and you can visit our [GitHub repository](https://github.com/marwan/quranwbw-v4) to have a look. However, our API and database are not."
+		question: 'Apakah QuranWBW.com bersifat sumber terbuka?',
+		answer: 'Ya. Front-end QuranWBW.com bersifat sumber terbuka dan dapat dilihat melalui [repositori GitHub](https://github.com/marwan/quranwbw-v4). API dan basis datanya tidak termasuk bagian sumber terbuka tersebut.'
 	},
 	{
 		id: 5,
-		question: 'Where can I find the list of features already suggested or issues already reported?',
-		answer: 'You can find them on the [Issues page](https://github.com/marwan/quranwbw-v4/issues) on GitHub.'
+		question: 'Di mana saya dapat melihat daftar saran fitur atau masalah yang sudah dilaporkan?',
+		answer: 'Daftar tersebut dapat dilihat pada [halaman Issues](https://github.com/marwan/quranwbw-v4/issues) di GitHub.'
 	},
 	{
 		id: 6,
-		question: 'I have a feature to suggest or an issue to report, how do I do it?',
-		answer: "We suggest you to raise it on our [GitHub repository](https://github.com/marwan/quranwbw-v4). In case you're not sure how to use it, drop us an email on [quranwbw@gmail.com](mailto:quranwbw@gmail.com)."
+		question: 'Bagaimana cara mengusulkan fitur atau melaporkan masalah?',
+		answer: 'Silakan buat laporan melalui [repositori GitHub](https://github.com/marwan/quranwbw-v4). Jika belum terbiasa menggunakan GitHub, Anda juga dapat mengirim [email](mailto:quranwbw@gmail.com).'
 	},
 	{
 		id: 7,
-		question: 'Is there an app for this website?',
-		answer: 'Unfortunately a native mobile app for QuranWBW.com is not available for both Android or Apple at the moment, however you can install the website as a Web App.'
+		question: 'Apakah tersedia aplikasi untuk situs ini?',
+		answer: 'Aplikasi mobile native khusus Android atau Apple belum tersedia. Namun, situs ini dapat dipasang sebagai Aplikasi Web (PWA) pada perangkat yang mendukungnya.'
 	},
 	{
 		id: 8,
-		question: 'Do you accept donations?',
-		answer: 'Thank you for thinking to donate, but we do not accept any donations. You may directly donate to the contributors whose data is being used on this website.'
+		question: 'Apakah Anda menerima donasi?',
+		answer: 'Terima kasih atas niat baik Anda, tetapi kami tidak menerima donasi. Jika ingin membantu, Anda dapat mendukung langsung para kontributor atau pemilik sumber data yang digunakan di situs ini.'
 	},
 	{
 		id: 9,
-		question: 'I am looking for certain data which is available on QuranWBW.com, how do I get it?',
-		answer: "We suggest you to contact the original contributors directly. However depending on the type of data you are looking for, we can try helping you with it. Drop us an [email](mailto:quranwbw@gmail.com) and we'll have a look."
+		question: 'Bagaimana cara mendapatkan data tertentu yang tersedia di QuranWBW.com?',
+		answer: 'Sebaiknya hubungi kontributor atau pemilik sumber data asli secara langsung. Tergantung jenis datanya, kami mungkin dapat membantu menunjukkan sumber yang sesuai. Silakan kirim [email](mailto:quranwbw@gmail.com) jika diperlukan.'
 	},
 	{
 		id: 10,
-		question: 'I want to contribute by adding new features or fixing issues, how do I do it?',
-		answer: 'Thank you for thinking to contribute, please visit our [GitHub repository](https://github.com/marwan/quranwbw-v4) and get started from there.'
+		question: 'Bagaimana cara berkontribusi menambah fitur atau memperbaiki masalah?',
+		answer: 'Terima kasih atas keinginan Anda untuk berkontribusi. Silakan kunjungi [repositori GitHub](https://github.com/marwan/quranwbw-v4) untuk melihat kode dan mulai berkontribusi.'
 	},
 	{
 		id: 99999,
-		question: 'I have more questions which are not listed here, where can I ask them?',
-		answer: "We suggest you to raise it on our [GitHub repository](https://github.com/marwan/quranwbw-v4). In case you're not sure how to use it, drop us an email on [quranwbw@gmail.com](mailto:quranwbw@gmail.com)."
+		question: 'Saya memiliki pertanyaan lain yang belum tercantum. Di mana saya dapat bertanya?',
+		answer: 'Silakan ajukan melalui [repositori GitHub](https://github.com/marwan/quranwbw-v4). Jika belum terbiasa menggunakan GitHub, Anda juga dapat mengirim [email](mailto:quranwbw@gmail.com).'
 	}
 ];
