@@ -34,7 +34,6 @@
 		__wordTooltip,
 		__settingsDrawerHidden,
 		__wakeLockEnabled,
-		__englishTerminology,
 		__hideNonDuaPart,
 		__playButtonsFunctionality,
 		__wordMorphologyOnClick,
@@ -43,7 +42,19 @@
 		__audioSettings
 	} from '$utils/stores';
 
-	import { selectableDisplays, selectableFontTypes, selectableThemes, selectableWordTranslations, selectableWordTransliterations, selectableVerseTranslations, selectableReciters, selectablePlaybackSpeeds, selectableTooltipOptions, selectableFontSizes, selectableVersePlayButtonOptions } from '$data/options';
+	import {
+		selectableDisplays,
+		selectableFontTypes,
+		selectableThemes,
+		selectableWordTranslations,
+		selectableWordTransliterations,
+		selectableVerseTranslations,
+		selectableReciters,
+		selectablePlaybackSpeeds,
+		selectableTooltipOptions,
+		selectableFontSizes,
+		selectableVersePlayButtonOptions
+	} from '$data/options';
 
 	import { updateSettings } from '$utils/updateSettings';
 	import { resetSettings } from '$utils/resetSettings';
@@ -57,7 +68,6 @@
 	import { showConfirm } from '$utils/confirmationAlertHandler';
 	import { checkOnlineAndAlert } from '$utils/offlineModeHandler';
 
-	// Components mapping for individual settings ([component, check internet first (true/false)])
 	const individualSettingsComponents = {
 		'website-theme': [WebsiteThemeSelector, false],
 		'display-type': [DisplayTypeSelector, false],
@@ -72,14 +82,12 @@
 		'verse-play-button': [VersePlayButtonSelector, true]
 	};
 
-	// Transition parameters for drawer
 	const transitionParamsRight = {
 		x: 320,
 		duration: 200,
 		easing: sineIn
 	};
 
-	// CSS classes
 	const settingsBlockClasses = 'space-y-2 py-6';
 	const selectorClasses = 'w-32 border border-theme-accent/20 text-left rounded-3xl focus:border-theme-accent focus:ring-theme-accent focus-within:ring-2 block p-2.5 truncate text-sm';
 	const settingsDescriptionClasses = 'mb-6 text-xs opacity-70';
@@ -98,58 +106,41 @@
 	let verseTranlationTransliterationSizeValue = getFontSizeIdByClass(JSON.parse($__userSettings).displaySettings.fontSizes.verseTranslationText);
 	let playbackSpeedValue = JSON.parse($__userSettings).audioSettings.playbackSpeed;
 
-	// Update settings when sliders are changed
 	$: updateSettings({ type: 'arabicText', value: selectableFontSizes[arabicWordSizeValue].value });
 	$: updateSettings({ type: 'wordTranslationText', value: selectableFontSizes[wordTranlationTransliterationSizeValue].value });
 	$: updateSettings({ type: 'verseTranslationText', value: selectableFontSizes[verseTranlationTransliterationSizeValue].value });
 	$: updateSettings({ type: 'playbackSpeed', value: playbackSpeedValue });
 
-	// Calculate maximum allowed font size based on breakpoint
 	$: maxFontSizeAllowed = ['default', 'sm'].includes(getTailwindBreakpoint()) ? 9 : 12;
-
-	// Get keys
 	$: wordTransliterationKey = Object.keys(selectableWordTransliterations).find((item) => selectableWordTransliterations[item].id === $__wordTransliteration);
-
-	// Hide settings drawer and go back to main settings on certain conditions
 	$: if ($__currentPage || $__settingsDrawerHidden) goBackToMainSettings();
 
-	// Build a Set of all transliteration resource IDs (language_id === 11115)
 	const transliterationIdSet = new Set(
 		Object.values(selectableVerseTranslations)
 			.filter((item) => item.language_id === 11115)
 			.map((item) => item.resource_id)
 	);
 
-	// Count how many selected verse translations are transliterations
 	$: totalVerseTransliterationsSelected = $__verseTranslations.filter((id) => transliterationIdSet.has(id)).length;
 
-	// Go back to main settings and restore scroll position
 	function goBackToMainSettings() {
 		showAllSettings = true;
 		showIndividualSetting = false;
 
-		// Scroll to last known position
 		setTimeout(() => {
 			const element = document.getElementById('settings-drawer');
-			if (element) {
-				element.scrollTop = mainSettingsScrollPos;
-			}
+			if (element) element.scrollTop = mainSettingsScrollPos;
 		}, 0);
 	}
 
-	// Navigate to an individual setting component
 	async function gotoIndividualSetting(type) {
-		// For certain settings, check internet connection first
-		if (individualSettingsComponents[type][1] === true) {
-			if (!(await checkOnlineAndAlert())) return;
-		}
+		if (individualSettingsComponents[type][1] === true && !(await checkOnlineAndAlert())) return;
 
 		mainSettingsScrollPos = document.getElementById('settings-drawer').scrollTop;
 		showAllSettings = false;
 		showIndividualSetting = true;
 		individualSettingsComponent = individualSettingsComponents[type][0];
 
-		// Scroll to the individual setting view
 		setTimeout(() => {
 			try {
 				document.getElementById('individual-setting').scrollIntoView();
@@ -159,39 +150,35 @@
 		}, 0);
 	}
 
-	// Handle mouse enter event to show font size sliders
 	function onMouseEnter(selector) {
 		document.querySelectorAll('.fontSizeSliders').forEach((element) => {
-			element.classList.remove(`bg-theme-bg`, 'opacity-100');
+			element.classList.remove('bg-theme-bg', 'opacity-100');
 			element.classList.add('opacity-0', 'pointer-events-none');
 		});
 
 		settingsDrawerOpacity = 'opacity-0';
 		settingsDrawerBackground = 'bg-transparent';
-		document.querySelector('.settings-backdrop').classList.add('opacityyy-10');
+		document.querySelector('.settings-backdrop')?.classList.add('opacityyy-10');
 
 		const selectedElement = document.getElementById(selector);
-		selectedElement.classList.remove('opacity-0', 'pointer-events-none');
-		selectedElement.classList.add('opacity-100', `bg-theme-bg`, 'rounded-3xl', 'shadow-lg', 'px-2');
+		selectedElement?.classList.remove('opacity-0', 'pointer-events-none');
+		selectedElement?.classList.add('opacity-100', 'bg-theme-bg', 'rounded-3xl', 'shadow-lg', 'px-2');
 	}
 
-	// Handle mouse leave event to hide font size sliders
 	function onMouseLeave() {
 		document.querySelectorAll('.fontSizeSliders').forEach((element) => {
-			element.classList.remove(`bg-theme-bg`, 'opacity-0', 'rounded-3xl', 'shadow-lg', 'px-2', 'pointer-events-none');
+			element.classList.remove('bg-theme-bg', 'opacity-0', 'rounded-3xl', 'shadow-lg', 'px-2', 'pointer-events-none');
 			element.classList.add('opacity-100');
 		});
 
 		settingsDrawerOpacity = 'opacity-100';
 		settingsDrawerBackground = 'bg-theme-bg';
-		document.querySelector('.settings-backdrop').classList.remove('opacityyy-10');
+		document.querySelector('.settings-backdrop')?.classList.remove('opacityyy-10');
 	}
 
 	function getFontSizeIdByClass(className) {
 		for (const key in selectableFontSizes) {
-			if (selectableFontSizes[key].value === className) {
-				return Number(key);
-			}
+			if (selectableFontSizes[key].value === className) return Number(key);
 		}
 		return null;
 	}
@@ -204,18 +191,16 @@
 
 	function handleFileChange(event) {
 		const file = event.target.files[0];
-		if (file) {
-			showConfirm('Are you sure you want to import settings? This will overwrite your current preferences.', 'settings-drawer', () => {
-				importSettings(file);
-				event.target.value = ''; // reset so the same file can be chosen again
-			});
-		}
+		if (!file) return;
+
+		showConfirm('Pulihkan pengaturan dari file ini? Preferensi yang sedang digunakan akan diganti.', 'settings-drawer', () => {
+			importSettings(file);
+			event.target.value = '';
+		});
 	}
 </script>
 
-<!-- settings drawer -->
 <Drawer placement="right" transitionType="fly" transitionParams={transitionParamsRight} bind:hidden={$__settingsDrawerHidden} class="w-full md:w-1/2 lg:w-[430px] md:rounded-tl-3xl md:rounded-bl-3xl pt-0 {settingsDrawerBackground}" id="settings-drawer">
-	<!-- all-settings -->
 	{#if showAllSettings}
 		<div id="all-settings">
 			<div class="flex z-30 top-0 sticky bg-theme-bg border-b-2 border-theme-accent/20 mb-4 {settingsDrawerOpacity}">
@@ -223,12 +208,9 @@
 				<CloseButton on:click={() => ($__settingsDrawerHidden = true)} class="my-4 rounded-3xl" />
 			</div>
 
-			<!-- display-settings-block -->
 			<div id="display-settings-block" class="py-5 {settingsDrawerOpacity}">
 				<h3 class="block mb-2 font-medium text-xl">Tampilan</h3>
-
 				<div class="flex flex-col flex-wrap text-base">
-					<!-- website-theme-setting -->
 					<div id="website-theme-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Tema</div>
@@ -236,10 +218,8 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Pilihan tema yang nyaman dipandang untuk sesi membaca Anda.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- display-type-setting -->
 					<div id="display-type-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Jenis Tampilan</div>
@@ -247,25 +227,20 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Pilih susunan tampilan {term('verse').toLowerCase()} yang paling nyaman untuk dibaca.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- word-tooltip-setting -->
 					<div id="word-tooltip-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">Tooltip Kata</div>
+							<div class="block">Keterangan Kata</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('word-tooltip')}>{selectableTooltipOptions[$__wordTooltip].name}</button>
 						</div>
 						<p class={settingsDescriptionClasses}>Pilih informasi yang muncul saat Anda menyorot sebuah kata.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- word-translation-toggle-setting -->
 					<div id="word-translation-toggle-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<span class="block">Terjemah Kata</span>
-
 							<label class="inline-flex items-center cursor-pointer {$__wordTransliterationEnabled === false && disabledClasses}">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__wordTranslationEnabled} on:click={(event) => updateSettings({ type: 'wordTranslationEnabled', value: event.target.checked })} />
 								<div class={toggleBtnClasses}></div>
@@ -273,10 +248,8 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Tampilkan atau sembunyikan terjemah kata di bawah teks Arab.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- word-transliteration-toggle-setting -->
 					<div id="word-transliteration-toggle-setting" class="{settingsBlockClasses} {$__signLanguageModeEnabled && disabledClasses}">
 						<div class="flex flex-row justify-between items-center">
 							<span class="block">Transliterasi Kata</span>
@@ -288,11 +261,8 @@
 						<p class={settingsDescriptionClasses}>Tampilkan atau sembunyikan transliterasi kata di bawah teks Arab.</p>
 					</div>
 
-					<!-- prevent sleep toggle, only show if the browser supports it  -->
 					{#if 'wakeLock' in navigator}
 						<div class="border-b border-theme-accent/20"></div>
-
-						<!-- prevent-sleep-toggle-setting -->
 						<div id="prevent-sleep-toggle-setting" class={settingsBlockClasses}>
 							<div class="flex flex-row justify-between items-center">
 								<span class="block">Cegah Layar Tidur</span>
@@ -304,24 +274,20 @@
 							<p class={settingsDescriptionClasses}>Jika diaktifkan, layar tidak akan redup atau tidur saat Anda sedang membaca. Opsi ini perlu diaktifkan ulang pada setiap sesi.</p>
 						</div>
 					{/if}
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- wide-website-layout-setting -->
 					<div id="wide-website-layout-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Layout Lebar</span>
+							<span class="block">Tata Letak Lebar</span>
 							<label class="inline-flex items-center cursor-pointer {$__wordTranslationEnabled === false && disabledClasses}">
 								<input type="checkbox" value="" class="sr-only peer" checked={$__wideWesbiteLayoutEnabled} on:click={(event) => updateSettings({ type: 'wideWesbiteLayoutEnabled', value: event.target.checked })} />
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Gunakan layout lebih lebar agar nyaman di layar besar.</p>
+						<p class={settingsDescriptionClasses}>Gunakan tata letak lebih lebar agar nyaman di layar besar.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- arabic-sign-language-setting -->
 					<div id="arabic-sign-language-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<span class="block">Bahasa Isyarat Arab</span>
@@ -330,17 +296,14 @@
 								<div class={toggleBtnClasses}></div>
 							</label>
 						</div>
-						<p class={settingsDescriptionClasses}>Aktifkan untuk mengubah tampilan Quran ke mode Bahasa Isyarat Arab. Font Indonesian Isep Misbah Digital akan digunakan dan beberapa opsi akan dinonaktifkan.</p>
+						<p class={settingsDescriptionClasses}>Aktifkan untuk mengubah tampilan Quran ke mode Bahasa Isyarat Arab. Font Digital Isep Misbah Indonesia akan digunakan dan beberapa opsi akan dinonaktifkan.</p>
 					</div>
 				</div>
 			</div>
 
-			<!-- font-settings-block -->
 			<div id="font-settings-block" class="py-5 border-t-2 border-theme-accent/20">
 				<h3 class="block mb-2 font-medium text-xl {settingsDrawerOpacity}">Font</h3>
-
 				<div class="flex flex-col flex-wrap text-base">
-					<!-- quran-font-setting -->
 					<div id="quran-font-setting" class="{settingsBlockClasses} {settingsDrawerOpacity} {$__signLanguageModeEnabled && disabledClasses}">
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Font Al Quran</div>
@@ -348,41 +311,34 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Pilih font Al Quran sesuai mushaf atau preferensi bacaan Anda.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20 {settingsDrawerOpacity}"></div>
 
-					<!-- arabic-word-size-setting -->
 					<div id="arabic-word-size-setting" class="fontSizeSliders {settingsBlockClasses} {$__currentPage === 'mushaf' && disabledClasses}">
 						<div class="flex flex-col justify-between space-y-4">
 							<span class="block">Ukuran Teks Arab ({selectableFontSizes[arabicWordSizeValue].value.split('-')[1]})</span>
-							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('arabic-word-size-setting')} on:mouseleave={() => onMouseLeave()}>
+							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('arabic-word-size-setting')} on:mouseleave={onMouseLeave}>
 								<Range min="1" max={maxFontSizeAllowed} bind:value={arabicWordSizeValue} class={rangeClasses} />
 							</div>
 						</div>
 					</div>
-
 					<div class="border-b border-theme-accent/20 {settingsDrawerOpacity}"></div>
 
-					<!-- word-translation-size-setting . -->
 					<div id="word-translation-size-setting" class="fontSizeSliders {settingsBlockClasses} {$__currentPage === 'mushaf' && disabledClasses}">
 						<div class="flex flex-col justify-between space-y-4">
 							<span class="block">
-								{$__signLanguageModeEnabled ? 'Ukuran Ikon Bahasa Isyarat' : 'Ukuran Terjemah/Transliterasi Kata'}
-								({selectableFontSizes[wordTranlationTransliterationSizeValue].value.split('-')[1]})
+								{$__signLanguageModeEnabled ? 'Ukuran Ikon Bahasa Isyarat' : 'Ukuran Terjemah/Transliterasi Kata'} ({selectableFontSizes[wordTranlationTransliterationSizeValue].value.split('-')[1]})
 							</span>
-							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('word-translation-size-setting')} on:mouseleave={() => onMouseLeave()}>
+							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('word-translation-size-setting')} on:mouseleave={onMouseLeave}>
 								<Range min="1" max={maxFontSizeAllowed} bind:value={wordTranlationTransliterationSizeValue} class={rangeClasses} />
 							</div>
 						</div>
 					</div>
-
 					<div class="border-b border-theme-accent/20 {settingsDrawerOpacity}"></div>
 
-					<!-- verse-translation-size-setting -->
 					<div id="verse-translation-size-setting" class="fontSizeSliders {settingsBlockClasses} {$__currentPage === 'mushaf' && disabledClasses}">
 						<div class="flex flex-col justify-between space-y-4">
 							<span class="block">Ukuran Terjemah/Transliterasi {term('verse')} ({selectableFontSizes[verseTranlationTransliterationSizeValue].value.split('-')[1]})</span>
-							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('verse-translation-size-setting')} on:mouseleave={() => onMouseLeave()}>
+							<div class="flex flex-col space-y-2 rounded-3xl w-full" role="group" on:mouseenter={() => onMouseEnter('verse-translation-size-setting')} on:mouseleave={onMouseLeave}>
 								<Range min="1" max={maxFontSizeAllowed} bind:value={verseTranlationTransliterationSizeValue} class={rangeClasses} />
 							</div>
 						</div>
@@ -390,12 +346,9 @@
 				</div>
 			</div>
 
-			<!-- translation-settings-block -->
 			<div id="translation-settings-block" class="py-5 border-t-2 border-theme-accent/20 {settingsDrawerOpacity}">
 				<h3 class="block mb-2 font-medium text-xl">Terjemah, Transliterasi & {term('tafsir')}</h3>
-
 				<div class="flex flex-col flex-wrap text-base">
-					<!-- word-translation-setting -->
 					<div id="word-translation-setting" class="{settingsBlockClasses} {$__signLanguageModeEnabled && disabledClasses}">
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Terjemah Kata</div>
@@ -403,10 +356,8 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Bahasa terjemah kata yang ditampilkan di bawah teks Arab.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- word-transliteration-setting -->
 					<div id="word-transliteration-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Transliterasi Kata</div>
@@ -414,10 +365,8 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Pilih jenis transliterasi kata yang ingin digunakan.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- verse-translation-setting -->
 					<div id="verse-translation-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Terjemah {term('verse')}</div>
@@ -425,21 +374,17 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Pilihan terjemah {term('verse').toLowerCase()} dari berbagai penulis dan bahasa.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- verse-transliteration-setting -->
 					<div id="verse-transliteration-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">{term('verse')} Transliteration</div>
-							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-transliteration')}>{totalVerseTransliterationsSelected} selected</button>
+							<div class="block">Transliterasi {term('verse')}</div>
+							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-transliteration')}>{totalVerseTransliterationsSelected} dipilih</button>
 						</div>
 						<p class={settingsDescriptionClasses}>Pilihan transliterasi {term('verse').toLowerCase()} dari berbagai jenis.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- tafsir-setting -->
 					<div id="tafsir-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">{term('tafsir')}</div>
@@ -450,12 +395,9 @@
 				</div>
 			</div>
 
-			<!-- audio-settings-block -->
 			<div id="audio-settings-block" class="py-5 border-t-2 border-theme-accent/20 {settingsDrawerOpacity}">
 				<h3 class="block mb-2 font-medium text-xl">Audio</h3>
-
 				<div class="flex flex-col flex-wrap text-base">
-					<!-- verse-reciter-setting -->
 					<div id="verse-reciter-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<div class="block">Qari {term('verse')}</div>
@@ -463,10 +405,8 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Suara qari yang diputar saat Anda mendengarkan {term('verse').toLowerCase()}.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- playback-speed-setting -->
 					<div id="playback-speed-setting" class={settingsBlockClasses}>
 						<div class="flex flex-col justify-between space-y-4">
 							<span class="block">Kecepatan Putar (x{selectablePlaybackSpeeds[playbackSpeedValue].speed})</span>
@@ -475,24 +415,20 @@
 							</div>
 						</div>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- verse-play-button-setting -->
 					<div id="verse-play-button-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<div class="block">{term('verse')} Play Button</div>
+							<div class="block">Tombol Putar {term('verse')}</div>
 							<button class={selectorClasses} on:click={() => gotoIndividualSetting('verse-play-button')}>{selectableVersePlayButtonOptions[$__playButtonsFunctionality.verse].name}</button>
 						</div>
 						<p class={settingsDescriptionClasses}>Pilih aksi yang terjadi saat tombol putar pada {term('verse').toLowerCase()} ditekan.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- wbw-autoscroll-setting -->
 					<div id="wbw-autoscroll-setting" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Auto-Scroll ke Kata yang Disorot</span>
+							<span class="block">Gulir Otomatis ke Kata yang Disorot</span>
 							<label class="inline-flex items-center cursor-pointer">
 								<input type="checkbox" class="sr-only peer" bind:checked={$__audioSettings.wbwAutoScrollEnabled} on:change={() => updateSettings({ type: 'audioSettings', value: $__audioSettings })} data-umami-event="Toggle WBW Auto Scroll" />
 								<div class={toggleBtnClasses}></div>
@@ -503,26 +439,9 @@
 				</div>
 			</div>
 
-			<!-- miscellaneous-settings-block -->
 			<div id="miscellaneous-settings-block" class="py-5 border-t-2 border-theme-accent/20 {settingsDrawerOpacity}">
 				<h3 class="block mb-2 font-medium text-xl">Lain-lain</h3>
-
 				<div class="flex flex-col flex-wrap text-base">
-					<!-- verse-reciter-setting -->
-					<div id="verse-reciter-setting" class={settingsBlockClasses}>
-						<div class="flex flex-row justify-between items-center">
-							<span class="block">Terminologi Inggris</span>
-							<label class="inline-flex items-center cursor-pointer">
-								<input type="checkbox" value="" class="sr-only peer" checked={$__englishTerminology} on:click={(event) => updateSettings({ type: 'englishTerminology', value: event.target.checked })} data-umami-event="Toggle English Terminology" />
-								<div class={toggleBtnClasses}></div>
-							</label>
-						</div>
-						<p class={settingsDescriptionClasses}>Ganti istilah yang digunakan antara terminologi Inggris dan istilah Quran.</p>
-					</div>
-
-					<div class="border-b border-theme-accent/20"></div>
-
-					<!-- non-dua-part-toggle -->
 					<div id="non-dua-part-toggle" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<span class="block">Sembunyikan Kata Non-{term('supplications')}</span>
@@ -533,10 +452,8 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Tampilkan atau sembunyikan kata non-{term('supplications').toLowerCase()} pada halaman {term('supplications').toLowerCase()}.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- show-morphology-on-word-click-toggle -->
 					<div id="show-morphology-on-word-click" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<span class="block">Morfologi Saat Kata Diklik</span>
@@ -547,14 +464,11 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Klik kata akan membuka morfologi, bukan memutar audio.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- import-export-settings -->
 					<div id="import-export-settings" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
 							<span class="block">Cadangkan & Pulihkan</span>
-
 							<div class="flex flex-row space-x-2">
 								<button class="text-sm space-x-2 {buttonClasses}" on:click={exportSettings}>
 									<Export />
@@ -572,40 +486,35 @@
 						</div>
 						<p class={settingsDescriptionClasses}>Simpan salinan pengaturan Anda atau impor kembali kapan saja untuk memulihkan preferensi.</p>
 					</div>
-
 					<div class="border-b border-theme-accent/20"></div>
 
-					<!-- reset-setting-button -->
 					<div id="reset-setting-button" class={settingsBlockClasses}>
 						<div class="flex flex-row justify-between items-center">
-							<span class="block">Reset Pengaturan</span>
+							<span class="block">Atur Ulang Pengaturan</span>
 							<button class="text-sm space-x-2 {buttonClasses}" on:click={() => showConfirm('Tindakan ini akan menghapus seluruh data lokal situs ini, termasuk pengaturan, penanda, catatan, data offline, dan cache. Tindakan ini tidak bisa dibatalkan.', 'settings-drawer', () => resetSettings())}>
 								<ResetSettings />
-								<span>Reset</span>
+								<span>Atur Ulang</span>
 							</button>
-							<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Reset</Tooltip>
+							<Tooltip arrow={false} type="light" placement="top" class="z-30 hidden md:block font-normal">Atur Ulang</Tooltip>
 						</div>
 						<p class={settingsDescriptionClasses}>Mengembalikan situs ke kondisi awal dengan menghapus pengaturan, penanda, catatan, data offline, dan cache dari perangkat ini.</p>
 					</div>
 				</div>
 			</div>
 
-			<!-- website build version & timestamp -->
 			<div class="flex flex-col justify-center border-t border-theme-accent/20 py-6 space-y-4 text-center {settingsDrawerOpacity}">
 				<!-- svelte-ignore missing-declaration -->
-				<a class="{linkClasses} text-xs" target="_blank" href="https://github.com/marwan/quranwbw/commit/{__APP_VERSION__.split(' ')[0]}">Build {__APP_VERSION__}</a>
+				<a class="{linkClasses} text-xs" target="_blank" href="https://github.com/marwan/quranwbw/commit/{__APP_VERSION__.split(' ')[0]}">Versi {__APP_VERSION__}</a>
 			</div>
 		</div>
 	{/if}
 
-	<!-- individual-setting -->
 	{#if showIndividualSetting}
 		<div id="individual-setting" transition:fly={{ duration: 150, x: 0, easing: sineIn }}>
 			<div class="flex z-30 top-0 sticky bg-theme-bg border-b-2 border-theme-accent/20 mb-4">
-				<button id="drawer-label" class="inline-flex items-center my-4 text-3xl font-semibold" on:click={() => goBackToMainSettings()}>Kembali</button>
+				<button id="drawer-label" class="inline-flex items-center my-4 text-3xl font-semibold" on:click={goBackToMainSettings}>Kembali</button>
 				<CloseButton on:click={() => ($__settingsDrawerHidden = true)} class="my-4 rounded-3xl" />
 			</div>
-
 			<svelte:component this={individualSettingsComponent} />
 		</div>
 	{/if}
