@@ -14,37 +14,26 @@
 	$: {
 		const id = Number($page.url.searchParams.get('id')) || 1;
 
-		// Chapter navigation (left to right)
 		if ($__currentPage === 'chapter') {
 			linkHref = $__chapterNumber + 1;
-			linkText = `Next ${term('chapter')}`;
+			linkText = `${term('chapter')} Berikutnya`;
 			linkDisabled = $__chapterNumber === 114;
-		}
-
-		// Mushaf navigation (right to left)
-		else if ($__currentPage === 'mushaf') {
+		} else if ($__currentPage === 'mushaf') {
 			linkHref = `page?id=${$__pageNumber - 1}`;
-			linkText = 'Previous Page';
+			linkText = 'Halaman Sebelumnya';
 			linkDisabled = $__pageNumber === 1;
-		}
-
-		// Juz navigation (left to right)
-		else if ($__currentPage === 'juz') {
+		} else if ($__currentPage === 'juz') {
 			linkHref = `juz?id=${id + 1}`;
-			linkText = `Next ${term('juz')}`;
+			linkText = `${term('juz')} Berikutnya`;
 			linkDisabled = id === 30;
-		}
-
-		// Hizb navigation (left to right)
-		else if ($__currentPage === 'hizb') {
+		} else if ($__currentPage === 'hizb') {
 			linkHref = `hizb?id=${id + 1}`;
-			linkText = `Next ${term('hizb')}`;
+			linkText = `${term('hizb')} Berikutnya`;
 			linkDisabled = id === 60;
 		}
 	}
 </script>
 
-<!-- next chapter / previous page -->
 <a href="{base}/{linkHref}" class="inline-flex flex-col items-center justify-center px-5 rounded-e-full group hover:bg-theme-accent/5 {linkDisabled ? disabledClasses : 'opacity-100'}">
 	<ChevronRight size={7} />
 	<span class="sr-only">{linkText}</span>
