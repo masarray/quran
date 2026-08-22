@@ -156,8 +156,8 @@ Object.entries(audioDelayNames).forEach(([id, name]) => {
 	if (selectableAudioDelays[id]) selectableAudioDelays[id].name = name;
 });
 
-// Safety net untuk teks bawaan komponen pihak ketiga atau caption lama yang
-// terlewat. Hanya elemen chrome/interaktif yang disentuh agar isi Al Quran,
+// Jaring pengaman untuk teks bawaan komponen pihak ketiga atau caption lama
+// yang terlewat. Hanya elemen chrome/interaktif yang disentuh agar isi Al Quran,
 // terjemahan, tafsir, dan catatan pengguna tidak pernah diubah.
 const exactUiText = new Map([
 	['Play', 'Putar'],
@@ -178,7 +178,9 @@ const exactUiText = new Map([
 	['Next Verse', 'Ayat Berikutnya'],
 	['Footnote', 'Catatan Kaki'],
 	['Show footnote', 'Tampilkan catatan kaki'],
-	['No data available.', 'Data tidak tersedia.']
+	['No data available.', 'Data tidak tersedia.'],
+	['faq', 'FAQ'],
+	['error', 'Kesalahan']
 ]);
 
 function translateUiValue(value) {
