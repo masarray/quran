@@ -6,7 +6,6 @@
 	import { playVerseAudio, setVersesToPlay, resetAudioSettings } from '$utils/audioController';
 	import { checkOnlineAndAlert } from '$utils/offlineModeHandler';
 
-	// quick play from first verse of page till the max chapter verses
 	async function audioHandler() {
 		if (!(await checkOnlineAndAlert())) return;
 
@@ -16,12 +15,9 @@
 		if ($__audioSettings.isPlaying) {
 			resetAudioSettings({ location: 'end' });
 		} else {
-			// On juz or hizb pages, play only the verses in that specific section
 			if (['juz', 'hizb'].includes($__currentPage)) {
 				setVersesToPlay({ verses: $__fullVersesDisplayKeys.split(',') });
-			}
-			// On other pages, play all verses available on the page
-			else {
+			} else {
 				setVersesToPlay({ allVersesOnPage: true });
 			}
 
@@ -39,16 +35,14 @@
 	}
 </script>
 
-<!-- play/pause button -->
 <div class="flex items-center justify-center">
-	<button type="button" title={$__audioSettings.isPlaying ? 'Pause' : 'Play'} on:click={() => audioHandler()} class="inline-flex flex-col items-center justify-center w-12 h-12 rounded-full group focus:border-theme-accent focus:ring-theme-accent bg-theme-accent/15" data-umami-event="Toolbar Play Button">
+	<button type="button" title={$__audioSettings.isPlaying ? 'Jeda' : 'Putar'} on:click={() => audioHandler()} class="inline-flex flex-col items-center justify-center w-12 h-12 rounded-full group focus:border-theme-accent focus:ring-theme-accent bg-theme-accent/15" data-umami-event="Toolbar Play Button">
 		<span><svelte:component this={$__audioSettings.isPlaying ? PauseSolid : PlaySolid} size={5} /></span>
-		<span class="sr-only">{$__audioSettings.isPlaying ? 'Pause' : 'Play'}</span>
+		<span class="sr-only">{$__audioSettings.isPlaying ? 'Jeda' : 'Putar'}</span>
 
-		<!-- show badge when a verse is playing -->
 		{#if $__audioSettings.isPlaying && $__audioSettings.audioType === 'verse'}
 			<div class="absolute inline-flex items-center justify-center z-30 text-xs px-2 rounded-3xl -top-3 border bg-theme-bg border-theme-accent/20">{$__audioSettings.playingKey}</div>
 		{/if}
 	</button>
 </div>
-<Tooltip arrow={false} type="light" class="hidden md:block font-normal">{$__audioSettings.isPlaying ? 'Pause' : 'Play'}</Tooltip>
+<Tooltip arrow={false} type="light" class="hidden md:block font-normal">{$__audioSettings.isPlaying ? 'Jeda' : 'Putar'}</Tooltip>
