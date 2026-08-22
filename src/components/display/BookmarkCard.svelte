@@ -13,7 +13,7 @@
 	export let bookmark;
 	export let fullQuranTextData = null;
 	export let cardInnerClasses;
-	export let forceClose = 0; // Reactive prop to force close dropdown
+	export let forceClose = 0;
 
 	const dispatch = createEventDispatcher();
 
@@ -24,12 +24,10 @@
 	let previousOpen = dropdownOpen;
 	let previousForceClose = forceClose;
 
-	// Parse bookmark reference
 	const [bookmarkChapter, bookmarkVerse] = bookmark.split(':').map(Number);
 	const chapterMeta = quranMetaData[bookmarkChapter];
 	const maxTextLength = 'max-w-[28vw] md:max-w-[115px]';
 
-	// Watch forceClose to close dropdown when parent scrolls
 	onMount(() => {
 		hasMounted = true;
 		previousOpen = dropdownOpen;
@@ -44,7 +42,7 @@
 		previousForceClose = forceClose;
 		if (dropdownOpen) {
 			dropdownOpen = false;
-			buttonElement?.blur(); // Clear focus so Flowbite stays closed
+			buttonElement?.blur();
 		}
 	}
 
@@ -55,15 +53,15 @@
 	function handleDeleteBookmark(event) {
 		event.stopPropagation();
 
-		showConfirm(`Are you sure you want to delete this bookmark (${bookmark})?`, null, () => {
+		showConfirm(`Yakin ingin menghapus penanda ayat (${bookmark})?`, null, () => {
 			updateSettings({ type: 'userBookmarks', key: bookmark });
 			window.umami?.track('Delete Bookmark Menu');
 		});
 	}
 </script>
 
-<div class="relative bookmark-menu-container {cardInnerClasses} !p-0 overflow-visible {dropdownOpen ? '!border-transparent' : ''}" role="article" aria-label="Bookmark for {chapterMeta.transliteration} verse {bookmarkVerse}">
-	<a href={`${base}/${bookmarkChapter}?startVerse=${bookmarkVerse}`} class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Go to {chapterMeta.transliteration} verse {bookmarkVerse}">
+<div class="relative bookmark-menu-container {cardInnerClasses} !p-0 overflow-visible {dropdownOpen ? '!border-transparent' : ''}" role="article" aria-label="Penanda ayat untuk {chapterMeta.transliteration} ayat {bookmarkVerse}">
+	<a href={`${base}/${bookmarkChapter}?startVerse=${bookmarkVerse}`} class="!justify-start flex flex-col w-full p-5 {dropdownOpen ? 'pointer-events-none' : ''}" aria-label="Buka {chapterMeta.transliteration} ayat {bookmarkVerse}">
 		<div class="text-sm truncate {maxTextLength}">
 			{chapterMeta.transliteration} ({bookmark})
 		</div>
@@ -72,24 +70,21 @@
 			<div class="text-sm truncate text-right direction-rtl arabic-font-1 opacity-70 mt-2">
 				{#await fullQuranTextData then data}
 					{@const verseText = data.data[`${bookmarkChapter}:${bookmarkVerse}`]}
-					<div class="truncate {maxTextLength}" lang="ar">
-						{verseText}
-					</div>
+					<div class="truncate {maxTextLength}" lang="ar">{verseText}</div>
 				{:catch _error}
-					<span class="text-xs opacity-50" role="alert">Failed to load verse</span>
+					<span class="text-xs opacity-50" role="alert">Gagal memuat ayat</span>
 				{/await}
 			</div>
 		{/if}
 	</a>
 
-	<!-- Options menu button -->
 	<button
 		id="bookmark-menu-{bookmark.replace(':', '-')}"
 		bind:this={buttonElement}
 		on:click|stopPropagation={toggleDropdown}
 		on:touchend|preventDefault|stopPropagation={toggleDropdown}
 		class="absolute top-2 right-2 p-1 rounded-full hover:bg-theme-accent/5 opacity-70 hover:opacity-100 transition-opacity z-10 focus:outline-none"
-		aria-label={dropdownOpen ? 'Close menu' : 'Open options menu'}
+		aria-label={dropdownOpen ? 'Tutup menu' : 'Buka menu pilihan'}
 		aria-expanded={dropdownOpen}
 		aria-haspopup="true"
 	>
@@ -102,7 +97,7 @@
 		<Dropdown bind:open={dropdownOpen} triggeredBy="#bookmark-menu-{bookmark.replace(':', '-')}" strategy="fixed" containerClass={`divide-y z-[1000] shadow-md border border-theme-accent/20`} class="px-2 my-2 w-max text-left font-sans direction-ltr">
 			<DropdownItem class={dropdownItemClasses} on:click={handleDeleteBookmark}>
 				<Trash size={4} aria-hidden="true" />
-				<span>Delete</span>
+				<span>Hapus</span>
 			</DropdownItem>
 		</Dropdown>
 	</Portal>
