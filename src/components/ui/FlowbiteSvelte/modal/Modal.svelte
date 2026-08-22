@@ -62,21 +62,18 @@
 	}
 	const getPlacementClasses = (placement) => {
 		switch (placement) {
-			// top
 			case 'top-left':
 				return ['justify-start', 'items-start'];
 			case 'top-center':
 				return ['justify-center', 'items-start'];
 			case 'top-right':
 				return ['justify-end', 'items-start'];
-			// center
 			case 'center-left':
 				return ['justify-start', 'items-center'];
 			case 'center':
 				return ['justify-center', 'items-center'];
 			case 'center-right':
 				return ['justify-end', 'items-center'];
-			// bottom
 			case 'bottom-left':
 				return ['justify-start', 'items-end'];
 			case 'bottom-center':
@@ -96,11 +93,11 @@
 	};
 	const onAutoClose = (e) => {
 		const target = e.target;
-		if (autoclose && target?.tagName === 'BUTTON') hide(e); // close on any button click
+		if (autoclose && target?.tagName === 'BUTTON') hide(e);
 	};
 	const onOutsideClose = (e) => {
 		const target = e.target;
-		if (outsideclose && target === e.currentTarget) hide(e); // close on click outside
+		if (outsideclose && target === e.currentTarget) hide(e);
 	};
 	const hide = (e) => {
 		e.preventDefault();
@@ -119,14 +116,11 @@
 </script>
 
 {#if open}
-	<!-- backdrop -->
 	<div class={backdropCls} />
-	<!-- dialog -->
 	<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 	<div transition:fly={transitionParams} on:keydown={handleKeys} on:wheel|preventDefault|nonpassive use:prepareFocus use:focusTrap on:click={onAutoClose} on:mousedown={onOutsideClose} class={dialogCls} tabindex="-1" aria-modal="true" role="dialog">
 		<div class="{modalPositions[position].innerClasses} {sizes[size]} {modalPositions[position].sizes}">
 			<Frame rounded shadow {...$$restProps} class={frameCls} {color}>
-				<!-- Modal header -->
 				{#if $$slots.header || title}
 					<Frame class={headerCls} {color}>
 						<slot name="header">
@@ -134,17 +128,15 @@
 								{title}
 							</h3>
 						</slot>
-						{#if dismissable}<CloseButton name="Close modal" {color} on:click={hide} />{/if}
+						{#if dismissable}<CloseButton name="Tutup dialog" {color} on:click={hide} />{/if}
 					</Frame>
 				{/if}
-				<!-- Modal body -->
 				<div class={bodyCls} role="document" on:keydown|stopPropagation={handleKeys} on:wheel|stopPropagation|passive>
 					{#if dismissable && !$$slots.header && !title}
-						<CloseButton name="Close modal" class="absolute top-3 end-2.5" {color} on:click={hide} />
+						<CloseButton name="Tutup dialog" class="absolute top-3 end-2.5" {color} on:click={hide} />
 					{/if}
 					<slot />
 				</div>
-				<!-- Modal footer -->
 				{#if $$slots.footer}
 					<Frame class={footerCls} {color}>
 						<slot name="footer" />
