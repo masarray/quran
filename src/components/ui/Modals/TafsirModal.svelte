@@ -26,26 +26,21 @@
 		}
 	}
 
-	// CSS classes for Tafsir text based on selected Tafsir language
 	$: tafsirTextClasses = `
 		flex flex-col space-y-4
 		${['Arabic', 'Urdu'].includes(selectedTafsir.language) && 'direction-rtl text-lg'}
 		${selectedTafsir.font}
 	`;
 
-	// Scroll to top if verse changes
 	$: if ($__tafsirModalVisible && verse) {
 		try {
 			const tafsirModal = document.getElementById('tafsirModal');
-			if (tafsirModal) {
-				tafsirModal.getElementsByTagName('div')[1].scrollTop = 0;
-			}
+			if (tafsirModal) tafsirModal.getElementsByTagName('div')[1].scrollTop = 0;
 		} catch (error) {
 			console.warn(error);
 		}
 	}
 
-	// Replaces each newline (\n) with a configurable number of <br /> tags for HTML rendering
 	function formatTafsir(text) {
 		return text.replace(/\n/g, '<br />'.repeat(selectedTafsir?.brPerNewline || 2));
 	}
@@ -69,9 +64,7 @@
 			{#await tafsirData}
 				<Spinner inline={true} />
 			{:then data}
-				<div class="py-4">
-					<ArabicVerseWords key="{chapter}:{verse}" />
-				</div>
+				<div class="py-4"><ArabicVerseWords key="{chapter}:{verse}" /></div>
 
 				<div class="text-sm flex flex-col space-y-6">
 					<div class="flex flex-col space-y-4">
@@ -94,8 +87,8 @@
 		{#key verse}
 			{#await tafsirData then}
 				<div class="grid grid-cols-2 gap-4 w-full">
-					<button class="text-sm {buttonClasses} {verse > 1 ? 'visible' : 'invisible'} w-fit justify-self-start" on:click={() => (verse = verse - 1)}>Previous {term('verse')}</button>
-					<button class="text-sm {buttonClasses} {verse < quranMetaData[chapter].verses ? 'visible' : 'invisible'} w-fit justify-self-end" on:click={() => (verse = verse + 1)}>Next {term('verse')}</button>
+					<button class="text-sm {buttonClasses} {verse > 1 ? 'visible' : 'invisible'} w-fit justify-self-start" on:click={() => (verse = verse - 1)}>{term('verse')} Sebelumnya</button>
+					<button class="text-sm {buttonClasses} {verse < quranMetaData[chapter].verses ? 'visible' : 'invisible'} w-fit justify-self-end" on:click={() => (verse = verse + 1)}>{term('verse')} Berikutnya</button>
 				</div>
 			{/await}
 		{/key}
