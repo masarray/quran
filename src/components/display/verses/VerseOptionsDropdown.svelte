@@ -24,15 +24,12 @@
 	import { fly } from 'svelte/transition';
 	import { checkOnlineAndAlert } from '$utils/offlineModeHandler';
 
-	// Constants
 	const mushafFontTypes = [2, 3];
 	const dropdownItemClasses = 'flex flex-row items-center space-x-2 font-normal rounded-3xl hover:bg-theme-accent/5';
 
-	// Component state
 	let dropdownOpen = false;
 	let subMenuVisible = false;
 
-	// Computed values
 	$: [chapter, verse] = $__verseKey.split(':').map(Number);
 	$: userBookmarks = JSON.parse($__userSettings).userBookmarks;
 	$: isBookmarked = userBookmarks.includes($__verseKey);
@@ -40,7 +37,6 @@
 	$: lastReadManual = JSON.parse($__userSettings).lastReadManual || {};
 	$: isManualLastRead = lastReadManual.chapter === chapter && lastReadManual.verse === verse;
 
-	// Event handlers
 	const handleAdvancedPlay = async () => {
 		if (!(await checkOnlineAndAlert())) return;
 		showAudioModal($__verseKey);
@@ -93,17 +89,15 @@
 		dropdownOpen = false;
 	};
 
-	// Track analytics
 	const trackEvent = (eventName) => {
 		window.umami.track(eventName);
 	};
 
-	// Menu items configuration
 	$: menuItems = [
 		{
 			id: 'play',
 			icon: Play,
-			text: 'Advanced Play',
+			text: 'Putar Lanjutan',
 			handler: handleAdvancedPlay,
 			analyticsEvent: 'Advanced Play Modal Button',
 			show: true
@@ -111,7 +105,7 @@
 		{
 			id: 'bookmark',
 			icon: isBookmarked ? BookmarkFilled : Bookmark,
-			text: isBookmarked ? 'Unbookmark' : 'Bookmark',
+			text: isBookmarked ? 'Hapus Penanda Ayat' : 'Tandai Ayat',
 			handler: handleBookmark,
 			analyticsEvent: 'Bookmark Verse Button',
 			show: true
@@ -119,7 +113,7 @@
 		{
 			id: 'notes',
 			icon: hasNotes ? NotesFilled : Notes,
-			text: 'Notes',
+			text: 'Catatan',
 			handler: handleNotes,
 			analyticsEvent: 'Verse Notes Modal Button',
 			show: true
@@ -174,14 +168,13 @@
 		}
 	];
 
-	// Mode switching items
 	$: modeItems =
 		$__currentPage === 'mushaf'
 			? [
 					{
 						href: `${base}/${chapter}?startVerse=${verse}`,
 						icon: ChapterMode,
-						text: `${term('chapter')} Mode`,
+						text: `Mode ${term('chapter')}`,
 						analyticsEvent: 'Chapter Mode Button'
 					}
 				]
@@ -203,7 +196,6 @@
 
 	{#if !subMenuVisible}
 		<div transition:fly={{ duration: 0, x: 0, easing: sineIn }}>
-			<!-- Main menu items -->
 			{#each menuItems as item (item.id)}
 				{#if item.show}
 					<DropdownItem class={dropdownItemClasses} on:click={item.handler} data-umami-event={item.analyticsEvent}>
@@ -213,7 +205,6 @@
 				{/if}
 			{/each}
 
-			<!-- Mode switching items -->
 			{#each modeItems as item}
 				<DropdownItem class={dropdownItemClasses} href={item.href} on:click={() => trackEvent(item.analyticsEvent)}>
 					<svelte:component this={item.icon} />
