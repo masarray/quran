@@ -9,10 +9,8 @@
 	import { cdnStaticDataUrls } from '$data/websiteSettings';
 	import { page } from '$app/stores';
 
-	// Allow only supported display types; fallback to default without saving to settings
 	if ([3, 4].includes($__displayType)) $__displayType = 1;
 
-	// State variables
 	let allTopics = [];
 	let showScrollTop = false;
 	let selectedTopicId = null;
@@ -20,31 +18,25 @@
 	let selectedTopicName = '';
 	let isLoading = true;
 
-	// Generate A-Z alphabet array
 	const alphabet = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
 
 	let groupedTopics = {};
 
-	// Group topics by first letter
 	$: {
 		groupedTopics = {};
 		for (const item of allTopics) {
 			const topic = item.topic;
 			const firstLetter = topic[0].toUpperCase();
-			if (!groupedTopics[firstLetter]) {
-				groupedTopics[firstLetter] = [];
-			}
+			if (!groupedTopics[firstLetter]) groupedTopics[firstLetter] = [];
 			groupedTopics[firstLetter].push(item);
 		}
 	}
 
-	// Handle URL parameter changes for topic selection
 	$: if ($page) {
 		const urlParams = new URLSearchParams($page.url.search);
 		const topicId = urlParams.get('id');
 		if (topicId) {
 			selectedTopicId = parseInt(topicId);
-			// Find the topic by ID
 			const topic = allTopics.find((item) => item.id === selectedTopicId);
 			if (topic) {
 				selectedTopicKeys = topic.verses.join(',');
@@ -57,16 +49,13 @@
 		}
 	}
 
-	// Show/hide scroll to top button based on scroll position
 	function handleScroll() {
 		showScrollTop = window.scrollY > 70;
 	}
 
 	onMount(async () => {
-		// Fetch and parse topics data
 		const rawTopics = await fetchAndCacheJson(cdnStaticDataUrls.quranTopics, 'other');
 
-		// Convert to array with IDs (1-based indexing)
 		allTopics = Object.entries(rawTopics).map(([topic, verses], index) => ({
 			id: index + 1,
 			topic: topic,
@@ -74,11 +63,8 @@
 		}));
 
 		isLoading = false;
-
-		// Add scroll listener
 		window.addEventListener('scroll', handleScroll);
 
-		// Cleanup
 		return () => {
 			window.removeEventListener('scroll', handleScroll);
 		};
@@ -87,37 +73,30 @@
 	__currentPage.set('topics');
 </script>
 
-<PageHead title="Topics" />
+<PageHead title="Topik" />
 
 <div class="mx-auto max-w-6xl">
 	{#if isLoading}
 		<Spinner />
 	{:else if selectedTopicId && selectedTopicKeys}
 		{@const resultsCount = selectedTopicKeys.split(',').length}
-		<!-- Verses Display -->
 		<div>
-			<div class="my-4 text-center text-xs">Showing {resultsCount} {resultsCount > 1 ? 'results' : 'result'} for the topic "{selectedTopicName}".</div>
+			<div class="my-4 text-center text-xs">Menampilkan {resultsCount} hasil untuk topik "{selectedTopicName}".</div>
 			<FullVersesDisplay keys={selectedTopicKeys} />
 		</div>
 	{:else}
-		<!-- Alphabet Selector -->
 		<div class="my-4">
 			<div class="mx-auto flex flex-wrap justify-center px-2">
 				{#each alphabet as letter}
-					<a href="#{letter}" class="ml-1 mt-1 px-2 py-1 rounded-full cursor-pointer no-underline min-w-[2rem] text-center border border-transparent hover:border-theme-accent bg-theme-accent/5">
-						{letter}
-					</a>
+					<a href="#{letter}" class="ml-1 mt-1 px-2 py-1 rounded-full cursor-pointer no-underline min-w-[2rem] text-center border border-transparent hover:border-theme-accent bg-theme-accent/5">{letter}</a>
 				{/each}
 			</div>
 		</div>
 
-		<!-- Topics Display -->
 		{#if allTopics.length > 0}
 			{#each alphabet as letter}
 				<div id={letter} class="py-6 border-b border-theme-accent/20 scroll-mt-4">
-					<h2 class="text-xl font-bold mb-4 text-theme-accent">
-						{letter}
-					</h2>
+					<h2 class="text-xl font-bold mb-4 text-theme-accent">{letter}</h2>
 					{#if groupedTopics[letter] && groupedTopics[letter].length > 0}
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
 							{#each groupedTopics[letter] as item}
@@ -128,7 +107,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p>No topics available for this letter.</p>
+						<p>Tidak ada topik untuk huruf ini.</p>
 					{/if}
 				</div>
 			{/each}
@@ -136,9 +115,8 @@
 	{/if}
 </div>
 
-<!-- Scroll to Top Button -->
 {#if showScrollTop && !selectedTopicId}
-	<button on:click={() => window.scrollTo({ top: 0, behavior: 'auto' })} class="z-20 fixed bottom-6 right-6 p-3 rounded-full transition-opacity duration-300 bg-theme-bg border-theme-accent/20 border" title="Scroll to top" aria-label="Scroll to top">
+	<button on:click={() => window.scrollTo({ top: 0, behavior: 'auto' })} class="z-20 fixed bottom-6 right-6 p-3 rounded-full transition-opacity duration-300 bg-theme-bg border-theme-accent/20 border" title="Kembali ke atas" aria-label="Kembali ke atas">
 		<ArrowUp size={5} />
 	</button>
 {/if}
