@@ -10,7 +10,7 @@
 	import { createLink } from '$utils/createLink';
 	import { fetchAndCacheJson } from '$utils/fetchData';
 
-	const modalTitle = `${term('tajweed')} Rules`;
+	const modalTitle = `Hukum ${term('tajweed')}`;
 	let tajweedRulesData;
 
 	$: if ($__currentPage || $__chapterNumber) __tajweedRulesModalVisible.set(false);
@@ -23,7 +23,6 @@
 		}
 	}
 
-	// Take an input of a string with keys (eg: "2:27:7, 2:17:9") and convert each key to a hyperlink
 	function replaceKeysWithLinks(keys) {
 		const keysSplit = keys.split(', ');
 		const keysLinks = [];
@@ -43,8 +42,8 @@
 		<table class="w-full text-sm text-left rtl:text-right">
 			<thead class="text-xs uppercase bg-theme-accent/5">
 				<tr>
-					<th scope="col" class="px-6 py-3 w-fit"> Icon </th>
-					<th scope="col" class="pl-2 pr-6 py-3"> Description </th>
+					<th scope="col" class="px-6 py-3 w-fit"> Simbol </th>
+					<th scope="col" class="pl-2 pr-6 py-3"> Keterangan </th>
 				</tr>
 			</thead>
 			<tbody>
@@ -60,7 +59,7 @@
 								{/if}
 
 								{#if value.examples !== null}
-									<span class="opacity-70">Examples: {@html replaceKeysWithLinks(value.examples)}</span>
+									<span class="opacity-70">Contoh: {@html replaceKeysWithLinks(value.examples)}</span>
 								{/if}
 							</div>
 						</td>
@@ -69,9 +68,8 @@
 			</tbody>
 		</table>
 
-		<!-- links to PDF files -->
 		<div class="mt-4 text-xs">
-			To learn the correct pronunciation of Arabic alphabets, please refer to
+			Untuk mempelajari pengucapan huruf Arab yang benar, silakan lihat
 			{@html createLink(`${staticEndpoint}/tajweed/Makharij%20Al%20Huroof.pdf`, 'Makharij Al Huroof')}.
 		</div>
 	{:catch error}
