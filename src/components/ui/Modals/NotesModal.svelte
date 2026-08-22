@@ -1,7 +1,7 @@
 <script>
 	import Modal from '$ui/FlowbiteSvelte/modal/Modal.svelte';
 	import Trash from '$svgs/Trash.svelte';
-	
+
 	import { __verseKey, __userNotes, __notesModalVisible } from '$utils/stores';
 	import { buttonClasses } from '$data/commonClasses';
 	import { timeAgo } from '$utils/timeAgo';
@@ -17,39 +17,31 @@
 
 	$: chapter = $__verseKey.split(':')[0];
 
-	// Reactive block to update note details and validation states
 	$: {
-		// Initialize note details as null by default
 		verseNote = null;
 		noteModifiedAt = null;
 
-		// Update note details if a note exists for the current key
 		if (Object.prototype.hasOwnProperty.call($__userNotes, $__verseKey)) {
 			verseNote = $__userNotes[$__verseKey].note;
 			noteModifiedAt = timeAgo($__userNotes[$__verseKey].modified_at);
-
-			// Re-run the block when notes modal visibility changes
 			$__notesModalVisible;
 		}
 
-		// Set default modification time if undefined
 		if (noteModifiedAt === undefined) {
-			noteModifiedAt = 'just now';
+			noteModifiedAt = 'baru saja';
 		}
 	}
 
-	// Update the button text accordingly
 	$: if ($__notesModalVisible) {
 		if (Object.prototype.hasOwnProperty.call($__userNotes, $__verseKey)) {
-			updateButtonText = 'Update';
+			updateButtonText = 'Perbarui';
 			showDeleteButton = true;
 		} else {
-			updateButtonText = 'Save';
+			updateButtonText = 'Simpan';
 			showDeleteButton = false;
 		}
 	}
 
-	// Function to update the note
 	function updateNote() {
 		const notesValue = document.getElementById('notes-value').value;
 		updateSettings({
@@ -60,7 +52,6 @@
 		});
 	}
 
-	// Function to reset the note
 	function resetNote() {
 		verseNote = '';
 		updateSettings({
@@ -86,12 +77,10 @@
 	</div>
 
 	<div class="flex flex-row space-x-2 flex-shrink-0 mt-4">
-		<button on:click={() => updateNote()} class="w-full {buttonClasses}">
-			{updateButtonText}
-		</button>
+		<button on:click={() => updateNote()} class="w-full {buttonClasses}">{updateButtonText}</button>
 
 		{#if showDeleteButton}
-			<button on:click={() => showConfirm('Are you sure you want to reset this note? This action cannot be undone.', 'notesModal', () => resetNote())} class="w-fit {buttonClasses}">
+			<button on:click={() => showConfirm('Yakin ingin menghapus catatan ini? Tindakan ini tidak dapat dibatalkan.', 'notesModal', () => resetNote())} class="w-fit {buttonClasses}" aria-label="Hapus catatan">
 				<span><Trash size={5} /></span>
 			</button>
 		{/if}
