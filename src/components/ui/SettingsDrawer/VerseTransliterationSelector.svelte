@@ -7,31 +7,21 @@
 	import { selectedRadioOrCheckboxClasses, individualCheckboxClasses } from '$data/commonClasses';
 	import { dataUnavailableWhileOfflineMessage, isUserOnline } from '$utils/offlineModeHandler';
 
-	// Get downloaded verse transliterations from offline settings
 	$: downloadedVerseTransliterations = $__offlineModeSettings?.downloadedDataSettings?.verseTranslations ?? [];
 
-	// Network tracker
 	let userOnline = false;
 	let networkCheckPerformed = false;
 
-	// Check online status on component mount
 	onMount(async () => {
 		userOnline = await isUserOnline();
 		networkCheckPerformed = true;
 	});
 
-	// Helper function to check if a transliteration should be shown
 	function shouldShowTransliteration(transliterationId) {
-		// If user is online, show all transliterations
-		if (userOnline) {
-			return true;
-		}
-
-		// If user is offline, only show downloaded transliterations
+		if (userOnline) return true;
 		return downloadedVerseTransliterations.includes(transliterationId);
 	}
 
-	// Helper function to check if a language has any visible transliterations
 	function hasVisibleTransliterations(languageId) {
 		return Object.values(selectableVerseTranslations).some((transliteration) => {
 			return transliteration.language_id === languageId && shouldShowTransliteration(transliteration.resource_id);
@@ -67,7 +57,7 @@
 		{/each}
 	</div>
 
-	<div class="text-xs opacity-70 pb-4">Relying solely on transliteration to recite the Quran is not recommended, as it can lead to pronunciation errors. To fully appreciate and receive the reward and blessings of recitation, one should learn to read the Quran in Arabic.</div>
+	<div class="text-xs opacity-70 pb-4">Jangan hanya mengandalkan transliterasi untuk membaca Al Quran karena pelafalan dapat menjadi kurang tepat. Untuk memperoleh bacaan yang lebih baik, pelajari membaca Al Quran langsung dalam tulisan Arab.</div>
 
-	<div class="text-xs opacity-70 pb-8">The transliteration appear in the order you select them. To rearrange the sequence, simply deselect all options and then reselect them in your desired order.</div>
+	<div class="text-xs opacity-70 pb-8">Transliterasi tampil sesuai urutan saat Anda memilihnya. Untuk mengubah urutan, batalkan semua pilihan lalu pilih kembali sesuai urutan yang diinginkan.</div>
 {/if}
