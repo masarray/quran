@@ -155,3 +155,96 @@ const audioDelayNames = {
 Object.entries(audioDelayNames).forEach(([id, name]) => {
 	if (selectableAudioDelays[id]) selectableAudioDelays[id].name = name;
 });
+
+// Safety net untuk teks bawaan komponen pihak ketiga atau caption lama yang
+// terlewat. Hanya elemen chrome/interaktif yang disentuh agar isi Al Quran,
+// terjemahan, tafsir, dan catatan pengguna tidak pernah diubah.
+const exactUiText = new Map([
+	['Play', 'Putar'],
+	['Pause', 'Jeda'],
+	['Settings', 'Pengaturan'],
+	['Display Type', 'Jenis Tampilan'],
+	['Minimal Mode', 'Mode Minimal'],
+	['Close', 'Tutup'],
+	['Close modal', 'Tutup dialog'],
+	['Cancel', 'Batal'],
+	['Confirm', 'Konfirmasi'],
+	['Got it', 'Mengerti'],
+	['Delete', 'Hapus'],
+	['Edit', 'Ubah'],
+	['Previous Page', 'Halaman Sebelumnya'],
+	['Next Page', 'Halaman Berikutnya'],
+	['Previous Verse', 'Ayat Sebelumnya'],
+	['Next Verse', 'Ayat Berikutnya'],
+	['Footnote', 'Catatan Kaki'],
+	['Show footnote', 'Tampilkan catatan kaki'],
+	['No data available.', 'Data tidak tersedia.']
+]);
+
+function translateUiValue(value) {
+	if (!value) return value;
+	const trimmed = value.trim();
+	if (exactUiText.has(trimmed)) return value.replace(trimmed, exactUiText.get(trimmed));
+
+	const pageMatch = trimmed.match(/^Page\s+(\d+)$/i);
+	if (pageMatch) return value.replace(trimmed, `Halaman ${pageMatch[1]}`);
+
+	return value;
+}
+
+function localizeChromeElement(element) {
+	if (!(element instanceof Element)) return;
+
+	for (const attribute of ['title', 'aria-label', 'placeholder']) {
+		if (element.hasAttribute(attribute)) {
+			const current = element.getAttribute(attribute);
+			const translated = translateUiValue(current);
+			if (translated !== current) element.setAttribute(attribute, translated);
+		}
+	}
+
+	const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+	let node;
+	while ((node = walker.nextNode())) {
+		const translated = translateUiValue(node.nodeValue);
+		if (translated !== node.nodeValue) node.nodeValue = translated;
+	}
+}
+
+function installIndonesianUxSafetyNet() {
+	if (typeof document === 'undefined' || typeof MutationObserver === 'undefined') return;
+
+	const chromeSelector = 'button, a, label, option, [role="button"], [role="menuitem"], [role="tooltip"], [aria-label], [title], input[placeholder]';
+	const apply = (root) => {
+		if (!(root instanceof Element || root instanceof Document)) return;
+		if (root instanceof Element && root.matches(chromeSelector)) localizeChromeElement(root);
+		root.querySelectorAll?.(chromeSelector).forEach(localizeChromeElement);
+	};
+
+	const start = () => {
+		apply(document);
+		const observer = new MutationObserver((mutations) => {
+			for (const mutation of mutations) {
+				if (mutation.type === 'attributes') {
+					localizeChromeElement(mutation.target);
+					continue;
+				}
+				mutation.addedNodes.forEach((node) => {
+					if (node instanceof Element) apply(node);
+				});
+			}
+		});
+
+		observer.observe(document.documentElement, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: ['title', 'aria-label', 'placeholder']
+		});
+	};
+
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true });
+	else start();
+}
+
+installIndonesianUxSafetyNet();
