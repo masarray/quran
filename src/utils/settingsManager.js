@@ -1,19 +1,15 @@
 import { defaultSettings } from '$src/hooks.client';
 import { showAlert } from '$utils/confirmationAlertHandler';
 
-// Helper: deep merge imported settings with defaults and type check
 function mergeWithDefaults(imported, defaults) {
 	if (typeof defaults !== 'object' || defaults === null) {
-		// primitive
 		return typeof imported === typeof defaults ? imported : defaults;
 	}
 
 	if (Array.isArray(defaults)) {
-		// arrays: accept only if array
 		return Array.isArray(imported) ? imported : defaults;
 	}
 
-	// objects: recurse
 	const result = {};
 	for (const key in defaults) {
 		if (key in imported) {
@@ -25,24 +21,21 @@ function mergeWithDefaults(imported, defaults) {
 	return result;
 }
 
-// Encode JSON: stringify → reverse → Base64
 function encodeSettings(json) {
 	const str = JSON.stringify(json);
 	return btoa(str.split('').reverse().join(''));
 }
 
-// Decode JSON: Base64 → reverse → parse
 function decodeSettings(encoded) {
 	try {
 		const reversed = atob(encoded).split('').reverse().join('');
 		return JSON.parse(reversed);
 	} catch (error) {
 		console.warn(error);
-		throw new Error('Invalid settings file');
+		throw new Error('Berkas pengaturan tidak valid');
 	}
 }
 
-// Normalize file name → force .qwbw extension
 function normalizeFilename(filename) {
 	if (filename.endsWith('.qwbw.txt')) {
 		return filename.replace(/\.qwbw\.txt$/, '.qwbw');
@@ -54,13 +47,12 @@ function normalizeFilename(filename) {
 }
 
 export function importSettings(file) {
-	// Safeguard: basic checks
 	if (!file || !(file instanceof File)) {
-		showAlert('Invalid file.', 'settings-drawer');
+		showAlert('Berkas tidak valid.', 'settings-drawer');
 		return;
 	}
 	if (!file.name.endsWith('.qwbw') && !file.name.endsWith('.qwbw.txt')) {
-		showAlert('Invalid file type. Please select a QuranWBW settings file.', 'settings-drawer');
+		showAlert('Jenis berkas tidak valid. Pilih berkas pengaturan Al Quran (.qwbw).', 'settings-drawer');
 		return;
 	}
 
@@ -70,16 +62,12 @@ export function importSettings(file) {
 	reader.onload = function (e) {
 		try {
 			const imported = decodeSettings(e.target.result);
-
-			// Merge with defaults (deep, with type checks)
 			const validated = mergeWithDefaults(imported, defaultSettings);
 
 			localStorage.setItem('userSettings', JSON.stringify(validated));
-
-			// Reload the page to apply settings
 			location.reload();
 		} catch (error) {
-			showAlert('Something went wrong while importing the file.', 'settings-drawer');
+			showAlert('Terjadi kesalahan saat memulihkan pengaturan dari berkas.', 'settings-drawer');
 			console.warn(error);
 		}
 	};
@@ -89,7 +77,7 @@ export function importSettings(file) {
 export function exportSettings() {
 	const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
 	if (!settings || Object.keys(settings).length === 0) {
-		showAlert('No settings found.', 'settings-drawer');
+		showAlert('Pengaturan belum tersedia untuk dicadangkan.', 'settings-drawer');
 		return;
 	}
 
@@ -97,10 +85,10 @@ export function exportSettings() {
 
 	const now = new Date();
 	const pad = (n) => n.toString().padStart(2, '0');
-	const date = now.toISOString().split('T')[0]; // YYYY-MM-DD
-	const time = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`; // HH-MM-SS
+	const date = now.toISOString().split('T')[0];
+	const time = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
 
-	const rawFilename = `quranwbw-settings-${date}_${time}.qwbw`;
+	const rawFilename = `al-quran-pengaturan-${date}_${time}.qwbw`;
 	const filename = normalizeFilename(rawFilename);
 
 	const blob = new Blob([encoded], { type: 'text/plain' });
