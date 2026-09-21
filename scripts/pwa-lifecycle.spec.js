@@ -202,6 +202,25 @@ test('cold GitHub Pages deep link boots through 404.html', async ({ browser }) =
   await context.close();
 });
 
+test('service worker registration does not depend on an idle callback', async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    window.requestIdleCallback = () => 1;
+    window.cancelIdleCallback = () => {};
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30_000
+  });
+
+  await waitForControlledPage(page);
+  await assertAppShell(page);
+
+  await context.close();
+});
+
 test('malformed local settings cannot brick a cold deep-link startup', async ({ browser }) => {
   const context = await browser.newContext();
   await context.addInitScript(() => {
