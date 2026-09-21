@@ -85,7 +85,7 @@ export async function playVerseAudio(props) {
 	audio.currentTime = 0;
 	audio.load();
 	audio.playbackRate = selectablePlaybackSpeeds[get(__playbackSpeed)].speed;
-	audio.play();
+	if (!(await startAudioPlayback())) return;
 
 	audioSettings.isPlaying = true;
 	audioSettings.playingKey = props.key;
@@ -202,7 +202,7 @@ export async function playWordAudio(props) {
 	audio.currentTime = 0;
 	audio.load();
 	audio.playbackRate = selectablePlaybackSpeeds[get(__playbackSpeed)].speed;
-	audio.play();
+	if (!(await startAudioPlayback())) return;
 
 	audioSettings.isPlaying = true;
 	audioSettings.audioType = 'word';
@@ -317,11 +317,18 @@ export async function wordAudioController(props) {
 	const verse = +props.key.split(':')[1];
 
 	if (audioSettings.isPlaying && audioSettings.audioType === 'verse' && reciter.wbw) {
-		const timestampData = await fetchTimestampData();
-		const verseTimestamp = timestampData.data[chapter][verse][reciter.id];
-		const wordTimestamp = verseTimestamp.split('|')[props.key.split(':')[2]];
+		try {
+			const timestampData = await fetchTimestampData();
+			const verseTimestamp = timestampData?.data?.[chapter]?.[verse]?.[reciter.id];
+			const wordTimestamp = verseTimestamp?.split('|')?.[props.key.split(':')[2]];
 
-		return (audio.currentTime = wordTimestamp);
+			if (wordTimestamp !== undefined && Number.isFinite(Number(wordTimestamp))) {
+				audio.currentTime = Number(wordTimestamp);
+				return;
+			}
+		} catch (error) {
+			console.warn('[Audio] Word timestamp unavailable; falling back to standalone word audio.', error);
+		}
 	}
 
 	props.type === 'end' ? showAudioModal(`${chapter}:${verse}`) : playWordAudio({ key: props.key });
@@ -458,12 +465,18 @@ function getWordsInVerse(key) {
 	const isMushafPage = get(__currentPage) === 'mushaf';
 	const [chapter, verse] = key.split(':');
 
-	if (isMushafPage) {
-		const pageData = JSON.parse(localStorage.getItem('pageData'));
-		return Number(pageData[key].meta.words);
-	} else {
-		const wordData = document.querySelector(`.verse-${chapter}-${verse}`).dataset.words;
-		return Number(wordData);
+	try {
+		if (isMushafPage) {
+			const pageData = JSON.parse(localStorage.getItem('pageData') || '{}');
+			const count = Number(pageData?.[key]?.meta?.words);
+			return Number.isFinite(count) && count > 0 ? count : 0;
+		}
+
+		const count = Number(document.querySelector(`.verse-${chapter}-${verse}`)?.dataset?.words);
+		return Number.isFinite(count) && count > 0 ? count : 0;
+	} catch (error) {
+		console.warn('[Audio] Unable to resolve word count for verse', key, error);
+		return 0;
 	}
 }
 
@@ -528,6 +541,18 @@ async function fetchTimestampData() {
 	if (cachedTimestampData) return cachedTimestampData;
 	cachedTimestampData = await fetchAndCacheJson(`${staticEndpoint}/timestamps/timestamps.json?version=2`, 'other');
 	return cachedTimestampData;
+}
+
+async function startAudioPlayback() {
+	try {
+		await audio.play();
+		return true;
+	} catch (error) {
+		console.warn('[Audio] Browser rejected or failed media playback.', error);
+		resetAudioSettings();
+		showAlert('Audio tidak dapat diputar. Silakan coba lagi atau pilih qari lain.', '');
+		return false;
+	}
 }
 
 // Fetch audio and cache it in the Cache API.
