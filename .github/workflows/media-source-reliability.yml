@@ -38,6 +38,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test bounded network retries
+        run: npm run test:network-reliability
+
       - name: Audit configured media sources
         env:
           MEDIA_SOURCE_REPORT: media-source-report.json
