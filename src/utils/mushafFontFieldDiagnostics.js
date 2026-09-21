@@ -92,7 +92,6 @@ export function deriveAdaptiveMushafMode(profile, { at = Date.now() } = {}) {
 
 	const successes = recent.filter((value) => value === 1).length;
 	const successRatio = successes / recent.length;
-	const recentFailures = recent.length - successes;
 	const latency = finiteOrNull(profile.ewmaLatencyMs);
 	const shortWindow = recent.slice(-4);
 	const shortFailures = shortWindow.filter((value) => value === 0).length;
