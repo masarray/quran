@@ -83,6 +83,22 @@ assert.ok(offlineHandler.includes("type: 'DELETE_CACHE'"), 'offline handler must
 
 const appHtml = await read('src/app.html');
 assert.ok(appHtml.includes("const appBasePath = '%sveltekit.assets%'.replace(/\\/$/, '');"));
+assert.ok(appHtml.includes('__QURAN_BOOT_USER_SETTINGS__'), 'boot HTML must isolate malformed settings before module startup');
+assert.equal(appHtml.includes("JSON.parse(localStorage.getItem('userSettings'))"), false, 'boot HTML must not directly parse untrusted settings');
+
+const hooksClient = await read('src/hooks.client.js');
+assert.ok(hooksClient.includes('loadUserSettings'), 'client hook must repair user settings before stores initialize');
+assert.ok(hooksClient.includes('handleError'), 'client runtime errors must enter the diagnostic/recovery path');
+
+const settingsStorage = await read('src/utils/settingsStorage.js');
+assert.ok(settingsStorage.includes('mergeSettingsWithDefaults'), 'nested settings must be structurally repaired');
+assert.ok(settingsStorage.includes('quranRecovery:userSettingsCorrupt'), 'malformed settings must be isolated with a local recovery copy');
+
+const rootError = await read('src/routes/+error.svelte');
+assert.ok(rootError.includes('repairPwaAppShell'), 'root error boundary must expose non-destructive app-shell recovery');
+
+const pwaRecoveryBanner = await read('src/components/ui/PwaRecoveryBanner.svelte');
+assert.ok(pwaRecoveryBanner.includes('wasUserSettingsRecoveredThisSession'), 'automatic settings recovery must be visible to the user');
 
 if (existsSync(path.join(root, 'build'))) {
 	const requiredArtifacts = ['build/index.html', 'build/404.html', 'build/service-worker.js'];
