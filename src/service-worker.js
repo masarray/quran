@@ -252,9 +252,18 @@ async function ensureSmartMushafFontCached(input, { priority = 'critical' } = {}
 	const existing = await matchMushafFontCaches(request);
 	if (existing) return { source: existing.source, url: url.href, persisted: true };
 
-	if (smartMushafFontInFlight.has(url.href)) return smartMushafFontInFlight.get(url.href);
+	const shared = smartMushafFontInFlight.get(url.href);
+	if (shared) {
+		try {
+			return await shared.promise;
+		} catch (error) {
+			// A current-page request must not inherit the one-shot budget of an older prefetch.
+			if (!(priority === 'critical' && shared.priority === 'prefetch')) throw error;
+		}
+	}
 
-	const task = (async () => {
+	let taskPromise;
+	taskPromise = (async () => {
 		const response = await fetchMushafFontResource(url.href, { priority });
 		try {
 			const cache = await caches.open(cacheNames.mushafFontSmart);
@@ -265,10 +274,12 @@ async function ensureSmartMushafFontCached(input, { priority = 'critical' } = {}
 			const bytes = await response.clone().arrayBuffer();
 			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false, bytes };
 		}
-	})().finally(() => smartMushafFontInFlight.delete(url.href));
+	})().finally(() => {
+		if (smartMushafFontInFlight.get(url.href)?.promise === taskPromise) smartMushafFontInFlight.delete(url.href);
+	});
 
-	smartMushafFontInFlight.set(url.href, task);
-	return task;
+	smartMushafFontInFlight.set(url.href, { promise: taskPromise, priority });
+	return taskPromise;
 }
 
 function validateOfflineCacheRequest(url, cacheName) {
