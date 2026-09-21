@@ -1,4 +1,5 @@
-import { defaultSettings } from '$src/hooks.client';
+import { defaultSettings } from '$data/defaultSettings';
+import { loadUserSettings } from '$utils/settingsStorage';
 import { showAlert } from '$utils/confirmationAlertHandler';
 
 function mergeWithDefaults(imported, defaults) {
@@ -75,7 +76,7 @@ export function importSettings(file) {
 }
 
 export function exportSettings() {
-	const settings = JSON.parse(localStorage.getItem('userSettings') || '{}');
+	const settings = loadUserSettings(defaultSettings, { persist: true });
 	if (!settings || Object.keys(settings).length === 0) {
 		showAlert('Pengaturan belum tersedia untuk dicadangkan.', 'settings-drawer');
 		return;
