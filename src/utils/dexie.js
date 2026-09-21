@@ -30,6 +30,17 @@ export const cacheTableMap = {
 };
 
 // Clears all records from the specified Dexie table without altering its schema
+export async function getDexieTableCount(tableName) {
+	if (!db.tables.some((table) => table.name === tableName)) return 0;
+
+	try {
+		return await db.table(tableName).count();
+	} catch (error) {
+		console.warn(`Unable to count Dexie table "${tableName}"`, error);
+		return 0;
+	}
+}
+
 export async function clearDexieTable(tableName) {
 	if (!db.tables.some((t) => t.name === tableName)) {
 		console.log(`Table "${tableName}" does not exist`);
