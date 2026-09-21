@@ -1,0 +1,92 @@
+name: R0 Toolchain Probe
+
+on:
+  push:
+    branches:
+      - 'reliability/r0-r1-r2'
+    paths:
+      - '.github/workflows/r0-toolchain-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        kit:
+          - '2.26.1'
+          - '2.8.4'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Probe SvelteKit version
+        run: npm install --no-save --package-lock=false @sveltejs/kit@${{ matrix.kit }}
+
+      - name: Build candidate
+        env:
+          GITHUB_PAGES: 'true'
+          BASE_PATH: '/quran'
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee toolchain-${{ matrix.kit }}.log
+
+      - name: Reject Svelte runtime export mismatch
+        shell: bash
+        run: |
+          if grep -Eq '"(untrack|fork|settled)" is not exported' toolchain-${{ matrix.kit }}.log; then
+            echo "SvelteKit ${{ matrix.kit }} still imports unavailable Svelte runtime APIs"
+            exit 1
+          fi
+
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Diagnose malformed CSS if present
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          function walk(dir) {
+            if (!fs.existsSync(dir)) return [];
+            return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+              const p = path.join(dir, e.name);
+              return e.isDirectory() ? walk(p) : [p];
+            });
+          }
+          for (const file of walk('.svelte-kit').filter((p) => p.endsWith('.css'))) {
+            const text = fs.readFileSync(file, 'utf8');
+            const needle = '-: .#;';
+            const i = text.indexOf(needle);
+            if (i >= 0) {
+              console.log('MALFORMED_CSS_FILE', file);
+              console.log(text.slice(Math.max(0, i - 600), i + 600));
+            }
+          }
+          NODE
+
+      - name: Upload probe log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r0-toolchain-${{ matrix.kit }}-${{ github.sha }}
+          path: toolchain-${{ matrix.kit }}.log
+          if-no-files-found: ignore
+          retention-days: 3
