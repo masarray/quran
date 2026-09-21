@@ -8,7 +8,7 @@
 	import Info from '$svgs/Info.svelte';
 	import { __currentPage, __offlineModeSettings, __verseTafsir, __fontType, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 	import { buttonClasses, disabledClasses } from '$data/commonClasses';
-	import { registerServiceWorker, unregisterServiceWorkerAndClearCache, checkOnlineAndAlert, cacheUrlWithServiceWorker, deleteServiceWorkerCache, inspectOfflineCacheHealth } from '$utils/offlineModeHandler';
+	import { registerServiceWorker, checkOnlineAndAlert, cacheUrlWithServiceWorker, deleteServiceWorkerCache, inspectOfflineCacheHealth, disableHiddenOfflineCaching } from '$utils/offlineModeHandler';
 	import { updateSettings } from '$utils/updateSettings';
 	import { showConfirm, showAlert } from '$utils/confirmationAlertHandler';
 	import { fetchChapterData, fetchVerseTranslationData, fetchAndCacheJson } from '$utils/fetchData';
@@ -370,9 +370,19 @@
 			const hasAnyContentDownloaded = offlineContentKeys.some((key) => offlineModeSettings[key]?.downloaded === true);
 			if (hasAnyContentDownloaded) return;
 
-			await unregisterServiceWorkerAndClearCache();
-			$__offlineModeSettings = {};
-			updateSettings({ type: 'offlineModeSettings', value: {} });
+			await disableHiddenOfflineCaching();
+			offlineModeSettings.serviceWorker = {
+				downloaded: false,
+				downloadedAt: null
+			};
+			offlineModeSettings.downloadedDataSettings = {
+				fontTypes: [],
+				wordTranslations: [],
+				wordTransliterations: [],
+				verseTranslations: [],
+				tafsirs: []
+			};
+			updateSettings({ type: 'offlineModeSettings', value: { ...offlineModeSettings } });
 		} catch (error) {
 			console.warn(error);
 		}
