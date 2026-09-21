@@ -49,12 +49,8 @@
 			try {
 				await disableServiceWorkerInDevelopment();
 
-				const currentVersion = __APP_VERSION__.split(' ')[0];
-				const coreCacheKey = `readerCoreCachePrimed:${currentVersion}`;
-				if (localStorage.getItem(coreCacheKey) !== 'true') {
-					const result = await registerServiceWorker({ startCaching: false });
-					if (result.success) localStorage.setItem(coreCacheKey, 'true');
-				}
+				const result = await registerServiceWorker({ startCaching: false });
+				if (!result.success) console.warn('[PWA] Service worker registration did not complete:', result.error);
 
 				const settings = JSON.parse(localStorage.getItem('userSettings'));
 				if (!settings?.offlineModeSettings?.serviceWorker?.downloaded) {
