@@ -94,9 +94,10 @@ export function deriveAdaptiveMushafMode(profile, { at = Date.now() } = {}) {
 	const successRatio = successes / recent.length;
 	const recentFailures = recent.length - successes;
 	const latency = finiteOrNull(profile.ewmaLatencyMs);
-	const failedRecently = Number.isFinite(profile.lastFailureAt) && at - profile.lastFailureAt < 5 * 60 * 1000;
+	const shortWindow = recent.slice(-4);
+	const shortFailures = shortWindow.filter((value) => value === 0).length;
 
-	if ((failedRecently && recentFailures >= 2) || (recent.length >= 4 && successRatio < 0.6)) return 'recovery';
+	if ((shortWindow.length >= 2 && shortFailures >= 2) || (recent.length >= 4 && successRatio < 0.6)) return 'recovery';
 	if ((recent.length >= 3 && successRatio < 0.85) || (latency !== null && latency >= 5000)) return 'cautious';
 	if (recent.length >= 5 && successRatio >= 0.9 && latency !== null && latency <= 1800) return 'fast';
 	return 'balanced';
