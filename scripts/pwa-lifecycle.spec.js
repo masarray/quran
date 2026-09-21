@@ -405,7 +405,7 @@ test('app-shell repair refreshes core cache without deleting offline content or 
   const repaired = await sendServiceWorkerRequest(page, { type: 'REPAIR_CORE_CACHE' });
   expect(repaired.ok).toBe(true);
 
-  const state = await page.evaluate(async ({ sentinelUrl }) => {
+  const state = await page.evaluate(async ({ sentinelUrl, base }) => {
     const chapterCache = await caches.open('quranwbw-chapter-data');
     const configCache = await caches.open('quranwbw-config');
     const configResponse = await configCache.match('caching-enabled');
@@ -424,7 +424,7 @@ test('app-shell repair refreshes core cache without deleting offline content or 
       offlineEnabled: configResponse ? (await configResponse.json()).enabled : null,
       shellReady
     };
-  }, { sentinelUrl });
+  }, { sentinelUrl, base });
 
   expect(state.sentinel).toBe(true);
   expect(state.offlineEnabled).toBe(false);
