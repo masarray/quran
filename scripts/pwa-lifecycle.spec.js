@@ -364,6 +364,56 @@ test('offline cache writes acknowledge durable completion and resume from cache'
   await context.close();
 });
 
+test('app-shell repair refreshes core cache without deleting offline content or enabling offline mode', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const sentinelUrl = `${origin}${base}/manifest.json`;
+  await page.evaluate(async ({ sentinelUrl }) => {
+    const chapterCache = await caches.open('quranwbw-chapter-data');
+    await chapterCache.put(sentinelUrl, new Response('sentinel', { headers: { 'Content-Type': 'text/plain' } }));
+
+    const configCache = await caches.open('quranwbw-config');
+    await configCache.put(
+      'caching-enabled',
+      new Response(JSON.stringify({ enabled: false }), { headers: { 'Content-Type': 'application/json' } })
+    );
+  }, { sentinelUrl });
+
+  const repaired = await sendServiceWorkerRequest(page, { type: 'REPAIR_CORE_CACHE' });
+  expect(repaired.ok).toBe(true);
+
+  const state = await page.evaluate(async ({ sentinelUrl }) => {
+    const chapterCache = await caches.open('quranwbw-chapter-data');
+    const configCache = await caches.open('quranwbw-config');
+    const configResponse = await configCache.match('caching-enabled');
+    const coreKeys = (await caches.keys()).filter((key) => key.startsWith('quranwbw-cache-'));
+    let shellReady = false;
+    for (const cacheName of coreKeys) {
+      const cache = await caches.open(cacheName);
+      if (await cache.match(`${location.origin}${base}/`)) {
+        shellReady = true;
+        break;
+      }
+    }
+
+    return {
+      sentinel: Boolean(await chapterCache.match(sentinelUrl)),
+      offlineEnabled: configResponse ? (await configResponse.json()).enabled : null,
+      shellReady
+    };
+  }, { sentinelUrl });
+
+  expect(state.sentinel).toBe(true);
+  expect(state.offlineEnabled).toBe(false);
+  expect(state.shellReady).toBe(true);
+
+  await context.close();
+});
+
 test('offline cache protocol rejects unowned caches and failed resources', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
