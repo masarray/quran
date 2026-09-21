@@ -21,7 +21,7 @@ function createCompleteVerseKeyData() {
 		for (let verse = 1; verse <= expectedVersesInChapter(chapter); verse += 1) {
 			data[`${chapter}:${verse}`] = {
 				page: Math.min(604, chapter + verse),
-				words: 3
+				words: 1
 			};
 		}
 	}
