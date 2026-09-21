@@ -577,8 +577,12 @@ self.addEventListener('fetch', (event) => {
 
 				try {
 					const response = await fetchMushafFontResource(url.href);
-					const cache = await caches.open(cacheNames.mushafFontSmart);
-					await cache.put(event.request, response.clone());
+					try {
+						const cache = await caches.open(cacheNames.mushafFontSmart);
+						await cache.put(event.request, response.clone());
+					} catch (cacheError) {
+						console.warn('[SW] Mushaf font is usable but could not be persisted.', cacheError);
+					}
 					return response;
 				} catch (error) {
 					console.warn('[SW] Mushaf font unavailable after bounded retry.', error);
