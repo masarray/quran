@@ -4,6 +4,15 @@ export function isRetryableHttpStatus(status) {
 	return DEFAULT_RETRY_STATUSES.has(status) || (status >= 500 && status <= 599);
 }
 
+export function isAudioContentType(contentType) {
+	const normalized = String(contentType || '').toLowerCase().split(';', 1)[0].trim();
+	return normalized.startsWith('audio/') || normalized === 'application/octet-stream';
+}
+
+export function isUsableAudioResponse(response) {
+	return Boolean(response?.ok && isAudioContentType(response.headers?.get?.('content-type')));
+}
+
 function delay(ms, signal) {
 	if (ms <= 0) return Promise.resolve();
 
