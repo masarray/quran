@@ -69,7 +69,13 @@ function publicState(state) {
 function notify(state) {
 	state.updatedAt = now();
 	const snapshot = publicState(state);
-	for (const subscriber of state.subscribers) subscriber(snapshot);
+	for (const subscriber of state.subscribers) {
+		try {
+			subscriber(snapshot);
+		} catch (error) {
+			console.warn('[Fonts] Mushaf font subscriber failed.', error);
+		}
+	}
 	window.dispatchEvent(new CustomEvent('mushaf-font-progress', { detail: snapshot }));
 }
 
@@ -136,7 +142,7 @@ async function ensureCachedFont(url) {
 
 async function activateFont(state, cached) {
 	const alreadyLoaded = loadedFamilies.get(state.family);
-	if (alreadyLoaded?.url === state.url && alreadyLoaded.face?.status === 'loaded') return;
+	if (alreadyLoaded?.url === state.url && alreadyLoaded.face?.status === 'loaded') return true;
 
 	let objectUrl = null;
 	try {
@@ -362,6 +368,7 @@ async function performEnsureMushafFont(page, url) {
 export async function ensureMushafFont(page, url = getMushafWordFontLink(page)) {
 	if (!isBrowserReady()) throw new Error('Mushaf fonts can only be loaded in a browser.');
 	installRecoveryListeners();
+	desiredUrlByFamily.set(`p${page}`, url);
 
 	if (fontReadyInFlight.has(url)) return fontReadyInFlight.get(url);
 
