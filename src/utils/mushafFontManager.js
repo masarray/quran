@@ -9,6 +9,11 @@ import {
 	markMushafFontNetworkSignal,
 	markMushafFontNetworkSuccess
 } from '$utils/mushafFontNetworkHealth';
+import {
+	readMushafNetworkProfile,
+	recordMushafFieldDiagnostic,
+	recordMushafNetworkOutcome
+} from '$utils/mushafFontFieldDiagnostics';
 
 export const smartMushafFontCacheName = 'quranwbw-mushaf-font-smart-v1';
 const fullMushafCacheName = 'quranwbw-mushaf-data';
@@ -31,6 +36,7 @@ let recoveryListenersInstalled = false;
 let lastCriticalPage = null;
 let lastRecoveryProbeAt = 0;
 let networkHealth = createMushafFontNetworkHealth();
+let adaptiveProfile = null;
 
 function now() {
 	return Date.now();
@@ -63,6 +69,39 @@ function getState(page, url) {
 	return state;
 }
 
+function getAdaptiveProfile() {
+	if (!adaptiveProfile) adaptiveProfile = readMushafNetworkProfile();
+	return adaptiveProfile;
+}
+
+function adaptiveProfileSnapshot() {
+	const profile = getAdaptiveProfile();
+	const recent = Array.isArray(profile.recentOutcomes) ? profile.recentOutcomes : [];
+	const successes = recent.filter((value) => value === 1).length;
+	return {
+		mode: profile.adaptiveMode || 'balanced',
+		sampleCount: profile.sampleCount || 0,
+		recentSamples: recent.length,
+		recentSuccessRatio: recent.length ? successes / recent.length : null,
+		ewmaLatencyMs: Number.isFinite(profile.ewmaLatencyMs) ? profile.ewmaLatencyMs : null,
+		lastFailureAt: profile.lastFailureAt ?? null,
+		lastSuccessAt: profile.lastSuccessAt ?? null
+	};
+}
+
+function publishAdaptiveProfile() {
+	if (!isBrowserReady()) return;
+	window.dispatchEvent(new CustomEvent('mushaf-font-adaptive-profile', { detail: adaptiveProfileSnapshot() }));
+}
+
+function applyAdaptiveProfile(next) {
+	const previousMode = getAdaptiveProfile().adaptiveMode || 'balanced';
+	adaptiveProfile = next;
+	const nextMode = next?.adaptiveMode || 'balanced';
+	if (nextMode === 'recovery' || (nextMode === 'cautious' && previousMode !== 'cautious')) clearBackgroundQueue();
+	publishAdaptiveProfile();
+}
+
 function networkHealthSnapshot() {
 	return {
 		status: networkHealth.status,
@@ -80,8 +119,17 @@ function publishNetworkHealth() {
 }
 
 function updateNetworkHealth(next) {
+	const previousStatus = networkHealth?.status;
 	networkHealth = next;
 	publishNetworkHealth();
+	if (previousStatus !== next?.status) {
+		const { effectiveType } = getConnectionInfo();
+		recordMushafFieldDiagnostic('network-health', {
+			reason: `${previousStatus || 'none'}-to-${next?.status || 'unknown'}`,
+			effectiveType,
+			failureStreak: next?.failureStreak
+		});
+	}
 }
 
 function noteNetworkFailure(error, { offline = false, reason = 'font-request-failed' } = {}) {
@@ -143,8 +191,10 @@ async function promoteUsedOfflineFont(url, response) {
 	try {
 		const smartCache = await caches.open(smartMushafFontCacheName);
 		await smartCache.put(url, response.clone());
+		recordMushafFieldDiagnostic('cache-promotion', { ok: true, source: 'offline-cache', reason: 'used-font-promoted' });
 		return { response, source: smartMushafFontCacheName, promoted: true };
 	} catch (error) {
+		recordMushafFieldDiagnostic('cache-promotion', { ok: false, source: 'offline-cache', reason: 'promotion-failed' });
 		console.warn('[Fonts] Used offline Mushaf font could not be promoted to smart cache.', error);
 		return { response, source: fullMushafCacheName, promoted: false };
 	}
@@ -170,6 +220,7 @@ async function findCachedFont(url) {
 
 function uncachedNetworkResult(result) {
 	if (result?.persisted !== false) return null;
+	recordMushafFieldDiagnostic('storage-fallback', { ok: true, source: 'network-uncached', reason: 'cache-write-failed' });
 	const bytes = result.bytes;
 	if (bytes && bytes.byteLength) {
 		return {
