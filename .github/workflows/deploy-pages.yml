@@ -12,6 +12,7 @@ on:
       - 'scripts/test-pwa-reliability.mjs'
       - 'scripts/test-runtime-recovery.mjs'
       - 'scripts/test-smart-mushaf-fonts.mjs'
+      - 'scripts/test-krl-network-churn.mjs'
       - 'scripts/test-network-reliability.mjs'
       - 'scripts/test-quran-data-integrity.mjs'
       - 'scripts/test-footnotes.mjs'
@@ -19,6 +20,7 @@ on:
       - 'src/utils/offlineModeHandler.js'
       - 'src/utils/mushafFontManager.js'
       - 'src/utils/mushafFontPolicy.js'
+      - 'src/utils/mushafFontNetworkHealth.js'
       - 'src/components/display/verses/WordsBlock.svelte'
       - 'src/utils/networkFetch.js'
       - 'src/utils/fetchData.js'
@@ -68,6 +70,7 @@ jobs:
           node --check src/utils/offlineModeHandler.js
           node --check src/utils/mushafFontManager.js
           node --check src/utils/mushafFontPolicy.js
+          node --check src/utils/mushafFontNetworkHealth.js
 
       - name: Test runtime recovery
         run: npm run test:runtime-recovery
