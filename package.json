@@ -9,7 +9,8 @@
 		"start": "node build",
 		"lint:unused": "eslint . --ext .js,.svelte --max-warnings=0",
 		"audit:footnotes": "node scripts/audit-footnotes.mjs",
-		"test:footnotes": "node --test scripts/test-footnotes.mjs"
+		"test:footnotes": "node --test scripts/test-footnotes.mjs",
+		"test:pwa-reliability": "node scripts/test-pwa-reliability.mjs"
 	},
 	"overrides": {
 		"cookie": "^0.7.0",
