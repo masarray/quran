@@ -200,7 +200,7 @@ async function fetchMushafFontResource(url) {
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), MUSHAF_FONT_FETCH_TIMEOUT_MS);
 		try {
-			const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
+			const response = await fetch(url, { cache: 'default', signal: controller.signal });
 			if (!response.ok) {
 				const retryable = [408, 425, 429].includes(response.status) || response.status >= 500;
 				const error = new Error(`${retryable ? 'Transient ' : ''}HTTP ${response.status} while loading Mushaf font ${url}`);
@@ -221,7 +221,9 @@ async function fetchMushafFontResource(url) {
 }
 
 async function matchMushafFontCaches(request) {
+	const existingCacheNames = new Set(await caches.keys());
 	for (const cacheName of [cacheNames.mushafFontSmart, cacheNames.mushafData]) {
+		if (!existingCacheNames.has(cacheName)) continue;
 		const cache = await caches.open(cacheName);
 		const response = await cache.match(request);
 		if (!response) continue;
@@ -242,15 +244,20 @@ async function ensureSmartMushafFontCached(input) {
 
 	const request = new Request(url.href, { mode: 'cors', credentials: 'omit' });
 	const existing = await matchMushafFontCaches(request);
-	if (existing) return { source: existing.source, url: url.href };
+	if (existing) return { source: existing.source, url: url.href, persisted: true };
 
 	if (smartMushafFontInFlight.has(url.href)) return smartMushafFontInFlight.get(url.href);
 
 	const task = (async () => {
 		const response = await fetchMushafFontResource(url.href);
-		const cache = await caches.open(cacheNames.mushafFontSmart);
-		await cache.put(request, response.clone());
-		return { source: 'network', url: url.href, status: response.status };
+		try {
+			const cache = await caches.open(cacheNames.mushafFontSmart);
+			await cache.put(request, response.clone());
+			return { source: 'network', url: url.href, status: response.status, persisted: true };
+		} catch (error) {
+			console.warn('[SW] Mushaf font loaded but could not be persisted; allowing live rendering.', error);
+			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false };
+		}
 	})().finally(() => smartMushafFontInFlight.delete(url.href));
 
 	smartMushafFontInFlight.set(url.href, task);
@@ -479,7 +486,7 @@ self.addEventListener('message', (event) => {
 		event.waitUntil(
 			(async () => {
 				await saveCachingStatus(false);
-				// Keep the verified app shell, config, and audio cache. Offline content caches are cleared.
+				// Keep the verified app shell, config, audio cache, and learned smart fonts. Optional offline downloads are cleared.
 				const keys = await caches.keys();
 				const preserve = new Set([cacheNames.core, cacheNames.config, cacheNames.audioData, ...PERSISTENT_AUTOMATIC_CACHE_NAMES]);
 				await Promise.all(
