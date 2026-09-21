@@ -16,9 +16,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kit:
-          - '2.26.1'
-          - '2.8.4'
+        mode:
+          - 'current-svelte4'
+          - 'current-svelte5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -35,8 +35,12 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Probe SvelteKit version
-        run: npm install --no-save --package-lock=false @sveltejs/kit@${{ matrix.kit }}
+      - name: Audit runtime dependencies before probe
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Probe Svelte 5 with current SvelteKit
+        if: matrix.mode == 'current-svelte5'
+        run: npm install --no-save --package-lock=false svelte@5
 
       - name: Build candidate
         env:
@@ -45,20 +49,18 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          npm run build 2>&1 | tee toolchain-${{ matrix.kit }}.log
+          npm run build 2>&1 | tee toolchain-${{ matrix.mode }}.log
 
       - name: Reject Svelte runtime export mismatch
         shell: bash
         run: |
-          if grep -Eq '"(untrack|fork|settled)" is not exported' toolchain-${{ matrix.kit }}.log; then
-            echo "SvelteKit ${{ matrix.kit }} still imports unavailable Svelte runtime APIs"
+          if grep -Eq '"(untrack|fork|settled)" is not exported' toolchain-${{ matrix.mode }}.log; then
+            echo "${{ matrix.mode }} still imports unavailable Svelte runtime APIs"
             exit 1
           fi
 
-      - name: Runtime dependency audit
-        run: npm audit --omit=dev --audit-level=high
-
       - name: Diagnose malformed CSS if present
+        if: always()
         shell: bash
         run: |
           node - <<'NODE'
@@ -71,22 +73,27 @@ jobs:
               return e.isDirectory() ? walk(p) : [p];
             });
           }
-          for (const file of walk('.svelte-kit').filter((p) => p.endsWith('.css'))) {
-            const text = fs.readFileSync(file, 'utf8');
-            const needle = '-: .#;';
-            const i = text.indexOf(needle);
-            if (i >= 0) {
-              console.log('MALFORMED_CSS_FILE', file);
-              console.log(text.slice(Math.max(0, i - 600), i + 600));
+          const files = [...walk('.svelte-kit'), ...walk('build')].filter((p) => p.endsWith('.css'));
+          let found = false;
+          for (const file of files) {
+            const css = fs.readFileSync(file, 'utf8');
+            for (const needle of ['-: .#;', ':#;', '{-:']) {
+              const i = css.indexOf(needle);
+              if (i >= 0) {
+                found = true;
+                console.log('MALFORMED_CSS_FILE', file, 'NEEDLE', needle);
+                console.log(css.slice(Math.max(0, i - 1000), i + 1000));
+              }
             }
           }
+          if (!found) console.log('Malformed minifier token not found in emitted CSS; warning is introduced during minification.');
           NODE
 
       - name: Upload probe log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: r0-toolchain-${{ matrix.kit }}-${{ github.sha }}
-          path: toolchain-${{ matrix.kit }}.log
+          name: r0-toolchain-${{ matrix.mode }}-${{ github.sha }}
+          path: toolchain-${{ matrix.mode }}.log
           if-no-files-found: ignore
           retention-days: 3
