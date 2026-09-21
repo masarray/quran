@@ -85,9 +85,9 @@ export async function cacheUrlWithServiceWorker(url, cacheName, { force = false,
 	return postMessageAndWait(worker, { type: 'CACHE_URL', url, cacheName, force }, { timeout });
 }
 
-export async function cacheMushafFontWithServiceWorker(url, { timeout = 60000 } = {}) {
+export async function cacheMushafFontWithServiceWorker(url, { timeout = 60000, priority = 'critical' } = {}) {
 	const worker = await getReadyServiceWorker();
-	return postMessageAndWait(worker, { type: 'CACHE_MUSHAF_FONT', url }, { timeout });
+	return postMessageAndWait(worker, { type: 'CACHE_MUSHAF_FONT', url, priority }, { timeout });
 }
 
 export async function deleteServiceWorkerCache(cacheName, { timeout = 30000 } = {}) {

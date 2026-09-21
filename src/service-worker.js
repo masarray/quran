@@ -39,7 +39,10 @@ const OFFLINE_CONTENT_CACHE_NAMES = new Set([cacheNames.audioData, cacheNames.ch
 const PERSISTENT_AUTOMATIC_CACHE_NAMES = new Set([cacheNames.mushafFontSmart]);
 const OFFLINE_ASSET_ORIGINS = new Set(['https://static.quranwbw.com', 'https://cdn.jsdelivr.net', 'https://audios.quranwbw.com']);
 const CACHE_REQUEST_ATTEMPTS = 3;
-const MUSHAF_FONT_FETCH_TIMEOUT_MS = 15000;
+const MUSHAF_FONT_FETCH_PROFILES = {
+	critical: { attempts: 3, timeouts: [8000, 12000, 18000] },
+	prefetch: { attempts: 1, timeouts: [7000] }
+};
 const MUSHAF_FONT_PATH_MARKER = '/data/v4/fonts/Hafs/KFGQPC-v4/';
 const smartMushafFontInFlight = new Map();
 
@@ -194,11 +197,14 @@ async function assertValidMushafFontResponse(response, url) {
 	return response;
 }
 
-async function fetchMushafFontResource(url) {
+async function fetchMushafFontResource(url, { priority = 'critical' } = {}) {
+	const profile = MUSHAF_FONT_FETCH_PROFILES[priority] || MUSHAF_FONT_FETCH_PROFILES.critical;
 	let lastError;
-	for (let attempt = 1; attempt <= CACHE_REQUEST_ATTEMPTS; attempt++) {
+
+	for (let attempt = 1; attempt <= profile.attempts; attempt++) {
 		const controller = new AbortController();
-		const timeout = setTimeout(() => controller.abort(), MUSHAF_FONT_FETCH_TIMEOUT_MS);
+		const timeoutMs = profile.timeouts[Math.min(attempt - 1, profile.timeouts.length - 1)];
+		const timeout = setTimeout(() => controller.abort(), timeoutMs);
 		try {
 			const response = await fetch(url, { cache: 'default', signal: controller.signal });
 			if (!response.ok) {
@@ -212,7 +218,7 @@ async function fetchMushafFontResource(url) {
 		} catch (error) {
 			lastError = error;
 			if (error?.retryable === false) throw error;
-			if (attempt < CACHE_REQUEST_ATTEMPTS) await sleep(500 * 2 ** (attempt - 1));
+			if (attempt < profile.attempts) await sleep(500 * 2 ** (attempt - 1));
 		} finally {
 			clearTimeout(timeout);
 		}
@@ -238,7 +244,7 @@ async function matchMushafFontCaches(request) {
 	return null;
 }
 
-async function ensureSmartMushafFontCached(input) {
+async function ensureSmartMushafFontCached(input, { priority = 'critical' } = {}) {
 	const url = input instanceof URL ? input : new URL(input, scopeUrl.origin);
 	if (!isMushafFontUrl(url)) throw new Error('Refusing to cache a non-Mushaf font in the smart font cache.');
 
@@ -246,22 +252,34 @@ async function ensureSmartMushafFontCached(input) {
 	const existing = await matchMushafFontCaches(request);
 	if (existing) return { source: existing.source, url: url.href, persisted: true };
 
-	if (smartMushafFontInFlight.has(url.href)) return smartMushafFontInFlight.get(url.href);
+	const shared = smartMushafFontInFlight.get(url.href);
+	if (shared) {
+		try {
+			return await shared.promise;
+		} catch (error) {
+			// A current-page request must not inherit the one-shot budget of an older prefetch.
+			if (!(priority === 'critical' && shared.priority === 'prefetch')) throw error;
+		}
+	}
 
-	const task = (async () => {
-		const response = await fetchMushafFontResource(url.href);
+	let taskPromise;
+	taskPromise = (async () => {
+		const response = await fetchMushafFontResource(url.href, { priority });
 		try {
 			const cache = await caches.open(cacheNames.mushafFontSmart);
 			await cache.put(request, response.clone());
 			return { source: 'network', url: url.href, status: response.status, persisted: true };
 		} catch (error) {
 			console.warn('[SW] Mushaf font loaded but could not be persisted; allowing live rendering.', error);
-			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false };
+			const bytes = await response.clone().arrayBuffer();
+			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false, bytes };
 		}
-	})().finally(() => smartMushafFontInFlight.delete(url.href));
+	})().finally(() => {
+		if (smartMushafFontInFlight.get(url.href)?.promise === taskPromise) smartMushafFontInFlight.delete(url.href);
+	});
 
-	smartMushafFontInFlight.set(url.href, task);
-	return task;
+	smartMushafFontInFlight.set(url.href, { promise: taskPromise, priority });
+	return taskPromise;
 }
 
 function validateOfflineCacheRequest(url, cacheName) {
@@ -415,8 +433,9 @@ self.addEventListener('message', (event) => {
 		event.waitUntil(
 			(async () => {
 				try {
-					const result = await ensureSmartMushafFontCached(event.data.url);
-					replyToMessage(event, { ok: true, type: 'CACHE_MUSHAF_FONT_RESULT', ...result });
+					const priority = event.data.priority === 'prefetch' ? 'prefetch' : 'critical';
+					const result = await ensureSmartMushafFontCached(event.data.url, { priority });
+					replyToMessage(event, { ok: true, type: 'CACHE_MUSHAF_FONT_RESULT', priority, ...result });
 				} catch (error) {
 					console.warn('[SW] CACHE_MUSHAF_FONT failed', error);
 					replyToMessage(event, { ok: false, type: 'CACHE_MUSHAF_FONT_RESULT', error: error instanceof Error ? error.message : String(error) });
@@ -576,7 +595,7 @@ self.addEventListener('fetch', (event) => {
 				if (cachedFont) return cachedFont.response;
 
 				try {
-					const response = await fetchMushafFontResource(url.href);
+					const response = await fetchMushafFontResource(url.href, { priority: 'critical' });
 					try {
 						const cache = await caches.open(cacheNames.mushafFontSmart);
 						await cache.put(event.request, response.clone());

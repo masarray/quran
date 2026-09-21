@@ -475,6 +475,83 @@ test('smart Mushaf font cache survives Offline Mode disable and serves while dis
   await context.close();
 });
 
+test('KRL-style repeated network flaps keep a learned Mushaf font available across offline reload', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const fontUrl =
+    'https://static.quranwbw.com/data/v4/fonts/Hafs/KFGQPC-v4/COLRv1/QCF4020_COLOR-Regular.woff2?version=12';
+
+  await page.evaluate(async ({ fontUrl, base }) => {
+    const source = await fetch(`${location.origin}${base}/fonts/qcf-uthmanic-digital.woff2`);
+    if (!source.ok) throw new Error('missing local WOFF2 fixture');
+    const bytes = await source.arrayBuffer();
+    const cache = await caches.open('quranwbw-mushaf-font-smart-v1');
+    await cache.put(
+      fontUrl,
+      new Response(bytes, {
+        status: 200,
+        headers: {
+          'Content-Type': 'font/woff2',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    );
+  }, { fontUrl, base });
+
+  const readLearnedFont = () =>
+    page.evaluate(async ({ fontUrl }) => {
+      const response = await fetch(fontUrl, { mode: 'cors' });
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      return {
+        ok: response.ok,
+        signature: String.fromCharCode(...bytes.slice(0, 4)),
+        controlled: Boolean(navigator.serviceWorker.controller)
+      };
+    }, { fontUrl });
+
+  for (let cycle = 0; cycle < 5; cycle++) {
+    await context.setOffline(true);
+    const offlineRead = await readLearnedFont();
+    expect(offlineRead.ok).toBe(true);
+    expect(offlineRead.signature).toBe('wOF2');
+    expect(offlineRead.controlled).toBe(true);
+
+    if (cycle === 2) {
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 20_000 });
+      await assertAppShell(page);
+      const afterOfflineReload = await readLearnedFont();
+      expect(afterOfflineReload.ok).toBe(true);
+      expect(afterOfflineReload.signature).toBe('wOF2');
+      expect(afterOfflineReload.controlled).toBe(true);
+    }
+
+    await context.setOffline(false);
+    const onlineRead = await readLearnedFont();
+    expect(onlineRead.ok).toBe(true);
+    expect(onlineRead.signature).toBe('wOF2');
+    expect(onlineRead.controlled).toBe(true);
+  }
+
+  const cacheState = await page.evaluate(async ({ fontUrl }) => {
+    const cache = await caches.open('quranwbw-mushaf-font-smart-v1');
+    const response = await cache.match(fontUrl);
+    const keys = await cache.keys();
+    return {
+      retained: Boolean(response),
+      exactEntries: keys.filter((request) => request.url === fontUrl).length
+    };
+  }, { fontUrl });
+
+  expect(cacheState.retained).toBe(true);
+  expect(cacheState.exactEntries).toBe(1);
+
+  await context.close();
+});
+
 test('app-shell repair refreshes core cache without deleting offline content or enabling offline mode', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
