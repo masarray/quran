@@ -278,30 +278,27 @@ test('successful service-worker update claims the page and remains offline-safe'
 
   swVariant = 'successful-update';
 
-  const changed = page.evaluate(
-    () =>
-      new Promise(async (resolve, reject) => {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) return reject(new Error('missing service worker registration'));
+  const changed = page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) throw new Error('missing service worker registration');
 
-        const timer = setTimeout(() => reject(new Error('controller did not change')), 15_000);
-        navigator.serviceWorker.addEventListener(
-          'controllerchange',
-          () => {
-            clearTimeout(timer);
-            resolve(true);
-          },
-          { once: true }
-        );
-
-        try {
-          await registration.update();
-        } catch (error) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('controller did not change')), 15_000);
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
           clearTimeout(timer);
-          reject(error);
-        }
-      })
-  );
+          resolve(true);
+        },
+        { once: true }
+      );
+
+      registration.update().catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+    });
+  });
 
   await expect(changed).resolves.toBe(true);
 
