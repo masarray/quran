@@ -17,7 +17,8 @@
 		"test:network-reliability": "node --test scripts/test-network-reliability.mjs",
 		"test:runtime-recovery": "node --test scripts/test-runtime-recovery.mjs",
 		"test:release-pipeline": "node scripts/test-release-pipeline.mjs",
-		"test:smart-fonts": "node --test scripts/test-smart-mushaf-fonts.mjs scripts/test-krl-network-churn.mjs"
+		"test:smart-fonts": "node --test scripts/test-smart-mushaf-fonts.mjs scripts/test-krl-network-churn.mjs",
+		"test:field-learning": "node --test scripts/test-field-network-learning.mjs"
 	},
 	"overrides": {
 		"cookie": "^0.7.0",
