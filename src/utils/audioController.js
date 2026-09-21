@@ -91,11 +91,21 @@ export async function playVerseAudio(props) {
 	audioSettings.playingKey = props.key;
 	audioSettings.audioType = 'verse';
 
-	// Attach word highlighting function for supported reciters
+	// Timestamp metadata is optional enhancement data. Playback must continue
+	// even if highlighting metadata is temporarily unavailable or corrupt.
 	if (props.language === 'arabic' && reciter.wbw) {
-		await fetchTimestampData();
-		wordsInVerseCache[props.key] = getWordsInVerse(props.key);
-		audio.addEventListener('timeupdate', wordHighlighter);
+		try {
+			const timestampData = await fetchTimestampData();
+			const verseTimestamp = timestampData?.data?.[playChapter]?.[playVerse]?.[reciter.id];
+			if (typeof verseTimestamp === 'string' && verseTimestamp.length > 0) {
+				wordsInVerseCache[props.key] = getWordsInVerse(props.key);
+				audio.addEventListener('timeupdate', wordHighlighter);
+			} else {
+				console.warn('[Audio] Timestamp metadata is missing for this verse/reciter; continuing without word highlighting.');
+			}
+		} catch (error) {
+			console.warn('[Audio] Timestamp metadata unavailable; continuing without word highlighting.', error);
+		}
 	}
 
 	// Scroll to the playing verse
@@ -305,7 +315,9 @@ export function resetAudioSettings(props) {
 export function showAudioModal(key) {
 	resetAudioSettings();
 	initializeAudioSettings(key);
-	fetchTimestampData();
+	fetchTimestampData().catch((error) => {
+		console.warn('[Audio] Unable to prefetch timestamp metadata for audio modal.', error);
+	});
 	__audioModalVisible.set(true);
 }
 
