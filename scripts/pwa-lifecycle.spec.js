@@ -80,7 +80,7 @@ async function requestHandler(req, res) {
   }
 
   if (url.searchParams.get('slow') === '1' && (relative === '/' || relative === '/index.html')) {
-    await new Promise((resolve) => setTimeout(resolve, 10_750));
+    await new Promise((resolve) => setTimeout(resolve, 10750));
   }
 
   let file;
