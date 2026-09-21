@@ -203,13 +203,15 @@ async function fetchMushafFontResource(url) {
 			const response = await fetch(url, { cache: 'no-store', signal: controller.signal });
 			if (!response.ok) {
 				const retryable = [408, 425, 429].includes(response.status) || response.status >= 500;
-				if (!retryable) throw new Error(`HTTP ${response.status} while loading Mushaf font ${url}`);
-				throw new Error(`Transient HTTP ${response.status} while loading Mushaf font ${url}`);
+				const error = new Error(`${retryable ? 'Transient ' : ''}HTTP ${response.status} while loading Mushaf font ${url}`);
+				error.retryable = retryable;
+				throw error;
 			}
 			await assertValidMushafFontResponse(response, url);
 			return response;
 		} catch (error) {
 			lastError = error;
+			if (error?.retryable === false) throw error;
 			if (attempt < CACHE_REQUEST_ATTEMPTS) await sleep(500 * 2 ** (attempt - 1));
 		} finally {
 			clearTimeout(timeout);
@@ -424,6 +426,11 @@ self.addEventListener('message', (event) => {
 					const url = validateOfflineCacheRequest(event.data.url, cacheName);
 					if (cacheName === cacheNames.mushafFontSmart && !isMushafFontUrl(url)) {
 						throw new Error('Smart Mushaf font cache only accepts versioned Mushaf WOFF2 files.');
+					}
+					if (cacheName === cacheNames.mushafFontSmart) {
+						const result = await ensureSmartMushafFontCached(url);
+						replyToMessage(event, { ok: true, type: 'CACHE_URL_RESULT', cacheName, url: url.href, source: result.source, status: result.status });
+						return;
 					}
 					const cache = await caches.open(cacheName);
 					const request = new Request(url.href);
