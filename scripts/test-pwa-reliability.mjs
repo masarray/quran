@@ -18,6 +18,8 @@ assert.ok(serviceWorker.includes('OFFLINE_CONTENT_CACHE_NAMES'), 'offline conten
 assert.ok(serviceWorker.includes('OFFLINE_ASSET_ORIGINS'), 'cross-origin interception must be restricted to approved Quran asset origins');
 assert.ok(serviceWorker.includes('if (!sameOrigin && !approvedOfflineOrigin) return;'), 'unrelated external traffic must bypass the service worker');
 assert.ok(serviceWorker.includes('replyToMessage(event'), 'transactional cache operations must acknowledge completion');
+assert.ok(serviceWorker.includes("event.data.type === 'REPAIR_CORE_CACHE'"), 'app-shell repair must be handled transactionally by the service worker');
+assert.ok(serviceWorker.includes('existing caches are retained'), 'failed app-shell repair must retain the previous core cache');
 assert.ok(serviceWorker.includes("source: 'cache'"), 'interrupted downloads must resume from already verified cache entries');
 assert.equal(serviceWorker.includes('await cache.put(event.request, networkResponse.clone())'), false, 'normal network traffic must never be duplicated into the app-shell cache');
 assert.ok(serviceWorker.includes("url.searchParams.has('__network_probe')"), 'network probe must bypass the service worker');
@@ -80,6 +82,8 @@ const offlineHandler = await read('src/utils/offlineModeHandler.js');
 assert.ok(offlineHandler.includes('new MessageChannel()'), 'service-worker requests must use a MessageChannel acknowledgement');
 assert.ok(offlineHandler.includes("type: 'CACHE_URL'"), 'offline handler must expose transactional URL caching');
 assert.ok(offlineHandler.includes("type: 'DELETE_CACHE'"), 'offline handler must await cache deletion');
+assert.ok(offlineHandler.includes("type: 'REPAIR_CORE_CACHE'"), 'app-shell recovery must request an acknowledged non-destructive core-cache repair');
+assert.equal(offlineHandler.includes('if (registration) await registration.unregister();'), false, 'app-shell recovery must not unregister the healthy worker before replacement is proven');
 
 const appHtml = await read('src/app.html');
 assert.ok(appHtml.includes("const appBasePath = '%sveltekit.assets%'.replace(/\\/$/, '');"));
