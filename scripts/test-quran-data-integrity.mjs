@@ -11,6 +11,7 @@ import {
 	validateTafsirChapterData,
 	validateVerseKeyData,
 	validateVerseTranslationData,
+	validateWordDatasetAlignment,
 	validateWordLanguageData
 } from '../src/utils/quranDataIntegrity.js';
 
@@ -69,6 +70,34 @@ test('verse-key metadata rejects invalid page and word counts', () => {
 	assert.equal(validateVerseKeyData(data), false);
 });
 
+test('word datasets must align with canonical per-verse word counts', () => {
+	const metaVerseData = createCompleteVerseKeyData();
+	const arabicWordData = createCompleteWordData({ arabic: true });
+	const translationWordData = createCompleteWordData();
+	const transliterationWordData = createCompleteWordData();
+
+	assert.equal(
+		validateWordDatasetAlignment({
+			arabicWordData,
+			translationWordData,
+			transliterationWordData,
+			metaVerseData
+		}),
+		true
+	);
+
+	metaVerseData['2:255'].words = 2;
+	assert.equal(
+		validateWordDatasetAlignment({
+			arabicWordData,
+			translationWordData,
+			transliterationWordData,
+			metaVerseData
+		}),
+		false
+	);
+});
+
 test('verse translations require all 6236 non-empty verse entries', () => {
 	const data = createCompleteTranslationData();
 	assert.equal(validateVerseTranslationData(data), true);
@@ -94,17 +123,18 @@ test('Arabic and word-language datasets require every Quran verse', () => {
 	assert.equal(validateWordLanguageData(language), false);
 });
 
-test('tafsir chapter validation requires exact verse coverage with text', () => {
+test('tafsir chapter validation accepts upstream arrays and requires exact verse coverage with text', () => {
 	const chapter = 18;
-	const ayahs = {};
+	const ayahs = [];
 	for (let verse = 1; verse <= expectedVersesInChapter(chapter); verse += 1) {
-		ayahs[verse] = { surah: chapter, ayah: verse, text: `Tafsir ${verse}` };
+		ayahs.push({ surah: chapter, ayah: verse, text: `Tafsir ${verse}` });
 	}
-	const data = { ayahs };
 
-	assert.equal(validateTafsirChapterData(data, chapter), true);
-	delete data.ayahs[57];
-	assert.equal(validateTafsirChapterData(data, chapter), false);
+	assert.equal(validateTafsirChapterData(ayahs, chapter), true);
+	assert.equal(validateTafsirChapterData({ ayahs }, chapter), true);
+
+	ayahs.splice(56, 1);
+	assert.equal(validateTafsirChapterData(ayahs, chapter), false);
 });
 
 test('morphology summary validation requires at least one valid word for every verse', () => {
