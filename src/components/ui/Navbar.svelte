@@ -170,7 +170,7 @@
 	{/if}
 
 	{#if ['chapter', 'juz', 'hizb'].includes($__currentPage)}
-		<div id="progress-bar" class="fixed inset-x-0 z-20 h-1 rounded-r-3xl bg-theme-accent" style="width: {readingProgress}%" />
+		<div id="progress-bar" class="fixed inset-x-0 z-20 h-1 rounded-r-3xl bg-theme-accent" style="width: {readingProgress}%"></div>
 	{/if}
 
 	{#if $__currentPage === 'mushaf'}
