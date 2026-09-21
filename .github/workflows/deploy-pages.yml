@@ -11,11 +11,15 @@ on:
       - 'scripts/pwa-lifecycle.spec.js'
       - 'scripts/test-pwa-reliability.mjs'
       - 'scripts/test-runtime-recovery.mjs'
+      - 'scripts/test-smart-mushaf-fonts.mjs'
       - 'scripts/test-network-reliability.mjs'
       - 'scripts/test-quran-data-integrity.mjs'
       - 'scripts/test-footnotes.mjs'
       - 'src/service-worker.js'
       - 'src/utils/offlineModeHandler.js'
+      - 'src/utils/mushafFontManager.js'
+      - 'src/utils/mushafFontPolicy.js'
+      - 'src/components/display/verses/WordsBlock.svelte'
       - 'src/utils/networkFetch.js'
       - 'src/utils/fetchData.js'
       - 'src/utils/quranDataIntegrity.js'
@@ -62,9 +66,14 @@ jobs:
         run: |
           node --check src/service-worker.js
           node --check src/utils/offlineModeHandler.js
+          node --check src/utils/mushafFontManager.js
+          node --check src/utils/mushafFontPolicy.js
 
       - name: Test runtime recovery
         run: npm run test:runtime-recovery
+
+      - name: Test smart Mushaf font pipeline
+        run: npm run test:smart-fonts
 
       - name: Test bounded network recovery
         run: npm run test:network-reliability
