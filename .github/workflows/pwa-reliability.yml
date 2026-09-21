@@ -11,6 +11,7 @@ on:
       - 'src/utils/mushafFontManager.js'
       - 'src/utils/mushafFontPolicy.js'
       - 'src/utils/mushafFontNetworkHealth.js'
+      - 'src/utils/mushafFontFieldDiagnostics.js'
       - 'src/components/display/verses/WordsBlock.svelte'
       - 'src/utils/fetchData.js'
       - 'src/utils/audioController.js'
@@ -32,6 +33,7 @@ on:
       - 'scripts/pwa-lifecycle.spec.js'
       - 'scripts/test-smart-mushaf-fonts.mjs'
       - 'scripts/test-krl-network-churn.mjs'
+      - 'scripts/test-field-network-learning.mjs'
       - 'scripts/test-release-pipeline.mjs'
       - '.github/workflows/deploy-pages.yml'
       - '.github/workflows/pwa-reliability.yml'
@@ -68,12 +70,16 @@ jobs:
           node --check src/utils/mushafFontManager.js
           node --check src/utils/mushafFontPolicy.js
           node --check src/utils/mushafFontNetworkHealth.js
+          node --check src/utils/mushafFontFieldDiagnostics.js
 
       - name: Test runtime recovery
         run: npm run test:runtime-recovery
 
       - name: Test smart Mushaf font pipeline
         run: npm run test:smart-fonts
+
+      - name: Test field diagnostics and adaptive learning
+        run: npm run test:field-learning
 
       - name: Build GitHub Pages candidate
         shell: bash

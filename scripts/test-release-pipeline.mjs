@@ -17,6 +17,7 @@ for (const command of [
   'npm run lint:unused',
   'npm run test:runtime-recovery',
   'npm run test:smart-fonts',
+  'npm run test:field-learning',
   'npm run test:network-reliability',
   'npm run test:quran-integrity',
   'npm run test:footnotes',

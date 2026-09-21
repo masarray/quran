@@ -552,6 +552,72 @@ test('KRL-style repeated network flaps keep a learned Mushaf font available acro
   await context.close();
 });
 
+test('adaptive Mushaf network profile survives reload and remains privacy-safe', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const seededAt = Date.now();
+  await page.evaluate(({ seededAt }) => {
+    localStorage.setItem(
+      'quranRecovery:mushafFontNetworkProfile:v1',
+      JSON.stringify({
+        version: 1,
+        updatedAt: seededAt,
+        sampleCount: 4,
+        successCount: 1,
+        failureCount: 3,
+        ewmaLatencyMs: 8200,
+        recentOutcomes: [0, 0, 1, 0],
+        lastFailureAt: seededAt,
+        lastSuccessAt: seededAt - 1000,
+        adaptiveMode: 'recovery'
+      })
+    );
+    localStorage.setItem(
+      'quranRecovery:mushafFontFieldDiagnostics:v1',
+      JSON.stringify([
+        {
+          version: 1,
+          at: seededAt,
+          type: 'network-failure',
+          ok: false,
+          latencyMs: 8200,
+          priority: 'critical',
+          source: 'network',
+          reason: 'critical-font-failure',
+          mode: 'recovery',
+          effectiveType: '4g',
+          failureStreak: 3
+        }
+      ])
+    );
+  }, { seededAt });
+
+  await page.goto(`${origin}${base}/offline`, { waitUntil: 'domcontentloaded' });
+  await expect(page.getByText(/Mode adaptif: Pemulihan/)).toBeVisible();
+
+  const persisted = await page.evaluate(() => ({
+    profile: JSON.parse(localStorage.getItem('quranRecovery:mushafFontNetworkProfile:v1') || 'null'),
+    diagnostics: JSON.parse(localStorage.getItem('quranRecovery:mushafFontFieldDiagnostics:v1') || '[]')
+  }));
+
+  expect(persisted.profile.adaptiveMode).toBe('recovery');
+  expect(persisted.profile.recentOutcomes).toEqual([0, 0, 1, 0]);
+
+  const serialized = JSON.stringify(persisted.diagnostics);
+  for (const forbidden of ['font.woff2', '/2/136', '"page"', '"surah"', '"ayah"', '"ssid"', '"ip"']) {
+    expect(serialized).not.toContain(forbidden);
+  }
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.getByText(/Mode adaptif: Pemulihan/)).toBeVisible();
+
+  await context.close();
+});
+
 test('app-shell repair refreshes core cache without deleting offline content or enabling offline mode', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
