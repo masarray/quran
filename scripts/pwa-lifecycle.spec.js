@@ -202,6 +202,69 @@ test('cold GitHub Pages deep link boots through 404.html', async ({ browser }) =
   await context.close();
 });
 
+test('malformed local settings cannot brick a cold deep-link startup', async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    localStorage.setItem('userSettings', '{ definitely broken');
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/18`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30_000
+  });
+
+  await expect.poll(
+    () => page.evaluate(() => {
+      try {
+        return JSON.parse(localStorage.getItem('userSettings'))?.displaySettings?.fontType;
+      } catch {
+        return null;
+      }
+    }),
+    { timeout: 10_000 }
+  ).toBe(1);
+
+  const recovery = await page.evaluate(() => ({
+    backup: localStorage.getItem('quranRecovery:userSettingsCorrupt'),
+    flag: sessionStorage.getItem('quran-settings-recovered')
+  }));
+  expect(recovery.backup).toContain('{ definitely broken');
+  expect(recovery.flag).toBe('1');
+  await expect(page.locator('body')).toContainText('Pengaturan lokal dipulihkan');
+  expect((await page.title()).toLowerCase()).toContain('quran');
+
+  await context.close();
+});
+
+test('structurally damaged settings are repaired without deleting user notes', async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    localStorage.setItem(
+      'userSettings',
+      JSON.stringify({
+        displaySettings: 'invalid',
+        userNotes: {
+          '1:1': { note: 'catatan tetap ada', modified_at: '2026-09-21T00:00:00.000Z' }
+        }
+      })
+    );
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30_000
+  });
+
+  const repaired = await page.evaluate(() => JSON.parse(localStorage.getItem('userSettings')));
+  expect(repaired.displaySettings.fontType).toBe(1);
+  expect(repaired.userNotes['1:1'].note).toBe('catatan tetap ada');
+  await assertAppShell(page);
+
+  await context.close();
+});
+
 test('installed PWA survives a complete offline relaunch', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
