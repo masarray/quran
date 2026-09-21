@@ -45,6 +45,51 @@ function getActiveServiceWorker(registration) {
 	return navigator.serviceWorker.controller || registration?.active || null;
 }
 
+function postMessageAndWait(worker, message, { timeout = 120000 } = {}) {
+	return new Promise((resolve, reject) => {
+		const channel = new MessageChannel();
+		const timer = setTimeout(() => {
+			channel.port1.close();
+			reject(new Error(`Service worker request timed out: ${message.type}`));
+		}, timeout);
+
+		channel.port1.onmessage = (event) => {
+			clearTimeout(timer);
+			channel.port1.close();
+			if (event.data?.ok) resolve(event.data);
+			else reject(new Error(event.data?.error || `Service worker request failed: ${message.type}`));
+		};
+
+		try {
+			worker.postMessage(message, [channel.port2]);
+		} catch (error) {
+			clearTimeout(timer);
+			channel.port1.close();
+			reject(error);
+		}
+	});
+}
+
+async function getReadyServiceWorker() {
+	const registration = await navigator.serviceWorker.getRegistration();
+	if (!registration) throw new Error('Service worker belum terdaftar.');
+
+	const readyRegistration = await navigator.serviceWorker.ready;
+	const worker = getActiveServiceWorker(readyRegistration || registration);
+	if (!worker) throw new Error('Service worker belum aktif. Silakan coba lagi.');
+	return worker;
+}
+
+export async function cacheUrlWithServiceWorker(url, cacheName, { force = false, timeout = 120000 } = {}) {
+	const worker = await getReadyServiceWorker();
+	return postMessageAndWait(worker, { type: 'CACHE_URL', url, cacheName, force }, { timeout });
+}
+
+export async function deleteServiceWorkerCache(cacheName, { timeout = 30000 } = {}) {
+	const worker = await getReadyServiceWorker();
+	return postMessageAndWait(worker, { type: 'DELETE_CACHE', cacheName }, { timeout });
+}
+
 export async function registerServiceWorker({ startCaching = true } = {}) {
 	if (dev) {
 		return { success: false, error: 'Service worker dinonaktifkan pada mode pengembangan.' };
@@ -75,7 +120,7 @@ export async function registerServiceWorker({ startCaching = true } = {}) {
 		if (startCaching) {
 			const worker = getActiveServiceWorker(readyRegistration || registration);
 			if (!worker) return { success: false, error: 'Service worker belum aktif. Silakan coba lagi.' };
-			worker.postMessage({ type: 'START_CACHING' });
+			await postMessageAndWait(worker, { type: 'START_CACHING' }, { timeout: 180000 });
 		}
 
 		return { success: true, registration: readyRegistration || registration };

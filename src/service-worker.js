@@ -27,10 +27,15 @@ const cacheNames = {
 	config: 'quranwbw-config', // User preferences (survives across versions)
 	audioData: 'quranwbw-audio-cache', // Audio files (recitations and word audios)
 	chapterData: 'quranwbw-chapter-data', // Chapter routes and data
+	fontData: 'quranwbw-font-data', // Shared offline Quran fonts
 	mushafData: 'quranwbw-mushaf-data', // Mushaf pages and fonts
 	morphologyData: 'quranwbw-morphology-data', // Morphology data files
 	tafsirData: 'quranwbw-tafsir-data' // Tafsir data files
 };
+const OFFLINE_CONTENT_CACHE_NAMES = new Set([cacheNames.audioData, cacheNames.chapterData, cacheNames.fontData, cacheNames.mushafData, cacheNames.morphologyData, cacheNames.tafsirData]);
+const OFFLINE_ASSET_ORIGINS = new Set(['https://static.quranwbw.com', 'https://cdn.jsdelivr.net', 'https://audios.quranwbw.com']);
+const CACHE_REQUEST_ATTEMPTS = 3;
+
 const scopeUrl = new URL(self.registration.scope);
 const basePath = scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname.slice(0, -1) : scopeUrl.pathname;
 function withBase(path) {
@@ -140,6 +145,43 @@ async function notifyClients(message) {
 	clients.forEach((client) => client.postMessage(message));
 }
 
+function replyToMessage(event, payload) {
+	event.ports?.[0]?.postMessage(payload);
+}
+
+function sleep(ms) {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchOfflineResource(url) {
+	let lastError;
+	for (let attempt = 1; attempt <= CACHE_REQUEST_ATTEMPTS; attempt++) {
+		try {
+			const response = await fetch(url, { cache: 'no-store' });
+			if (!response.ok) throw new Error(`HTTP ${response.status} while caching ${url}`);
+			return response;
+		} catch (error) {
+			lastError = error;
+			if (attempt < CACHE_REQUEST_ATTEMPTS) await sleep(400 * 2 ** (attempt - 1));
+		}
+	}
+	throw lastError ?? new Error(`Unable to cache ${url}`);
+}
+
+function validateOfflineCacheRequest(url, cacheName) {
+	if (!OFFLINE_CONTENT_CACHE_NAMES.has(cacheName)) throw new Error(`Unsupported offline cache: ${cacheName}`);
+
+	const resolved = new URL(url, scopeUrl.origin);
+	const sameOrigin = resolved.origin === scopeUrl.origin;
+	if (sameOrigin && !resolved.pathname.startsWith(scopeUrl.pathname)) {
+		throw new Error('Refusing to cache a same-origin URL outside the PWA scope.');
+	}
+	if (!sameOrigin && !OFFLINE_ASSET_ORIGINS.has(resolved.origin)) {
+		throw new Error(`Offline caching is not allowed for origin: ${resolved.origin}`);
+	}
+	return resolved;
+}
+
 async function getVersionedCoreCacheNames() {
 	const keys = await caches.keys();
 	const previous = keys.filter((key) => key.startsWith(CORE_CACHE_PREFIX) && key !== cacheNames.core).reverse();
@@ -242,47 +284,59 @@ self.addEventListener('message', (event) => {
 				try {
 					await performCaching();
 					await notifyClients({ type: 'CACHE_COMPLETE', cacheName: cacheNames.core });
+					replyToMessage(event, { ok: true, type: 'CACHE_COMPLETE', cacheName: cacheNames.core });
 				} catch (error) {
+					cachingEnabled = false;
+					await saveCachingStatus(false);
 					console.warn('[SW] Initial offline cache failed.', error);
 					await notifyClients({ type: 'CACHE_FAILED' });
+					replyToMessage(event, { ok: false, type: 'CACHE_FAILED', error: error instanceof Error ? error.message : String(error) });
 				}
 			})()
 		);
 	}
-	// Cache a specific URL to a specific cache
+	// Cache a specific URL to a specific dedicated offline cache.
 	else if (event.data.type === 'CACHE_URL') {
 		event.waitUntil(
 			(async () => {
 				try {
-					const cacheName = event.data.cacheName || cacheNames.core;
+					const cacheName = event.data.cacheName;
+					const url = validateOfflineCacheRequest(event.data.url, cacheName);
 					const cache = await caches.open(cacheName);
-					const response = await fetch(event.data.url);
-					if (response.ok) {
-						await cache.put(event.data.url, response);
+					const request = new Request(url.href);
+
+					if (!event.data.force) {
+						const existing = await cache.match(request);
+						if (existing) {
+							replyToMessage(event, { ok: true, type: 'CACHE_URL_RESULT', cacheName, url: url.href, source: 'cache' });
+							return;
+						}
 					}
+
+					const response = await fetchOfflineResource(url.href);
+					await cache.put(request, response.clone());
+					replyToMessage(event, { ok: true, type: 'CACHE_URL_RESULT', cacheName, url: url.href, source: 'network', status: response.status });
 				} catch (error) {
-					console.warn(error);
+					console.warn('[SW] CACHE_URL failed', error);
+					replyToMessage(event, { ok: false, type: 'CACHE_URL_RESULT', error: error instanceof Error ? error.message : String(error) });
 				}
 			})()
 		);
 	}
-	// Delete a specific cache
+	// Delete a specific dedicated offline cache.
 	else if (event.data.type === 'DELETE_CACHE') {
 		event.waitUntil(
 			(async () => {
 				try {
 					const cacheName = event.data.cacheName;
+					if (!OFFLINE_CONTENT_CACHE_NAMES.has(cacheName)) throw new Error(`Unsupported offline cache: ${cacheName}`);
 					await caches.delete(cacheName);
 
-					const clients = await self.clients.matchAll();
-					clients.forEach((client) => {
-						client.postMessage({
-							type: 'CACHE_DELETED',
-							cacheName: cacheName
-						});
-					});
+					await notifyClients({ type: 'CACHE_DELETED', cacheName });
+					replyToMessage(event, { ok: true, type: 'CACHE_DELETED', cacheName });
 				} catch (error) {
-					console.warn(error);
+					console.warn('[SW] DELETE_CACHE failed', error);
+					replyToMessage(event, { ok: false, type: 'CACHE_DELETED', error: error instanceof Error ? error.message : String(error) });
 				}
 			})()
 		);
@@ -339,7 +393,7 @@ async function matchVersionedCoreCaches(request) {
 }
 
 async function matchOfflineDataCaches(request) {
-	for (const cacheName of [cacheNames.chapterData, cacheNames.mushafData, cacheNames.morphologyData, cacheNames.tafsirData, cacheNames.audioData]) {
+	for (const cacheName of OFFLINE_CONTENT_CACHE_NAMES) {
 		const cache = await caches.open(cacheName);
 		const response = await cache.match(request);
 		if (response) return response;
@@ -366,6 +420,8 @@ self.addEventListener('fetch', (event) => {
 	if (event.request.method !== 'GET' || stuffNotToCache.some((excluded) => url.pathname.includes(excluded))) return;
 	if (url.searchParams.has('__network_probe')) return;
 	const sameOrigin = url.origin === scopeUrl.origin;
+	const approvedOfflineOrigin = OFFLINE_ASSET_ORIGINS.has(url.origin);
+	if (!sameOrigin && !approvedOfflineOrigin) return;
 
 	event.respondWith(
 		(async () => {
@@ -379,17 +435,13 @@ self.addEventListener('fetch', (event) => {
 			if (cachingEnabled) {
 				const offlineResponse = await matchOfflineDataCaches(event.request);
 				if (offlineResponse) return offlineResponse;
+			} else if (!sameOrigin) {
+				return fetch(event.request);
 			}
 
 			try {
 				const networkResponse = await fetch(event.request);
-				if (networkResponse && networkResponse.status < 500) {
-					if (sameOrigin && cachingEnabled && networkResponse.ok) {
-						const cache = await caches.open(cacheNames.core);
-						await cache.put(event.request, networkResponse.clone());
-					}
-					return networkResponse;
-				}
+				if (networkResponse && networkResponse.status < 500) return networkResponse;
 			} catch (error) {
 				console.warn('[SW] Network request failed; using local fallback when possible.', error);
 			}
