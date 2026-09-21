@@ -10,6 +10,7 @@ const states = new Map();
 const cacheInFlight = new Map();
 const fontReadyInFlight = new Map();
 const loadedFamilies = new Map();
+const desiredUrlByFamily = new Map();
 const backgroundQueue = [];
 const queuedBackgroundUrls = new Set();
 
@@ -150,6 +151,10 @@ async function activateFont(state, cached) {
 		const face = new FontFace(state.family, source);
 		await face.load();
 
+		// A theme/font change may have selected a different URL while this one was loading.
+		// Keep the obsolete response cached, but never let it replace the newly desired face.
+		if (desiredUrlByFamily.get(state.family) !== state.url) return false;
+
 		const previous = loadedFamilies.get(state.family);
 		if (previous?.face && previous.face !== face) {
 			try {
@@ -161,6 +166,7 @@ async function activateFont(state, cached) {
 
 		document.fonts.add(face);
 		loadedFamilies.set(state.family, { url: state.url, face });
+		return true;
 	} finally {
 		if (objectUrl) URL.revokeObjectURL(objectUrl);
 	}
@@ -326,8 +332,17 @@ async function performEnsureMushafFont(page, url) {
 			cached = await ensureCachedFont(url);
 		}
 
+		if (desiredUrlByFamily.get(state.family) !== state.url) {
+			setState(state, { status: 'superseded', source: cached.source });
+			return publicState(state);
+		}
+
 		setState(state, { status: 'activating', source: cached.source });
-		await activateFont(state, cached);
+		const activated = await activateFont(state, cached);
+		if (!activated) {
+			setState(state, { status: 'superseded', source: cached.source });
+			return publicState(state);
+		}
 		clearRetry(state);
 		setState(state, { status: 'ready', source: cached.source, attempts: 0 });
 		queueNeighborPrefetch(page);
@@ -360,6 +375,7 @@ export function subscribeMushafFont(page, url, subscriber) {
 	installRecoveryListeners();
 
 	const state = getState(page, url);
+	desiredUrlByFamily.set(state.family, url);
 	state.subscribers.add(subscriber);
 	subscriber(publicState(state));
 	ensureMushafFont(page, url).catch((error) => {
