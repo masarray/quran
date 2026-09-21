@@ -146,6 +146,28 @@ async function assertAppShell(page) {
   expect((await page.title()).toLowerCase()).toContain('quran');
 }
 
+async function sendServiceWorkerRequest(page, message) {
+  return page.evaluate(
+    ({ message }) =>
+      new Promise(async (resolve, reject) => {
+        const registration = await navigator.serviceWorker.ready;
+        const worker = navigator.serviceWorker.controller || registration.active;
+        if (!worker) return reject(new Error('missing active service worker'));
+
+        const channel = new MessageChannel();
+        const timer = setTimeout(() => reject(new Error(`service worker request timed out: ${message.type}`)), 10_000);
+
+        channel.port1.onmessage = (event) => {
+          clearTimeout(timer);
+          resolve(event.data);
+        };
+
+        worker.postMessage(message, [channel.port2]);
+      }),
+    { message }
+  );
+}
+
 test.beforeAll(async () => {
   server = http.createServer((req, res) => {
     requestHandler(req, res).catch((error) => {
@@ -229,6 +251,65 @@ test('slow navigation beyond ten seconds is not aborted by the service worker', 
 
   expect(elapsed).toBeGreaterThanOrEqual(10_000);
   await assertAppShell(page);
+
+  await context.close();
+});
+
+test('offline cache writes acknowledge durable completion and resume from cache', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const url = `${origin}${base}/manifest.json`;
+  const first = await sendServiceWorkerRequest(page, {
+    type: 'CACHE_URL',
+    url,
+    cacheName: 'quranwbw-chapter-data'
+  });
+  expect(first.ok).toBe(true);
+  expect(first.source).toBe('network');
+
+  const cached = await page.evaluate(async ({ url }) => {
+    const cache = await caches.open('quranwbw-chapter-data');
+    return Boolean(await cache.match(url));
+  }, { url });
+  expect(cached).toBe(true);
+
+  const second = await sendServiceWorkerRequest(page, {
+    type: 'CACHE_URL',
+    url,
+    cacheName: 'quranwbw-chapter-data'
+  });
+  expect(second.ok).toBe(true);
+  expect(second.source).toBe('cache');
+
+  await context.close();
+});
+
+test('offline cache protocol rejects unowned caches and failed resources', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const unowned = await sendServiceWorkerRequest(page, {
+    type: 'CACHE_URL',
+    url: `${origin}${base}/manifest.json`,
+    cacheName: 'unowned-test-cache'
+  });
+  expect(unowned.ok).toBe(false);
+  expect(unowned.error).toContain('Unsupported offline cache');
+
+  const missing = await sendServiceWorkerRequest(page, {
+    type: 'CACHE_URL',
+    url: `${origin}${base}/missing-offline-resource.json`,
+    cacheName: 'quranwbw-chapter-data'
+  });
+  expect(missing.ok).toBe(false);
+  expect(missing.error).toContain('HTTP 404');
 
   await context.close();
 });
