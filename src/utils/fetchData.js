@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import { __fontType, __chapterData, __verseTranslationData, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 import { staticEndpoint, cdnStaticDataUrls } from '$data/websiteSettings';
 import { selectableFontTypes, selectableWordTranslations, selectableWordTransliterations, selectableVerseTranslations } from '$data/options';
-import { quranMetaData } from '$data/quranMeta';
+import { assertQuranDataIntegrity, chapterFromJsonPath, normalizeTafsirChapterData, validateArabicWordData, validateWordDatasetAlignment, validateWordLanguageData, validateVerseTranslationData, validateVerseKeyData, validateTafsirChapterData, validateMorphologySummaryData, validateMorphologyStaticData } from '$utils/quranDataIntegrity';
 
 // Keep track of in-progress fetches globally
 const inFlightRequests = new Map();
@@ -66,66 +66,29 @@ export async function fetchChapterData(props) {
 	return result;
 }
 
-// Fetch specific translations and cache the data
-export async function fetchVerseTranslationData(props) {
+// Fetch specific translations and cache the data.
+// Fail closed: do not publish a partially loaded translation set to the UI.
+export async function fetchVerseTranslationData(props = {}) {
 	const translations = get(__verseTranslations);
-
-	// Get current store data
 	const existingData = get(__verseTranslationData) || {};
-
-	// Final object to hold the complete data
 	const updatedData = { ...existingData };
 
-	// Filter translation IDs that need to be fetched (not in store or cache)
-	const idsToFetch = [];
+	const results = await Promise.all(
+		translations.map(async (id) => {
+			const translation = selectableVerseTranslations[id];
+			if (!translation) throw new Error(`Unknown verse translation ID: ${id}`);
 
-	for (const id of translations) {
-		const version = selectableVerseTranslations[id].version;
-		const cached = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${version}`, 'translation', { requireCacheWrite: props.requireCacheWrite === true });
-
-		if (cached && typeof cached === 'object' && Object.keys(cached).length > 0) {
-			updatedData[id] = cached;
-		} else {
-			idsToFetch.push(id);
-		}
-	}
-
-	// Early return if everything was found in cache/store
-	if (idsToFetch.length === 0) {
-		// Update the store
-		if (!props.preventStoreUpdate) __verseTranslationData.set(updatedData);
-
-		return updatedData;
-	}
-
-	// Fetch missing translations
-	const fetchPromises = idsToFetch.map(async (id) => {
-		const version = selectableVerseTranslations[id].version;
-		try {
-			const res = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${version}`, 'translation', { requireCacheWrite: props.requireCacheWrite === true });
-
-			if (!res.ok) throw new Error(`Failed to fetch translation ID ${id}`);
-			const data = await res.json();
+			const data = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${translation.version}`, 'translation', {
+				requireCacheWrite: props.requireCacheWrite === true
+			});
 
 			return { id, data };
-		} catch (error) {
-			console.warn(error);
-			return { id, data: null };
-		}
-	});
+		})
+	);
 
-	const results = await Promise.all(fetchPromises);
+	for (const { id, data } of results) updatedData[id] = data;
 
-	// Merge fetched data into final object
-	for (const { id, data } of results) {
-		if (data) {
-			updatedData[id] = data;
-		}
-	}
-
-	// Update the store
 	if (!props.preventStoreUpdate) __verseTranslationData.set(updatedData);
-
 	return updatedData;
 }
 
@@ -144,8 +107,19 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 	const cachedData = await manageCache(cacheKey, type);
 
 	if (cachedData) {
-		const hasValidTimestamp = typeof cachedData.timestamp === 'number' && !isNaN(cachedData.timestamp);
-		const age = hasValidTimestamp ? Date.now() - cachedData.timestamp : Infinity;
+		let cachedDataValid = true;
+		const normalizedCachedData = normalizeJsonForConsumer(cachedData.data, type);
+		try {
+			validateCachedJson(normalizedCachedData, validator, cacheKey, type);
+		} catch (error) {
+			cachedDataValid = false;
+			console.warn('[integrity] rejecting corrupt cached Quran data', error);
+			await deleteCacheRecord(cacheKey, type);
+		}
+
+		if (cachedDataValid) {
+			const hasValidTimestamp = typeof cachedData.timestamp === 'number' && !isNaN(cachedData.timestamp);
+			const age = hasValidTimestamp ? Date.now() - cachedData.timestamp : Infinity;
 
 		// If stale → kick off background fetch (deduplicated)
 		if (age > maxCacheAge && !inFlightRequests.has(cacheKey)) {
@@ -155,8 +129,8 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 					try {
 						const response = await fetch(url);
 						if (!response.ok) throw new Error('CDN response not ok');
-						const freshData = await response.json();
-						validateCachedJson(freshData, validator, cacheKey);
+						const freshData = normalizeJsonForConsumer(await response.json(), type);
+						validateCachedJson(freshData, validator, cacheKey, type);
 						await manageCache(cacheKey, type, freshData);
 						console.log(`[cache] background update done for ${cacheKey}`);
 						return freshData;
@@ -169,11 +143,12 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 			);
 		}
 
-		// Always return stale (or fresh) cache immediately
-		return cachedData.data;
+			// Always return a valid stale (or fresh) cache immediately.
+			return normalizedCachedData;
+		}
 	}
 
-	// 2. No cache → see if someone else is already fetching with the same durability requirement
+	// 2. No valid cache → see if someone else is already fetching with the same durability requirement
 	if (inFlightRequests.has(requestKey)) {
 		return inFlightRequests.get(requestKey);
 	}
@@ -183,8 +158,8 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 		try {
 			const response = await fetch(url);
 			if (!response.ok) throw new Error('Failed to fetch data from the CDN');
-			const data = await response.json();
-			validateCachedJson(data, validator, cacheKey);
+			const data = normalizeJsonForConsumer(await response.json(), type);
+			validateCachedJson(data, validator, cacheKey, type);
 			const cacheWriteSucceeded = await manageCache(cacheKey, type, data, { throwOnWriteError: requireCacheWrite });
 			if (requireCacheWrite && !cacheWriteSucceeded) {
 				throw new Error(`Failed to persist offline data: ${cacheKey}`);
@@ -200,64 +175,51 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 	return fetchPromise;
 }
 
-function validateCachedJson(data, validator, cacheKey) {
-	if (!validator) return true;
-	if (validator(data)) return true;
-	throw new Error(`Invalid Quran data shape: ${cacheKey}`);
+function normalizeJsonForConsumer(data, type) {
+	if (type === 'tafsir') return normalizeTafsirChapterData(data);
+	return data;
+}
+
+function validateCachedJson(data, validator, cacheKey, kind) {
+	return assertQuranDataIntegrity(data, validator, { cacheKey, kind });
 }
 
 function getCacheValidator(parsedUrl, type) {
 	const pathname = parsedUrl.pathname;
 
-	if (type === 'word' && pathname.includes('/words-data/arabic/')) {
-		return validateArabicWordData;
-	}
+	if (type === 'word' && pathname.includes('/words-data/arabic/')) return validateArabicWordData;
 
 	if (type === 'word' && (pathname.includes('/words-data/translations/') || pathname.includes('/words-data/transliterations/'))) {
 		return validateWordLanguageData;
 	}
 
-	if (type === 'translation' || pathname.includes('/verse-translations/')) {
-		return validateVerseTranslationDataShape;
+	if (type === 'translation' || pathname.includes('/verse-translations/')) return validateVerseTranslationData;
+
+	if (pathname.includes('/meta/verseKeyData.json')) return validateVerseKeyData;
+
+	if (type === 'tafsir') {
+		const chapter = chapterFromJsonPath(pathname);
+		return chapter ? (data) => validateTafsirChapterData(data, chapter) : () => false;
 	}
 
-	if (pathname.includes('/meta/verseKeyData.json')) {
-		return validateVerseKeyData;
+	if (type === 'morphology' && pathname.includes('/lexicon/word-summaries/')) {
+		const chapter = chapterFromJsonPath(pathname);
+		return chapter ? (data) => validateMorphologySummaryData(data, chapter) : () => false;
 	}
+
+	if (type === 'morphology') return validateMorphologyStaticData;
 
 	return null;
 }
 
-function validateArabicWordData(data) {
-	if (!data || typeof data !== 'object') return false;
-
-	for (let chapter = 1; chapter <= 114; chapter += 1) {
-		const verses = data[chapter];
-		if (!verses || typeof verses !== 'object') return false;
-
-		const expectedVerses = quranMetaData[chapter]?.verses || 0;
-		for (let verse = 1; verse <= expectedVerses; verse += 1) {
-			const verseData = verses[verse];
-			if (!Array.isArray(verseData) || !Array.isArray(verseData[0]) || verseData[0].length === 0) return false;
-		}
+async function deleteCacheRecord(key, type) {
+	try {
+		const table = cacheTableMap[type];
+		if (!table) return;
+		await table.delete(key);
+	} catch (error) {
+		console.warn('[integrity] unable to delete corrupt cache record', error);
 	}
-
-	return true;
-}
-
-function validateWordLanguageData(data) {
-	if (!data || typeof data !== 'object') return false;
-	return Boolean(data[1]?.[1]?.[0]?.length && data[114]?.[6]?.[0]?.length);
-}
-
-function validateVerseTranslationDataShape(data) {
-	if (!data || typeof data !== 'object') return false;
-	return Object.keys(data).length > 0 && Boolean(data[1] || data['1'] || data['1:1']);
-}
-
-function validateVerseKeyData(data) {
-	if (!data || typeof data !== 'object') return false;
-	return Boolean(data['1:1']?.page && data['114:6']?.page);
 }
 
 // Unified cache utility for IndexedDB with version and freshness control
@@ -302,10 +264,16 @@ export async function fetchWordData(fontType, wordTranslation, wordTransliterati
 
 	const [arabicWordData, translationWordData, transliterationWordData, metaVerseData] = await Promise.all(urls.map(({ url, type }) => fetchAndCacheJson(url, type, { requireCacheWrite })));
 
-	return {
+	const combinedWordData = {
 		arabicWordData,
 		translationWordData,
 		transliterationWordData,
 		metaVerseData
 	};
+	assertQuranDataIntegrity(combinedWordData, validateWordDatasetAlignment, {
+		cacheKey: 'combined-word-dataset',
+		kind: 'word-alignment'
+	});
+
+	return combinedWordData;
 }

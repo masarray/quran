@@ -9,6 +9,7 @@ on:
       - 'src/service-worker.js'
       - 'src/utils/offlineModeHandler.js'
       - 'src/utils/fetchData.js'
+      - 'src/utils/quranDataIntegrity.js'
       - 'src/utils/dexie.js'
       - 'src/utils/storageHealth.js'
       - 'src/routes/**'
