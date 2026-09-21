@@ -10,6 +10,7 @@ on:
       - 'src/utils/offlineModeHandler.js'
       - 'src/utils/mushafFontManager.js'
       - 'src/utils/mushafFontPolicy.js'
+      - 'src/utils/mushafFontNetworkHealth.js'
       - 'src/components/display/verses/WordsBlock.svelte'
       - 'src/utils/fetchData.js'
       - 'src/utils/audioController.js'
@@ -30,6 +31,7 @@ on:
       - 'scripts/test-pwa-reliability.mjs'
       - 'scripts/pwa-lifecycle.spec.js'
       - 'scripts/test-smart-mushaf-fonts.mjs'
+      - 'scripts/test-krl-network-churn.mjs'
       - 'scripts/test-release-pipeline.mjs'
       - '.github/workflows/deploy-pages.yml'
       - '.github/workflows/pwa-reliability.yml'
@@ -65,6 +67,7 @@ jobs:
           node --check src/utils/offlineModeHandler.js
           node --check src/utils/mushafFontManager.js
           node --check src/utils/mushafFontPolicy.js
+          node --check src/utils/mushafFontNetworkHealth.js
 
       - name: Test runtime recovery
         run: npm run test:runtime-recovery
