@@ -1,13 +1,14 @@
 <script>
 	import PageHead from '$misc/PageHead.svelte';
 	import { base } from '$app/paths';
+	import { onMount } from 'svelte';
 	import Download from '$svgs/Download.svelte';
 	import Trash from '$svgs/Trash.svelte';
 	import Refresh from '$svgs/Refresh.svelte';
 	import Info from '$svgs/Info.svelte';
 	import { __currentPage, __offlineModeSettings, __verseTafsir, __fontType, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 	import { buttonClasses, disabledClasses } from '$data/commonClasses';
-	import { registerServiceWorker, unregisterServiceWorkerAndClearCache, checkOnlineAndAlert, cacheUrlWithServiceWorker, deleteServiceWorkerCache } from '$utils/offlineModeHandler';
+	import { registerServiceWorker, unregisterServiceWorkerAndClearCache, checkOnlineAndAlert, cacheUrlWithServiceWorker, deleteServiceWorkerCache, inspectOfflineCacheHealth } from '$utils/offlineModeHandler';
 	import { updateSettings } from '$utils/updateSettings';
 	import { showConfirm, showAlert } from '$utils/confirmationAlertHandler';
 	import { fetchChapterData, fetchVerseTranslationData, fetchAndCacheJson } from '$utils/fetchData';
@@ -15,7 +16,8 @@
 	import { getMushafWordFontLink, isIOSorMac } from '$utils/getMushafWordFontLink';
 	import { term } from '$utils/terminologies';
 	import { selectableTafsirs } from '$data/selectableTafsirs';
-	import { clearDexieTable } from '$utils/dexie';
+	import { clearDexieTable, getDexieTableCount } from '$utils/dexie';
+	import { ensureStorageCapacity, isQuotaExceededError } from '$utils/storageHealth';
 
 	const errorAlertMessage = 'Terjadi kesalahan. Silakan coba lagi beberapa saat lagi.';
 	const mismatchMessage = 'Pengaturan telah berubah. Unduh ulang agar akses offline tetap bekerja dengan benar.';
@@ -105,17 +107,6 @@
 		}
 	];
 
-	window.addEventListener('sw-cache-started', () => {
-		isRegistering = true;
-	});
-
-	window.addEventListener('sw-cache-complete', () => {
-		isRegistering = false;
-		updateOfflineSettingsStructure('serviceWorker', {
-			downloaded: true,
-			downloadedAt: new Date().toISOString()
-		});
-	});
 
 	function ensureOfflineSettingsStructure(key, defaultStructure = { downloaded: false, downloadedAt: null }) {
 		if (!$__offlineModeSettings) $__offlineModeSettings = {};
@@ -130,6 +121,96 @@
 		};
 		updateSettings({ type: 'offlineModeSettings', value: offlineModeSettings });
 	}
+
+	async function reconcileOfflineSettingsWithStorage() {
+		try {
+			const [cacheHealth, morphologyCount, tafsirCount] = await Promise.all([
+				inspectOfflineCacheHealth(),
+				getDexieTableCount('morphology_data'),
+				getDexieTableCount('tafsir_data')
+			]);
+
+			let changed = false;
+			const demoteIfMissing = (key, healthy) => {
+				if (offlineModeSettings?.[key]?.downloaded && !healthy) {
+					offlineModeSettings[key] = {
+						...offlineModeSettings[key],
+						downloaded: false,
+						downloadedAt: null
+					};
+					changed = true;
+				}
+			};
+
+			demoteIfMissing('serviceWorker', cacheHealth.coreShellReady && cacheHealth.fontDataCount > 0);
+			demoteIfMissing('chapterData', cacheHealth.chapterDataCount >= totalChapters);
+			demoteIfMissing('mushafData', cacheHealth.mushafDataCount >= totalPages);
+			demoteIfMissing('morphologyData', morphologyCount >= totalChapters + 4);
+			demoteIfMissing('tafsirData', tafsirCount >= totalChapters);
+
+			if (changed) {
+				updateSettings({ type: 'offlineModeSettings', value: { ...offlineModeSettings } });
+			}
+		} catch (error) {
+			console.warn('[Offline] Unable to reconcile saved download flags with local storage', error);
+		}
+	}
+
+	async function prepareOfflineDownload(estimatedSizeMB) {
+		if (!(await checkOnlineAndAlert())) return false;
+
+		try {
+			const storage = await ensureStorageCapacity(estimatedSizeMB);
+			if (storage.persisted === false) {
+				console.warn('[Offline] Browser did not grant persistent storage; downloaded data can still be evicted under storage pressure.');
+			}
+			return true;
+		} catch (error) {
+			console.warn('[Offline] Storage preflight failed', error);
+			showAlert(error?.message || 'Ruang penyimpanan perangkat tidak cukup untuk unduhan ini.', '');
+			return false;
+		}
+	}
+
+	function showDownloadFailure(error) {
+		console.warn(error);
+		if (isQuotaExceededError(error)) {
+			showAlert('Penyimpanan perangkat penuh atau kuota penyimpanan browser tidak mencukupi. Kosongkan ruang lalu coba lagi.', '');
+			return;
+		}
+		showAlert(errorAlertMessage, '');
+	}
+
+	onMount(() => {
+		const handleCacheStarted = () => {
+			isRegistering = true;
+		};
+		const handleCacheComplete = () => {
+			isRegistering = false;
+			updateOfflineSettingsStructure('serviceWorker', {
+				downloaded: true,
+				downloadedAt: new Date().toISOString()
+			});
+		};
+		const handleCacheFailed = () => {
+			isRegistering = false;
+			updateOfflineSettingsStructure('serviceWorker', {
+				downloaded: false,
+				downloadedAt: null
+			});
+		};
+
+		window.addEventListener('sw-cache-started', handleCacheStarted);
+		window.addEventListener('sw-cache-complete', handleCacheComplete);
+		window.addEventListener('sw-cache-failed', handleCacheFailed);
+		reconcileOfflineSettingsWithStorage();
+
+		return () => {
+			window.removeEventListener('sw-cache-started', handleCacheStarted);
+			window.removeEventListener('sw-cache-complete', handleCacheComplete);
+			window.removeEventListener('sw-cache-failed', handleCacheFailed);
+		};
+	});
 
 	async function cacheUrlsToCache(urls, cacheName, { concurrency = 4, onProgress = () => {} } = {}) {
 		let nextIndex = 0;
@@ -190,8 +271,8 @@
 			const activeVerseTranslations = verseTranslations ?? $__verseTranslations;
 			const fontTypeForFetch = Array.isArray(activeFontType) ? activeFontType[0] : activeFontType;
 
-			await fetchChapterData({ chapter: 1, fontType: fontTypeForFetch, preventStoreUpdate: true });
-			await fetchVerseTranslationData({ preventStoreUpdate: true });
+			await fetchChapterData({ chapter: 1, fontType: fontTypeForFetch, preventStoreUpdate: true, requireCacheWrite: true });
+			await fetchVerseTranslationData({ preventStoreUpdate: true, requireCacheWrite: true });
 
 			addDownloadedDataSettings({
 				fontTypes: activeFontType,
@@ -328,7 +409,7 @@
 	}
 
 	async function handleDownloadChaptersData() {
-		if (!(await checkOnlineAndAlert())) return;
+		if (!(await prepareOfflineDownload(20))) return;
 
 		isDownloadingChapter = true;
 		downloadProgressPercentage = 0;
@@ -336,7 +417,7 @@
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
-			const totalStepsInDownloadProgress = coreSteps + totalChapters;
+			const totalStepsInDownloadProgress = coreSteps + totalChapters + 1;
 			let completedStepsInDownloadProgress = 0;
 
 			await ensureCoreDataDownloaded(() => {
@@ -360,15 +441,14 @@
 			updateOfflineSettingsStructure('chapterData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Chapter Data Download');
 		} catch (error) {
-			console.warn(error);
-			showAlert(errorAlertMessage, '');
+			showDownloadFailure(error);
 		} finally {
 			isDownloadingChapter = false;
 		}
 	}
 
 	async function handleDownloadMushafData() {
-		if (!(await checkOnlineAndAlert())) return;
+		if (!(await prepareOfflineDownload(60))) return;
 
 		isDownloadingMushaf = true;
 		downloadProgressPercentage = 0;
@@ -400,15 +480,14 @@
 			updateOfflineSettingsStructure('mushafData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Mushaf Data Download');
 		} catch (error) {
-			console.warn(error);
-			showAlert(errorAlertMessage, '');
+			showDownloadFailure(error);
 		} finally {
 			isDownloadingMushaf = false;
 		}
 	}
 
 	async function handleDownloadMorphologyData() {
-		if (!(await checkOnlineAndAlert())) return;
+		if (!(await prepareOfflineDownload(90))) return;
 
 		isDownloadingMorphology = true;
 		downloadProgressPercentage = 0;
@@ -425,21 +504,21 @@
 			});
 
 			for (let chapter = 1; chapter <= totalChapters; chapter++) {
-				await fetchAndCacheJson(morphologyDataUrls.getWordSummary(chapter), 'morphology');
+				await fetchAndCacheJson(morphologyDataUrls.getWordSummary(chapter), 'morphology', { requireCacheWrite: true });
 				completedStepsInDownloadProgress++;
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			}
 
-			await fetchAndCacheJson(morphologyDataUrls.wordVerbs, 'morphology');
+			await fetchAndCacheJson(morphologyDataUrls.wordVerbs, 'morphology', { requireCacheWrite: true });
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-			await fetchAndCacheJson(morphologyDataUrls.wordsWithSameRootKeys, 'morphology');
+			await fetchAndCacheJson(morphologyDataUrls.wordsWithSameRootKeys, 'morphology', { requireCacheWrite: true });
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-			await fetchAndCacheJson(morphologyDataUrls.wordUthmaniAndRoots, 'morphology');
+			await fetchAndCacheJson(morphologyDataUrls.wordUthmaniAndRoots, 'morphology', { requireCacheWrite: true });
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-			await fetchAndCacheJson(morphologyDataUrls.exactWordsKeys, 'morphology');
+			await fetchAndCacheJson(morphologyDataUrls.exactWordsKeys, 'morphology', { requireCacheWrite: true });
 			completedStepsInDownloadProgress++;
 			updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			await downloadChapterAndVerseTranslationData({});
@@ -449,15 +528,14 @@
 			updateOfflineSettingsStructure('morphologyData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Morphology Data Download');
 		} catch (error) {
-			console.warn(error);
-			showAlert(errorAlertMessage, '');
+			showDownloadFailure(error);
 		} finally {
 			isDownloadingMorphology = false;
 		}
 	}
 
 	async function handleDownloadTafsirData() {
-		if (!(await checkOnlineAndAlert())) return;
+		if (!(await prepareOfflineDownload(90))) return;
 
 		isDownloadingTafsir = true;
 		downloadProgressPercentage = 0;
@@ -465,7 +543,7 @@
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
-			const totalStepsInDownloadProgress = coreSteps + totalChapters + 1;
+			const totalStepsInDownloadProgress = coreSteps + totalChapters;
 			let completedStepsInDownloadProgress = 0;
 
 			await ensureCoreDataDownloaded(() => {
@@ -477,7 +555,7 @@
 			const selectedTafsir = selectableTafsirs[selectedTafirId];
 
 			for (let chapter = 1; chapter <= totalChapters; chapter++) {
-				await fetchAndCacheJson(`${tafsirDataUrls[selectedTafsir.url]}/${selectedTafsir.slug}/${chapter}.json`, 'tafsir');
+				await fetchAndCacheJson(`${tafsirDataUrls[selectedTafsir.url]}/${selectedTafsir.slug}/${chapter}.json`, 'tafsir', { requireCacheWrite: true });
 				completedStepsInDownloadProgress++;
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			}
@@ -486,8 +564,7 @@
 			updateOfflineSettingsStructure('tafsirData', { downloaded: true, downloadedAt: new Date().toISOString() });
 			window.umami?.track('Tafsir Data Download');
 		} catch (error) {
-			console.warn(error);
-			showAlert(errorAlertMessage, '');
+			showDownloadFailure(error);
 		} finally {
 			isDownloadingTafsir = false;
 		}
@@ -495,7 +572,7 @@
 
 	async function downloadAllCdnStaticData() {
 		try {
-			const cachePromises = Object.entries(cdnStaticDataUrls).map(([_, url]) => fetchAndCacheJson(url, 'other'));
+			const cachePromises = Object.entries(cdnStaticDataUrls).map(([_, url]) => fetchAndCacheJson(url, 'other', { requireCacheWrite: true }));
 			await Promise.all(cachePromises);
 			console.log('All CDN static data cached successfully');
 		} catch (error) {
