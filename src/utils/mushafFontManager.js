@@ -8,6 +8,7 @@ const cacheSearchOrder = [smartMushafFontCacheName, fullMushafCacheName];
 
 const states = new Map();
 const cacheInFlight = new Map();
+const fontReadyInFlight = new Map();
 const loadedFamilies = new Map();
 const backgroundQueue = [];
 const queuedBackgroundUrls = new Set();
@@ -274,22 +275,12 @@ function installRecoveryListeners() {
 	});
 }
 
-export async function ensureMushafFont(page, url = getMushafWordFontLink(page)) {
-	if (!isBrowserReady()) throw new Error('Mushaf fonts can only be loaded in a browser.');
-	installRecoveryListeners();
-
+async function performEnsureMushafFont(page, url) {
 	const state = getState(page, url);
 	const loaded = loadedFamilies.get(state.family);
 	if (loaded?.url === url && loaded.face?.status === 'loaded') {
 		if (state.status !== 'ready') setState(state, { status: 'ready', source: 'memory', attempts: 0 });
 		return publicState(state);
-	}
-
-	if (state.status === 'checking' || state.status === 'downloading' || state.status === 'activating') {
-		const shared = cacheInFlight.get(url);
-		if (shared) await shared.catch(() => {});
-		const ready = loadedFamilies.get(state.family);
-		if (ready?.url === url && ready.face?.status === 'loaded') return publicState(state);
 	}
 
 	try {
@@ -315,6 +306,17 @@ export async function ensureMushafFont(page, url = getMushafWordFontLink(page)) 
 		scheduleActiveRetry(state);
 		throw error;
 	}
+}
+
+export async function ensureMushafFont(page, url = getMushafWordFontLink(page)) {
+	if (!isBrowserReady()) throw new Error('Mushaf fonts can only be loaded in a browser.');
+	installRecoveryListeners();
+
+	if (fontReadyInFlight.has(url)) return fontReadyInFlight.get(url);
+
+	const task = performEnsureMushafFont(page, url).finally(() => fontReadyInFlight.delete(url));
+	fontReadyInFlight.set(url, task);
+	return task;
 }
 
 export function subscribeMushafFont(page, url, subscriber) {
