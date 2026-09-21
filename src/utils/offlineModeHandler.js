@@ -148,6 +148,36 @@ export async function disableHiddenOfflineCaching() {
 	}
 }
 
+export async function inspectOfflineCacheHealth() {
+	const cacheKeys = await caches.keys();
+	const coreCaches = cacheKeys.filter((key) => key.startsWith('quranwbw-cache-'));
+
+	let coreShellReady = false;
+	const shellUrl = `${location.origin}${base}/`;
+	for (const cacheName of coreCaches) {
+		const cache = await caches.open(cacheName);
+		if (await cache.match(shellUrl)) {
+			coreShellReady = true;
+			break;
+		}
+	}
+
+	const countEntries = async (cacheName) => {
+		if (!cacheKeys.includes(cacheName)) return 0;
+		const cache = await caches.open(cacheName);
+		return (await cache.keys()).length;
+	};
+
+	return {
+		coreShellReady,
+		coreCacheCount: coreCaches.length,
+		chapterDataCount: await countEntries('quranwbw-chapter-data'),
+		mushafDataCount: await countEntries('quranwbw-mushaf-data'),
+		fontDataCount: await countEntries('quranwbw-font-data'),
+		audioDataCount: await countEntries('quranwbw-audio-cache')
+	};
+}
+
 export async function unregisterServiceWorkerAndClearCache() {
 	try {
 		const registrations = await navigator.serviceWorker.getRegistrations();
