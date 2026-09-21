@@ -262,7 +262,8 @@ async function ensureSmartMushafFontCached(input, { priority = 'critical' } = {}
 			return { source: 'network', url: url.href, status: response.status, persisted: true };
 		} catch (error) {
 			console.warn('[SW] Mushaf font loaded but could not be persisted; allowing live rendering.', error);
-			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false };
+			const bytes = await response.clone().arrayBuffer();
+			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false, bytes };
 		}
 	})().finally(() => smartMushafFontInFlight.delete(url.href));
 
