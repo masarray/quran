@@ -32,6 +32,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { getWebsiteWidth } from '$utils/getWebsiteWidth';
+	import { defaultSettings } from '$data/defaultSettings';
+	import { loadUserSettings, parseJsonSafely } from '$utils/settingsStorage';
 
 	const defaultPaddingTop = 'pt-16';
 	const defaultPaddingBottom = 'pb-8';
@@ -52,7 +54,7 @@
 				const result = await registerServiceWorker({ startCaching: false });
 				if (!result.success) console.warn('[PWA] Service worker registration did not complete:', result.error);
 
-				const settings = JSON.parse(localStorage.getItem('userSettings'));
+				const settings = loadUserSettings(defaultSettings, { persist: true });
 				if (!settings?.offlineModeSettings?.serviceWorker?.downloaded) {
 					await disableHiddenOfflineCaching();
 				}
@@ -140,8 +142,8 @@
 
 	// Non-Mushaf Page Base Handling
 	$: if ($__currentPage && $__currentPage !== 'mushaf') {
-		const userSettings = JSON.parse(localStorage.getItem('userSettings'));
-		const parsedUserSettings = JSON.parse($__userSettings);
+		const userSettings = loadUserSettings(defaultSettings, { persist: true });
+		const parsedUserSettings = parseJsonSafely($__userSettings, userSettings) || userSettings;
 
 		// Only restore user settings if sign language mode is OFF
 		if (!$__signLanguageModeEnabled) {
