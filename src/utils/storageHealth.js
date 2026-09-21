@@ -55,7 +55,8 @@ export async function ensureStorageCapacity(requiredMB, { reserveMB = 25, reserv
 		return { persisted, estimate, sufficient: true };
 	}
 
-	const reserveBytes = Math.max(reserveMB * MB, estimate.quota * reserveRatio);
+	const percentageReserve = Math.min(200 * MB, estimate.quota * reserveRatio);
+	const reserveBytes = Math.max(reserveMB * MB, percentageReserve);
 	if (estimate.available < requiredBytes + reserveBytes) {
 		throw new StorageCapacityError({
 			requiredBytes,
