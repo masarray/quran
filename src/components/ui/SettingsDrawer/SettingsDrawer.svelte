@@ -503,7 +503,6 @@
 			</div>
 
 			<div class="flex flex-col justify-center border-t border-theme-accent/20 py-6 space-y-4 text-center {settingsDrawerOpacity}">
-				<!-- svelte-ignore missing-declaration -->
 				<a class="{linkClasses} text-xs" target="_blank" href="https://github.com/marwan/quranwbw/commit/{__APP_VERSION__.split(' ')[0]}">Versi {__APP_VERSION__}</a>
 			</div>
 		</div>

@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import { error } from '@sveltejs/kit';
 
 export async function load({ params }) {
@@ -10,5 +11,5 @@ export async function load({ params }) {
 		});
 	}
 
-	goto(`/juz?id=${juz}`, { replaceState: false });
+	goto(`${base}/juz?id=${juz}`, { replaceState: false });
 }

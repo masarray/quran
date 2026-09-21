@@ -1,0 +1,97 @@
+name: PWA Reliability
+
+on:
+  push:
+    branches:
+      - 'reliability/**'
+  pull_request:
+    paths:
+      - 'src/service-worker.js'
+      - 'src/utils/offlineModeHandler.js'
+      - 'src/routes/**'
+      - 'src/app.html'
+      - 'svelte.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/test-pwa-reliability.mjs'
+      - 'scripts/pwa-lifecycle.spec.js'
+      - '.github/workflows/pwa-reliability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Syntax-check PWA runtime
+        run: |
+          node --check src/service-worker.js
+          node --check src/utils/offlineModeHandler.js
+
+      - name: Build GitHub Pages candidate
+        shell: bash
+        env:
+          GITHUB_PAGES: 'true'
+          BASE_PATH: '/quran'
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee pwa-build.log
+
+      - name: Verify PWA reliability invariants
+        run: npm run test:pwa-reliability
+
+      - name: Reject known startup regressions
+        shell: bash
+        run: |
+          if grep -Fq 'Overwriting build/index.html with fallback page' pwa-build.log; then
+            echo 'index.html was overwritten as fallback; expected build/404.html'
+            exit 1
+          fi
+          if grep -Fq 'Offline - resource not cached' build/service-worker.js; then
+            echo 'Raw offline failure text returned to production service worker'
+            exit 1
+          fi
+          if grep -Eq '"(untrack|fork|settled)" is not exported' pwa-build.log; then
+            echo 'Svelte/SvelteKit runtime export mismatch detected'
+            exit 1
+          fi
+          if grep -Fq 'css-syntax-error' pwa-build.log; then
+            echo 'CSS minifier syntax warning detected'
+            exit 1
+          fi
+
+      - name: Install Playwright lifecycle harness
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Run real PWA lifecycle tests
+        run: npx playwright test scripts/pwa-lifecycle.spec.js --workers=1 --reporter=line
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pwa-reliability-${{ github.sha }}
+          path: pwa-build.log
+          if-no-files-found: ignore
+          retention-days: 7

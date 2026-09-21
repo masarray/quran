@@ -13,7 +13,7 @@ const config = {
 	kit: {
 		adapter: useStaticAdapter
 			? adapterStatic({
-					fallback: 'index.html',
+					fallback: '404.html',
 					strict: false
 				})
 			: useNodeAdapter

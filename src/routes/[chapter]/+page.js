@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import { isValidVerseKey } from '$utils/validateKey';
 import { quranMetaData } from '$data/quranMeta';
 
@@ -13,13 +14,13 @@ export async function load({ params }) {
 		const verse = updatedParam.split(':')[1];
 
 		if (isValidVerseKey(`${chapter}:${verse}`)) {
-			goto(`/${chapter}/${verse}`, { replaceState: false });
+			goto(`${base}/${chapter}/${verse}`, { replaceState: false });
 		}
 	}
 
 	// if a chapter slug was provided
 	if (getIdByKeyword(params.chapter) !== null) {
-		goto(`/${getIdByKeyword(params.chapter)}`, { replaceState: false });
+		goto(`${base}/${getIdByKeyword(params.chapter)}`, { replaceState: false });
 	}
 
 	// basic chapter number check

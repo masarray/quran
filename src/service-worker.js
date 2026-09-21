@@ -21,6 +21,7 @@ import { build, files, version } from '$service-worker';
  */
 
 // Different cache names for different data types
+const CORE_CACHE_PREFIX = 'quranwbw-cache-';
 const cacheNames = {
 	core: `quranwbw-cache-${version}`, // Core website files (versioned)
 	config: 'quranwbw-config', // User preferences (survives across versions)
@@ -32,7 +33,13 @@ const cacheNames = {
 };
 const scopeUrl = new URL(self.registration.scope);
 const basePath = scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname.slice(0, -1) : scopeUrl.pathname;
-const withBase = (path) => `${basePath}${path}`;
+function withBase(path) {
+	if (/^https?:\/\//i.test(path)) return path;
+	const normalized = path.startsWith('/') ? path : `/${path}`;
+	if (!basePath) return normalized;
+	if (normalized === basePath || normalized.startsWith(`${basePath}/`)) return normalized;
+	return `${basePath}${normalized}`;
+}
 
 // Files we should never cache (the service worker itself and its settings)
 const stuffNotToCache = ['/service-worker.js', '/service-worker-settings.json'];
@@ -41,7 +48,7 @@ const stuffNotToCache = ['/service-worker.js', '/service-worker-settings.json'];
 const precacheFiles = [
 	...files, // Static files from /static folder
 	...build // Generated JS/CSS chunks (includes the main bundle)
-];
+].map(withBase);
 
 // Important pages we want to cache
 const staticRoutesToCache = ['/about', '/bookmarks', '/changelog', '/duas', '/games/guess-the-word', '/morphology', '/offline', '/supplications', '/topics', '/juz', '/hizb', '/page'].map(withBase);
@@ -50,7 +57,6 @@ const staticRoutesToCache = ['/about', '/bookmarks', '/changelog', '/duas', '/ga
 // CRITICAL: This must be loaded from cache on startup!
 let cachingEnabled = false;
 let cachingStatusLoaded = false; // Track if we've loaded the status
-const networkTimeout = 10000;
 
 /**
  * CHECK IF USER PREVIOUSLY ENABLED OFFLINE MODE
@@ -105,8 +111,19 @@ async function ensureCachingStatusLoaded() {
  * Runs when service worker is first installed
  * We skip waiting so the new service worker activates immediately
  */
-self.addEventListener('install', () => {
-	self.skipWaiting();
+self.addEventListener('install', (event) => {
+	event.waitUntil(
+		(async () => {
+			const cache = await caches.open(cacheNames.core);
+			try {
+				await cache.addAll([withBase('/'), ...build.map(withBase)]);
+				await self.skipWaiting();
+			} catch (error) {
+				await caches.delete(cacheNames.core);
+				throw error;
+			}
+		})()
+	);
 });
 
 /**
@@ -118,73 +135,46 @@ self.addEventListener('install', () => {
  * 2. If yes, automatically update their cache with new content
  * 3. Delete old caches from previous versions ONLY AFTER new cache is complete
  */
+async function notifyClients(message) {
+	const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+	clients.forEach((client) => client.postMessage(message));
+}
+
+async function getVersionedCoreCacheNames() {
+	const keys = await caches.keys();
+	const previous = keys.filter((key) => key.startsWith(CORE_CACHE_PREFIX) && key !== cacheNames.core).reverse();
+	return [cacheNames.core, ...previous];
+}
+
+async function cleanupOldCoreCaches() {
+	const coreCaches = await getVersionedCoreCacheNames();
+	const keep = new Set(coreCaches.slice(0, 2));
+	await Promise.all(coreCaches.filter((key) => !keep.has(key)).map((key) => caches.delete(key)));
+}
+
 self.addEventListener('activate', (event) => {
 	event.waitUntil(
 		(async () => {
-			// CRITICAL: Load caching status immediately
 			await ensureCachingStatusLoaded();
-			await self.clients.claim();
+			let offlineRefreshComplete = true;
 
-			// If they did, automatically recache everything with the new version
 			if (cachingEnabled) {
-				console.log('Caching was previously enabled, updating cache...');
-
-				// Tell the website that we're updating the cache
-				const clients = await self.clients.matchAll();
-				clients.forEach((client) => {
-					client.postMessage({ type: 'CACHE_UPDATE_STARTED' });
-				});
-
-				performCaching()
-					.then(async () => {
-						// Tell the website we're done updating
-						const finalClients = await self.clients.matchAll();
-						finalClients.forEach((client) => {
-							client.postMessage({ type: 'CACHE_UPDATE_COMPLETE' });
-						});
-
-						// NOW delete old caches (only after new cache is complete)
-						const keys = await caches.keys();
-						await Promise.all(
-							keys.map((key) => {
-								// Delete any cache that starts with 'quranwbw-cache-' but is not the current version
-								if (key.startsWith('quranwbw-cache-') && key !== cacheNames.core) {
-									console.log('[SW] Deleting old versioned cache:', key);
-									return caches.delete(key);
-								}
-							})
-						);
-					})
-					.catch((error) => console.warn(error));
-			} else {
-				// If caching was not enabled, just delete old caches immediately
-				const keys = await caches.keys();
-				await Promise.all(
-					keys.map((key) => {
-						// Delete any cache that starts with 'quranwbw-cache-' but is not the current version
-						if (key.startsWith('quranwbw-cache-') && key !== cacheNames.core) {
-							console.log('[SW] Deleting old versioned cache:', key);
-							return caches.delete(key);
-						}
-					})
-				);
+				await notifyClients({ type: 'CACHE_UPDATE_STARTED' });
+				try {
+					await performCaching();
+					await notifyClients({ type: 'CACHE_UPDATE_COMPLETE' });
+				} catch (error) {
+					offlineRefreshComplete = false;
+					console.warn('[SW] Offline cache refresh failed; previous cache is retained.', error);
+					await notifyClients({ type: 'CACHE_UPDATE_FAILED' });
+				}
 			}
 
+			await self.clients.claim();
+			if (offlineRefreshComplete) await cleanupOldCoreCaches();
 		})()
 	);
 });
-
-async function fetchWithTimeout(request, timeout = networkTimeout) {
-	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), timeout);
-
-	try {
-		return await fetch(request, { signal: controller.signal });
-	} finally {
-		clearTimeout(timer);
-	}
-}
-
 /**
  * PERFORM CACHING
  * Downloads and caches all website content
@@ -243,27 +233,19 @@ self.addEventListener('message', (event) => {
 	if (event.data.type === 'START_CACHING') {
 		cachingEnabled = true;
 		cachingStatusLoaded = true;
-		saveCachingStatus(true); // Remember this preference
 
 		event.waitUntil(
 			(async () => {
-				// Tell the website we're starting
-				const clients = await self.clients.matchAll();
-				clients.forEach((client) => {
-					client.postMessage({ type: 'CACHE_STARTED' });
-				});
+				await saveCachingStatus(true);
+				await notifyClients({ type: 'CACHE_STARTED' });
 
-				// Download and cache everything
-				await performCaching();
-
-				// Tell the website we're done
-				const finalClients = await self.clients.matchAll();
-				finalClients.forEach((client) => {
-					client.postMessage({
-						type: 'CACHE_COMPLETE',
-						cacheName: cacheNames.core
-					});
-				});
+				try {
+					await performCaching();
+					await notifyClients({ type: 'CACHE_COMPLETE', cacheName: cacheNames.core });
+				} catch (error) {
+					console.warn('[SW] Initial offline cache failed.', error);
+					await notifyClients({ type: 'CACHE_FAILED' });
+				}
 			})()
 		);
 	}
@@ -309,19 +291,21 @@ self.addEventListener('message', (event) => {
 	else if (event.data.type === 'DISABLE_CACHING') {
 		cachingEnabled = false;
 		cachingStatusLoaded = true;
-		saveCachingStatus(false); // Remember this preference
 
 		event.waitUntil(
 			(async () => {
-				// Delete all caches except the audio cache
+				await saveCachingStatus(false);
+				// Keep the verified app shell, config, and audio cache. Offline content caches are cleared.
 				const keys = await caches.keys();
+				const preserve = new Set([cacheNames.core, cacheNames.config, cacheNames.audioData]);
 				await Promise.all(
 					keys.map((key) => {
-						if (key !== cacheNames.audioData) {
+						if (!preserve.has(key) && !key.startsWith(CORE_CACHE_PREFIX)) {
 							return caches.delete(key);
 						}
 					})
 				);
+				await cleanupOldCoreCaches();
 
 				// Tell the website cache is cleared
 				const clients = await self.clients.matchAll();
@@ -345,96 +329,99 @@ self.addEventListener('message', (event) => {
  * If offline mode is disabled:
  * - Just fetch from network normally (service worker does nothing)
  */
+async function matchVersionedCoreCaches(request) {
+	for (const cacheName of await getVersionedCoreCacheNames()) {
+		const cache = await caches.open(cacheName);
+		const response = await cache.match(request);
+		if (response) return response;
+	}
+	return null;
+}
+
+async function matchOfflineDataCaches(request) {
+	for (const cacheName of [cacheNames.chapterData, cacheNames.mushafData, cacheNames.morphologyData, cacheNames.tafsirData, cacheNames.audioData]) {
+		const cache = await caches.open(cacheName);
+		const response = await cache.match(request);
+		if (response) return response;
+	}
+	return null;
+}
+
+async function matchAppShell() {
+	return matchVersionedCoreCaches(new Request(new URL(withBase('/'), scopeUrl.origin)));
+}
+
+function offlineRecoveryResponse() {
+	const html = '<!doctype html><html lang="id"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Al Quran</title><body style="font-family:system-ui,sans-serif;margin:0;padding:2rem;line-height:1.5"><main style="max-width:32rem;margin:15vh auto"><h1 style="font-size:1.2rem">Al Quran belum dapat dimuat</h1><p>Koneksi sedang tidak tersedia dan data aplikasi lokal belum siap. Sambungkan internet lalu coba lagi.</p><button onclick="location.reload()" style="padding:.7rem 1rem">Coba lagi</button></main></body></html>';
+	return new Response(html, {
+		status: 503,
+		statusText: 'Service Unavailable',
+		headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }
+	});
+}
+
 self.addEventListener('fetch', (event) => {
 	const url = new URL(event.request.url);
 
-	// Ignore non-GET requests, excluded files, and connectivity checks
-	if (event.request.method !== 'GET' || stuffNotToCache.some((excluded) => url.pathname.includes(excluded)) || url.hostname === 'www.gstatic.com') {
-		return;
-	}
+	if (event.request.method !== 'GET' || stuffNotToCache.some((excluded) => url.pathname.includes(excluded))) return;
+	if (url.searchParams.has('__network_probe')) return;
+	const sameOrigin = url.origin === scopeUrl.origin;
 
 	event.respondWith(
 		(async () => {
-			// CRITICAL: Ensure caching status is loaded before checking it
 			await ensureCachingStatusLoaded();
 
-			// If caching is enabled, try all caches first
-			if (cachingEnabled) {
-				const allCacheNames = Object.values(cacheNames);
-				for (const cacheName of allCacheNames) {
-					const cache = await caches.open(cacheName);
-					const cachedResponse = await cache.match(event.request);
-					if (cachedResponse) {
-						console.log('[SW] Serving from cache:', url.pathname);
-						return cachedResponse;
-					}
-				}
+			if (sameOrigin && event.request.mode !== 'navigate') {
+				const coreResponse = await matchVersionedCoreCaches(event.request);
+				if (coreResponse) return coreResponse;
 			}
 
-			// Not in cache, try network
-			try {
-				const networkResponse = await fetchWithTimeout(event.request);
+			if (cachingEnabled) {
+				const offlineResponse = await matchOfflineDataCaches(event.request);
+				if (offlineResponse) return offlineResponse;
+			}
 
-				// If request failed, just return the error
-				if (!networkResponse || networkResponse.status !== 200) {
+			try {
+				const networkResponse = await fetch(event.request);
+				if (networkResponse && networkResponse.status < 500) {
+					if (sameOrigin && cachingEnabled && networkResponse.ok) {
+						const cache = await caches.open(cacheNames.core);
+						await cache.put(event.request, networkResponse.clone());
+					}
 					return networkResponse;
 				}
-
-				// If caching is enabled, save this response for next time
-				if (cachingEnabled) {
-					const cache = await caches.open(cacheNames.core);
-					cache.put(event.request, networkResponse.clone());
-				}
-
-				return networkResponse;
 			} catch (error) {
-				// Network request failed (user is offline)
-				console.warn(error);
+				console.warn('[SW] Network request failed; using local fallback when possible.', error);
+			}
 
-				// If caching is enabled, try to find in cache again (redundant but safe)
-				if (cachingEnabled) {
-					const allCacheNames = Object.values(cacheNames);
-					for (const cacheName of allCacheNames) {
-						const cache = await caches.open(cacheName);
-						const cachedResponse = await cache.match(event.request);
-						if (cachedResponse) {
-							console.log('[SW] Serving from cache (offline):', url.pathname);
-							return cachedResponse;
-						}
-					}
-				}
+			if (sameOrigin) {
+				const exactCore = await matchVersionedCoreCaches(event.request);
+				if (exactCore) return exactCore;
+			}
 
-				// For page navigation, show the homepage if cached
-				if (event.request.mode === 'navigate') {
-					const cache = await caches.open(cacheNames.core);
-					const homepageResponse = await cache.match(withBase('/'));
-					if (homepageResponse) {
-						console.log('[SW] Serving homepage for failed navigation');
-						return homepageResponse;
-					}
-				}
+			if (event.request.mode === 'navigate') {
+				const shell = await matchAppShell();
+				if (shell) return shell;
+				return offlineRecoveryResponse();
+			}
 
-				// For images, return transparent 1x1 pixel
-				if (event.request.destination === 'image') {
-					return new Response(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), { headers: { 'Content-Type': 'image/gif' } });
-				}
+			if (event.request.destination === 'image') {
+				return new Response(atob('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), { headers: { 'Content-Type': 'image/gif' } });
+			}
 
-				// For fonts, fail explicitly so the app can offer a visible recovery path.
-				if (event.request.destination === 'font') {
-					return new Response('Font unavailable offline', {
-						status: 503,
-						statusText: 'Service Unavailable',
-						headers: new Headers({ 'Content-Type': 'text/plain' })
-					});
-				}
-
-				// For other resources, return error
-				return new Response('Offline - resource not cached', {
+			if (event.request.destination === 'font') {
+				return new Response('Font unavailable offline', {
 					status: 503,
 					statusText: 'Service Unavailable',
-					headers: new Headers({ 'Content-Type': 'text/plain' })
+					headers: { 'Content-Type': 'text/plain; charset=utf-8' }
 				});
 			}
+
+			return new Response('Resource unavailable offline', {
+				status: 503,
+				statusText: 'Service Unavailable',
+				headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+			});
 		})()
 	);
 });

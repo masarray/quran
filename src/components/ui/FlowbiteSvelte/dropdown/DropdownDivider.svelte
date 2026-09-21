@@ -1,9 +1,11 @@
 <script>
 	import { twMerge } from 'tailwind-merge';
 	export let divClass = 'my-1 h-px';
+	let className = '';
+	export { className as class };
 </script>
 
-<div {...$$restProps} class={twMerge(divClass, $$props.class)} />
+<div role="separator" class={twMerge(divClass, className)}></div>
 
 <!--
 @component

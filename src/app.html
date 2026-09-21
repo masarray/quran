@@ -23,8 +23,9 @@
 		<meta name="twitter:image" content="https://masarray.github.io/quran/images/icon-512.png" />
 
 		<script>
-			const baseFontUrl = '%sveltekit.assets%/fonts';
-			const isHomePage = location.pathname === '/' || location.pathname === '';
+			const appBasePath = '%sveltekit.assets%'.replace(/\/$/, '');
+			const baseFontUrl = `${appBasePath}/fonts`;
+			const isHomePage = location.pathname === `${appBasePath}/` || location.pathname === (appBasePath || '/');
 
 			const preloadFont = (url) => {
 				const link = document.createElement('link');

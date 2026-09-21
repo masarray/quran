@@ -4,6 +4,47 @@ import { dev } from '$app/environment';
 
 export const dataUnavailableWhileOfflineMessage = 'Data tidak tersedia saat offline.';
 
+let serviceWorkerMessageBridgeInstalled = false;
+
+function dispatchServiceWorkerEvent(type, detail) {
+	window.dispatchEvent(new CustomEvent(type, { detail }));
+}
+
+function installServiceWorkerMessageBridge() {
+	if (serviceWorkerMessageBridgeInstalled || !('serviceWorker' in navigator)) return;
+	serviceWorkerMessageBridgeInstalled = true;
+
+	navigator.serviceWorker.addEventListener('message', (event) => {
+		switch (event.data?.type) {
+			case 'CACHE_STARTED':
+				dispatchServiceWorkerEvent('sw-cache-started', event.data);
+				break;
+			case 'CACHE_PROGRESS':
+				dispatchServiceWorkerEvent('sw-cache-progress', event.data);
+				break;
+			case 'CACHE_COMPLETE':
+				dispatchServiceWorkerEvent('sw-cache-complete', event.data);
+				break;
+			case 'CACHE_FAILED':
+				dispatchServiceWorkerEvent('sw-cache-failed', event.data);
+				break;
+			case 'CACHE_UPDATE_STARTED':
+				dispatchServiceWorkerEvent('sw-cache-update-started', event.data);
+				break;
+			case 'CACHE_UPDATE_COMPLETE':
+				dispatchServiceWorkerEvent('sw-cache-update-complete', event.data);
+				break;
+			case 'CACHE_UPDATE_FAILED':
+				dispatchServiceWorkerEvent('sw-cache-update-failed', event.data);
+				break;
+		}
+	});
+}
+
+function getActiveServiceWorker(registration) {
+	return navigator.serviceWorker.controller || registration?.active || null;
+}
+
 export async function registerServiceWorker({ startCaching = true } = {}) {
 	if (dev) {
 		return { success: false, error: 'Service worker dinonaktifkan pada mode pengembangan.' };
@@ -20,40 +61,27 @@ export async function registerServiceWorker({ startCaching = true } = {}) {
 			registration = await navigator.serviceWorker.register(`${base}/service-worker.js`, {
 				type: 'module'
 			});
+		} else {
+			try {
+				await registration.update();
+			} catch (error) {
+				console.warn('[PWA] Service worker update check failed; keeping current worker.', error);
+			}
 		}
 
-		await navigator.serviceWorker.ready;
-
-		navigator.serviceWorker.addEventListener('message', (event) => {
-			if (event.data.type === 'CACHE_STARTED') {
-				window.dispatchEvent(
-					new CustomEvent('sw-cache-started', {
-						detail: event.data
-					})
-				);
-			} else if (event.data.type === 'CACHE_PROGRESS') {
-				window.dispatchEvent(
-					new CustomEvent('sw-cache-progress', {
-						detail: event.data
-					})
-				);
-			} else if (event.data.type === 'CACHE_COMPLETE') {
-				window.dispatchEvent(
-					new CustomEvent('sw-cache-complete', {
-						detail: event.data
-					})
-				);
-			}
-		});
+		const readyRegistration = await navigator.serviceWorker.ready;
+		installServiceWorkerMessageBridge();
 
 		if (startCaching) {
-			navigator.serviceWorker.controller?.postMessage({ type: 'START_CACHING' });
+			const worker = getActiveServiceWorker(readyRegistration || registration);
+			if (!worker) return { success: false, error: 'Service worker belum aktif. Silakan coba lagi.' };
+			worker.postMessage({ type: 'START_CACHING' });
 		}
 
-		return { success: true, registration };
+		return { success: true, registration: readyRegistration || registration };
 	} catch (error) {
 		console.warn(error);
-		return { success: false, error: error.message };
+		return { success: false, error: error instanceof Error ? error.message : String(error) };
 	}
 }
 
@@ -69,7 +97,7 @@ export async function disableHiddenOfflineCaching() {
 		const registration = await navigator.serviceWorker.getRegistration();
 		if (!registration) return;
 
-		navigator.serviceWorker.controller?.postMessage({ type: 'DISABLE_CACHING' });
+		getActiveServiceWorker(registration)?.postMessage({ type: 'DISABLE_CACHING' });
 	} catch (error) {
 		console.warn(error);
 	}
@@ -89,26 +117,25 @@ export async function unregisterServiceWorkerAndClearCache() {
 	}
 }
 
-export async function isUserOnline(timeout = 1000) {
+export async function isUserOnline(timeout = 3000) {
 	if (!navigator.onLine) return false;
 
 	const controller = new AbortController();
 	const id = setTimeout(() => controller.abort(), timeout);
+	const probeUrl = `${base}/manifest.json?__network_probe=${Date.now()}`;
 
 	try {
-		const response = await fetch('https://www.gstatic.com/generate_204?cacheBust=' + Date.now(), {
+		const response = await fetch(probeUrl, {
 			method: 'GET',
-			mode: 'no-cors',
 			cache: 'no-store',
 			signal: controller.signal
 		});
-
-		clearTimeout(id);
-		return response.type === 'opaque' || (response.status >= 200 && response.status < 300);
+		return response.ok;
 	} catch (error) {
-		clearTimeout(id);
-		console.warn(error);
+		console.warn('[PWA] Connectivity probe failed', error);
 		return false;
+	} finally {
+		clearTimeout(id);
 	}
 }
 

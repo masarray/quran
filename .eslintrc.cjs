@@ -5,7 +5,7 @@ module.exports = {
 	plugins: ['unused-imports'],
 	parserOptions: {
 		sourceType: 'module',
-		ecmaVersion: 2020,
+		ecmaVersion: 2022,
 		extraFileExtensions: ['.svelte']
 	},
 	env: {

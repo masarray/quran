@@ -37,7 +37,8 @@ export function parseURL() {
 	} else if (pathParts.length >= 2) {
 		const secondPart = pathParts[1];
 
-		let range = secondPart.split(/[-:.#]/);
+		const verseDelimiterPattern = new RegExp('[-' + ':.#]');
+		let range = secondPart.split(verseDelimiterPattern);
 		startVerse = parseInt(range[0], 10) || 1;
 		endVerse = parseInt(range[1], 10);
 
