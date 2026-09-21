@@ -14,7 +14,8 @@
 		"test:quran-integrity": "node --test scripts/test-quran-data-integrity.mjs",
 		"audit:quran-integrity": "node scripts/audit-quran-data-integrity.mjs",
 		"audit:media-sources": "node scripts/audit-media-sources.mjs",
-		"test:network-reliability": "node --test scripts/test-network-reliability.mjs"
+		"test:network-reliability": "node --test scripts/test-network-reliability.mjs",
+		"test:runtime-recovery": "node --test scripts/test-runtime-recovery.mjs"
 	},
 	"overrides": {
 		"cookie": "^0.7.0",
