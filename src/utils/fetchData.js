@@ -17,7 +17,9 @@ export async function fetchChapterData(props) {
 	const wordTranslation = props.wordTranslation || get(__wordTranslation);
 	const wordTransliteration = props.wordTransliteration || get(__wordTransliteration);
 
-	const { arabicWordData, translationWordData, transliterationWordData, metaVerseData } = await fetchWordData(fontType, wordTranslation, wordTransliteration);
+	const { arabicWordData, translationWordData, transliterationWordData, metaVerseData } = await fetchWordData(fontType, wordTranslation, wordTransliteration, {
+		requireCacheWrite: props.requireCacheWrite === true
+	});
 
 	const result = {};
 	const arabicVerses = arabicWordData[chapter] || {};
@@ -79,7 +81,7 @@ export async function fetchVerseTranslationData(props) {
 
 	for (const id of translations) {
 		const version = selectableVerseTranslations[id].version;
-		const cached = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${version}`, 'translation');
+		const cached = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${version}`, 'translation', { requireCacheWrite: props.requireCacheWrite === true });
 
 		if (cached && typeof cached === 'object' && Object.keys(cached).length > 0) {
 			updatedData[id] = cached;
@@ -100,7 +102,7 @@ export async function fetchVerseTranslationData(props) {
 	const fetchPromises = idsToFetch.map(async (id) => {
 		const version = selectableVerseTranslations[id].version;
 		try {
-			const res = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${version}`, 'translation');
+			const res = await fetchAndCacheJson(`${staticEndpoint}/verse-translations/${id}.json?version=${version}`, 'translation', { requireCacheWrite: props.requireCacheWrite === true });
 
 			if (!res.ok) throw new Error(`Failed to fetch translation ID ${id}`);
 			const data = await res.json();
@@ -128,7 +130,7 @@ export async function fetchVerseTranslationData(props) {
 }
 
 // Generic fetch and cache utility with safe 7-day expiry logic
-export async function fetchAndCacheJson(url, type = 'other') {
+export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite = false } = {}) {
 	const parsedUrl = new URL(url);
 	const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
 	const lastPart = pathParts[pathParts.length - 1] || '';
@@ -136,6 +138,7 @@ export async function fetchAndCacheJson(url, type = 'other') {
 	const cacheKey = `${secondLastPart}/${lastPart}${parsedUrl.search}`;
 	const maxCacheAge = 7 * 24 * 60 * 60 * 1000; // 7 days
 	const validator = getCacheValidator(parsedUrl, type);
+	const requestKey = requireCacheWrite ? `${cacheKey}::require-cache-write` : cacheKey;
 
 	// 1. Try cache first
 	const cachedData = await manageCache(cacheKey, type);
@@ -170,9 +173,9 @@ export async function fetchAndCacheJson(url, type = 'other') {
 		return cachedData.data;
 	}
 
-	// 2. No cache → see if someone else is already fetching
-	if (inFlightRequests.has(cacheKey)) {
-		return inFlightRequests.get(cacheKey);
+	// 2. No cache → see if someone else is already fetching with the same durability requirement
+	if (inFlightRequests.has(requestKey)) {
+		return inFlightRequests.get(requestKey);
 	}
 
 	// 3. Otherwise start a new fetch and store the Promise
@@ -182,14 +185,17 @@ export async function fetchAndCacheJson(url, type = 'other') {
 			if (!response.ok) throw new Error('Failed to fetch data from the CDN');
 			const data = await response.json();
 			validateCachedJson(data, validator, cacheKey);
-			await manageCache(cacheKey, type, data);
+			const cacheWriteSucceeded = await manageCache(cacheKey, type, data, { throwOnWriteError: requireCacheWrite });
+			if (requireCacheWrite && !cacheWriteSucceeded) {
+				throw new Error(`Failed to persist offline data: ${cacheKey}`);
+			}
 			return data;
 		} finally {
-			inFlightRequests.delete(cacheKey);
+			inFlightRequests.delete(requestKey);
 		}
 	})();
 
-	inFlightRequests.set(cacheKey, fetchPromise);
+	inFlightRequests.set(requestKey, fetchPromise);
 
 	return fetchPromise;
 }
@@ -255,7 +261,7 @@ function validateVerseKeyData(data) {
 }
 
 // Unified cache utility for IndexedDB with version and freshness control
-async function manageCache(key, type, dataToSet = undefined) {
+async function manageCache(key, type, dataToSet = undefined, { throwOnWriteError = false } = {}) {
 	try {
 		const table = cacheTableMap[type];
 		if (!table) throw new Error(`Invalid table for type: ${type}`);
@@ -275,14 +281,14 @@ async function manageCache(key, type, dataToSet = undefined) {
 			return record;
 		}
 	} catch (error) {
-		// Log any unexpected errors and return appropriate fallback
 		console.warn(error);
+		if (dataToSet !== undefined && throwOnWriteError) throw error;
 		return dataToSet !== undefined ? false : null;
 	}
 }
 
 // Fetches Arabic, translation, transliteration, and meta verse data in parallel
-export async function fetchWordData(fontType, wordTranslation, wordTransliteration) {
+export async function fetchWordData(fontType, wordTranslation, wordTransliteration, { requireCacheWrite = false } = {}) {
 	const { id: fontID, version: arabicVersion } = selectableFontTypes[fontType];
 	const { version: translationVersion } = selectableWordTranslations[wordTranslation];
 	const { version: transliterationVersion } = selectableWordTransliterations[wordTransliteration];
@@ -294,7 +300,7 @@ export async function fetchWordData(fontType, wordTranslation, wordTransliterati
 		{ url: cdnStaticDataUrls.verseKeyData, type: 'other' }
 	];
 
-	const [arabicWordData, translationWordData, transliterationWordData, metaVerseData] = await Promise.all(urls.map(({ url, type }) => fetchAndCacheJson(url, type)));
+	const [arabicWordData, translationWordData, transliterationWordData, metaVerseData] = await Promise.all(urls.map(({ url, type }) => fetchAndCacheJson(url, type, { requireCacheWrite })));
 
 	return {
 		arabicWordData,

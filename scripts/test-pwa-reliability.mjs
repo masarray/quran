@@ -50,6 +50,20 @@ assert.ok(offlinePage.includes('(_, i) => `${base}/${i + 1}`'));
 assert.ok(offlinePage.includes('cacheUrlWithServiceWorker'), 'offline downloads must wait for service-worker acknowledgement');
 assert.ok(offlinePage.includes("'quranwbw-font-data'"), 'shared Quran fonts must use a dedicated offline cache');
 assert.equal(offlinePage.includes('setTimeout(resolve, 50)'), false, 'offline progress must not be driven by artificial delays');
+assert.ok(offlinePage.includes('ensureStorageCapacity'), 'offline downloads must preflight browser storage capacity');
+assert.ok(offlinePage.includes('inspectOfflineCacheHealth'), 'saved download flags must be reconciled against real CacheStorage');
+assert.ok(offlinePage.includes('getDexieTableCount'), 'IndexedDB-only offline sections must be health-checked');
+assert.ok(offlinePage.includes('requireCacheWrite: true'), 'offline JSON downloads must require durable IndexedDB writes');
+assert.equal(offlinePage.includes('unregisterServiceWorkerAndClearCache'), false, 'removing optional offline data must not remove the always-available PWA app shell');
+
+const fetchData = await read('src/utils/fetchData.js');
+assert.ok(fetchData.includes('requireCacheWrite = false'), 'JSON cache helper must support a strict durability mode');
+assert.ok(fetchData.includes('Failed to persist offline data'), 'strict offline writes must fail closed when IndexedDB storage fails');
+
+const storageHealth = await read('src/utils/storageHealth.js');
+assert.ok(storageHealth.includes('navigator.storage?.estimate'), 'storage quota must be estimated before large downloads');
+assert.ok(storageHealth.includes('navigator.storage?.persist'), 'offline mode should request persistent browser storage');
+assert.ok(storageHealth.includes('StorageCapacityError'), 'insufficient storage must produce a specific recoverable error');
 
 const offlineHandler = await read('src/utils/offlineModeHandler.js');
 assert.ok(offlineHandler.includes('new MessageChannel()'), 'service-worker requests must use a MessageChannel acknowledgement');
