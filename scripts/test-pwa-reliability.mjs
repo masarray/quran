@@ -12,7 +12,7 @@ assert.match(serviceWorker, /cache\.addAll\(\[withBase\('\/'\), \.\.\.build\.map
 assert.ok(serviceWorker.includes('getVersionedCoreCacheNames'), 'previous healthy core cache fallback must be retained');
 assert.ok(serviceWorker.includes('offlineRecoveryResponse'), 'navigation must have a branded recovery response');
 assert.ok(serviceWorker.includes('const sameOrigin = url.origin === scopeUrl.origin;'), 'service worker must distinguish same-origin app shell requests');
-assert.ok(serviceWorker.includes('if (sameOrigin && cachingEnabled && networkResponse.ok)'), 'cross-origin responses must not leak into the core app-shell cache');
+assert.equal(serviceWorker.includes('if (sameOrigin && cachingEnabled && networkResponse.ok)'), false, 'normal network responses must not be written into the core app-shell cache');
 assert.ok(serviceWorker.includes('matchOfflineDataCaches(event.request)'), 'explicitly downloaded cross-origin offline assets must remain readable');
 assert.ok(serviceWorker.includes('OFFLINE_CONTENT_CACHE_NAMES'), 'offline content must use an explicit cache allowlist');
 assert.ok(serviceWorker.includes('OFFLINE_ASSET_ORIGINS'), 'cross-origin interception must be restricted to approved Quran asset origins');
