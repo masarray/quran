@@ -1,4 +1,4 @@
-import { quranMetaData } from '$data/quranMeta';
+import { quranMetaData } from '../data/quranMeta.js';
 
 export class QuranDataIntegrityError extends Error {
 	constructor(message, { cacheKey = '', kind = 'unknown' } = {}) {
