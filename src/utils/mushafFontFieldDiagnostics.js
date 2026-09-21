@@ -103,7 +103,11 @@ export function deriveAdaptiveMushafMode(profile, { at = Date.now() } = {}) {
 }
 
 export function updateMushafNetworkProfile(profile, { ok, latencyMs = null, at = Date.now() } = {}) {
-	const base = profile?.version === MUSHAF_FIELD_SCHEMA_VERSION ? profile : createMushafNetworkProfile({ at });
+	const fresh =
+		profile?.version === MUSHAF_FIELD_SCHEMA_VERSION &&
+		Number.isFinite(profile.updatedAt) &&
+		at - profile.updatedAt <= MUSHAF_NETWORK_PROFILE_TTL_MS;
+	const base = fresh ? profile : createMushafNetworkProfile({ at });
 	const latency = clampLatency(latencyMs);
 	const previousLatency = finiteOrNull(base.ewmaLatencyMs);
 	const nextLatency =
