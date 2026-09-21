@@ -185,7 +185,7 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 			if (!response.ok) throw new Error('Failed to fetch data from the CDN');
 			const data = await response.json();
 			validateCachedJson(data, validator, cacheKey);
-			const cacheWriteSucceeded = await manageCache(cacheKey, type, data);
+			const cacheWriteSucceeded = await manageCache(cacheKey, type, data, { throwOnWriteError: requireCacheWrite });
 			if (requireCacheWrite && !cacheWriteSucceeded) {
 				throw new Error(`Failed to persist offline data: ${cacheKey}`);
 			}
@@ -261,7 +261,7 @@ function validateVerseKeyData(data) {
 }
 
 // Unified cache utility for IndexedDB with version and freshness control
-async function manageCache(key, type, dataToSet = undefined) {
+async function manageCache(key, type, dataToSet = undefined, { throwOnWriteError = false } = {}) {
 	try {
 		const table = cacheTableMap[type];
 		if (!table) throw new Error(`Invalid table for type: ${type}`);
@@ -281,8 +281,8 @@ async function manageCache(key, type, dataToSet = undefined) {
 			return record;
 		}
 	} catch (error) {
-		// Log any unexpected errors and return appropriate fallback
 		console.warn(error);
+		if (dataToSet !== undefined && throwOnWriteError) throw error;
 		return dataToSet !== undefined ? false : null;
 	}
 }
