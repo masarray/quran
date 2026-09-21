@@ -13,12 +13,6 @@ permissions:
 
 jobs:
   probe:
-    strategy:
-      fail-fast: false
-      matrix:
-        mode:
-          - 'current-svelte4'
-          - 'current-svelte5'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -38,9 +32,8 @@ jobs:
       - name: Audit runtime dependencies before probe
         run: npm audit --omit=dev --audit-level=high
 
-      - name: Probe Svelte 5 with current SvelteKit
-        if: matrix.mode == 'current-svelte5'
-        run: npm install --no-save --package-lock=false svelte@5
+      - name: Probe Svelte 5 + vite-plugin-svelte 4
+        run: npm install --no-save --package-lock=false svelte@5.57.1 @sveltejs/vite-plugin-svelte@4
 
       - name: Build candidate
         env:
@@ -49,51 +42,33 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          npm run build 2>&1 | tee toolchain-${{ matrix.mode }}.log
+          npm run build 2>&1 | tee toolchain-svelte5-plugin4.log
 
-      - name: Reject Svelte runtime export mismatch
+      - name: Reject known toolchain warnings
         shell: bash
         run: |
-          if grep -Eq '"(untrack|fork|settled)" is not exported' toolchain-${{ matrix.mode }}.log; then
-            echo "${{ matrix.mode }} still imports unavailable Svelte runtime APIs"
+          if grep -Eq '"(untrack|fork|settled)" is not exported' toolchain-svelte5-plugin4.log; then
+            echo 'Svelte runtime export mismatch remains'
             exit 1
           fi
-
-      - name: Diagnose malformed CSS if present
-        if: always()
-        shell: bash
-        run: |
-          node - <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          function walk(dir) {
-            if (!fs.existsSync(dir)) return [];
-            return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
-              const p = path.join(dir, e.name);
-              return e.isDirectory() ? walk(p) : [p];
-            });
-          }
-          const files = [...walk('.svelte-kit'), ...walk('build')].filter((p) => p.endsWith('.css'));
-          let found = false;
-          for (const file of files) {
-            const css = fs.readFileSync(file, 'utf8');
-            for (const needle of ['-: .#;', ':#;', '{-:']) {
-              const i = css.indexOf(needle);
-              if (i >= 0) {
-                found = true;
-                console.log('MALFORMED_CSS_FILE', file, 'NEEDLE', needle);
-                console.log(css.slice(Math.max(0, i - 1000), i + 1000));
-              }
-            }
-          }
-          if (!found) console.log('Malformed minifier token not found in emitted CSS; warning is introduced during minification.');
-          NODE
+          if grep -Fq 'Active Svelte 5 support has moved' toolchain-svelte5-plugin4.log; then
+            echo 'vite-plugin-svelte major is still stale'
+            exit 1
+          fi
+          if grep -Fq 'css-syntax-error' toolchain-svelte5-plugin4.log; then
+            echo 'Malformed generated CSS remains'
+            exit 1
+          fi
+          if grep -Eq 'lightBlue|warmGray|trueGray|coolGray|blueGray' toolchain-svelte5-plugin4.log; then
+            echo 'Deprecated Tailwind color aliases remain'
+            exit 1
+          fi
 
       - name: Upload probe log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: r0-toolchain-${{ matrix.mode }}-${{ github.sha }}
-          path: toolchain-${{ matrix.mode }}.log
+          name: r0-toolchain-svelte5-plugin4-${{ github.sha }}
+          path: toolchain-svelte5-plugin4.log
           if-no-files-found: ignore
           retention-days: 3
