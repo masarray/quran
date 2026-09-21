@@ -178,6 +178,45 @@ export async function inspectOfflineCacheHealth() {
 	};
 }
 
+export async function repairPwaAppShell() {
+	if (dev || !('serviceWorker' in navigator) || !('caches' in window)) {
+		return { success: false, error: 'Pemulihan aplikasi tidak tersedia pada lingkungan ini.' };
+	}
+
+	if (!navigator.onLine) {
+		return { success: false, error: 'Sambungkan internet sebelum memulihkan berkas inti aplikasi.' };
+	}
+
+	try {
+		const probe = await fetch(`${base}/manifest.json?__network_probe=${Date.now()}`, {
+			cache: 'no-store'
+		});
+		if (!probe.ok) {
+			return { success: false, error: 'Koneksi ke berkas aplikasi belum stabil. Silakan coba lagi.' };
+		}
+
+		const registration = await navigator.serviceWorker.getRegistration();
+		if (registration) await registration.unregister();
+
+		const cacheNames = await caches.keys();
+		await Promise.all(
+			cacheNames
+				.filter((cacheName) => cacheName.startsWith('quranwbw-cache-'))
+				.map((cacheName) => caches.delete(cacheName))
+		);
+
+		const freshRegistration = await navigator.serviceWorker.register(`${base}/service-worker.js`, {
+			type: 'module'
+		});
+		await navigator.serviceWorker.ready;
+
+		return { success: true, registration: freshRegistration };
+	} catch (error) {
+		console.warn('[PWA] App-shell repair failed.', error);
+		return { success: false, error: error instanceof Error ? error.message : String(error) };
+	}
+}
+
 export async function unregisterServiceWorkerAndClearCache() {
 	try {
 		const registrations = await navigator.serviceWorker.getRegistrations();
