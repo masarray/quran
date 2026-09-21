@@ -193,7 +193,7 @@ async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 	}
 
 	if (navigator.onLine === false) {
-		updateNetworkHealth(markMushafFontNetworkSignal(networkHealth, { online: false, reason: 'navigator-offline' }));
+		noteNetworkFailure(null, { offline: true, reason: 'navigator-offline' });
 		const error = new Error('Mushaf font is not cached and the device is offline.');
 		error.code = 'OFFLINE';
 		throw error;
@@ -404,6 +404,12 @@ function retryActiveFonts({ reason = 'recovery-signal', forceProbe = false } = {
 function installRecoveryListeners() {
 	if (recoveryListenersInstalled || !isBrowserReady()) return;
 	recoveryListenersInstalled = true;
+	updateNetworkHealth(
+		markMushafFontNetworkSignal(networkHealth, {
+			online: navigator.onLine !== false,
+			reason: navigator.onLine === false ? 'startup-offline' : 'startup-online'
+		})
+	);
 
 	window.addEventListener('offline', () => {
 		updateNetworkHealth(markMushafFontNetworkSignal(networkHealth, { online: false, reason: 'offline-event' }));
