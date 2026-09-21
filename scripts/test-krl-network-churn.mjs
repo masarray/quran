@@ -81,12 +81,15 @@ test('manager and worker implement priority, circuit breaker and learned-cache p
 	assert.match(manager, /priority: 'critical'/);
 	assert.match(manager, /promoteUsedOfflineFont/);
 	assert.match(manager, /smartCache\.put\(url, response\.clone\(\)\)/);
+	assert.match(manager, /uncachedNetworkResult/);
+	assert.match(manager, /new Response\(bytes/);
 	assert.doesNotMatch(manager, /state\.attempts = 0;\s*ensureMushafFont/);
 
 	assert.match(worker, /MUSHAF_FONT_FETCH_PROFILES/);
 	assert.match(worker, /prefetch: \{ attempts: 1/);
 	assert.match(worker, /critical: \{ attempts: 3/);
 	assert.match(worker, /event\.data\.priority === 'prefetch'/);
+	assert.match(worker, /bytes = await response\.clone\(\)\.arrayBuffer\(\)/);
 
 	assert.match(offlineHandler, /priority = 'critical'/);
 	assert.match(offlineHandler, /CACHE_MUSHAF_FONT', url, priority/);
