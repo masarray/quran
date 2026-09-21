@@ -1,5 +1,6 @@
 <script>
 	import PageHead from '$misc/PageHead.svelte';
+	import { base } from '$app/paths';
 	import Download from '$svgs/Download.svelte';
 	import Trash from '$svgs/Trash.svelte';
 	import Refresh from '$svgs/Refresh.svelte';
@@ -336,7 +337,7 @@
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			});
 
-			const chapterRoutes = Array.from({ length: totalChapters }, (_, i) => `/${i + 1}`);
+			const chapterRoutes = Array.from({ length: totalChapters }, (_, i) => `${base}/${i + 1}`);
 			for (const route of chapterRoutes) {
 				await cacheUrlToCache(route, 'quranwbw-chapter-data');
 				completedStepsInDownloadProgress++;
