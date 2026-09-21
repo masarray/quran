@@ -235,7 +235,17 @@ async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 	const existing = await findCachedFont(url);
 	if (existing) return existing;
 
-	if (priority === 'prefetch' && !canPrefetchMushafFonts(networkHealth, { online: navigator.onLine !== false })) {
+	if (
+		priority === 'prefetch' &&
+		(!canPrefetchMushafFonts(networkHealth, { online: navigator.onLine !== false }) || getAdaptiveProfile().adaptiveMode === 'recovery')
+	) {
+		const { effectiveType } = getConnectionInfo();
+		recordMushafFieldDiagnostic('prefetch-suspended', {
+			reason: getAdaptiveProfile().adaptiveMode === 'recovery' ? 'adaptive-recovery' : 'circuit-breaker',
+			mode: getAdaptiveProfile().adaptiveMode,
+			effectiveType,
+			failureStreak: networkHealth.failureStreak
+		});
 		const error = new Error('Background Mushaf font prefetch is suspended while the network is unstable.');
 		error.code = 'PREFETCH_SUSPENDED';
 		throw error;
@@ -256,6 +266,8 @@ async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 	}
 
 	if (navigator.onLine === false) {
+		const { effectiveType } = getConnectionInfo();
+		recordMushafFieldDiagnostic('network-signal', { ok: false, reason: 'navigator-offline', effectiveType });
 		noteNetworkFailure(null, { offline: true, reason: 'navigator-offline' });
 		const error = new Error('Mushaf font is not cached and the device is offline.');
 		error.code = 'OFFLINE';
@@ -263,14 +275,38 @@ async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 	}
 
 	const timeout = priority === 'prefetch' ? 12000 : 55000;
+	const startedAt = now();
+	const connectionAtStart = getConnectionInfo();
 	let taskPromise;
 	taskPromise = cacheMushafFontWithServiceWorker(url, { timeout, priority })
 		.then((result) => {
-			if (String(result?.source || '').startsWith('network')) noteNetworkSuccess(`${priority}-font-success`);
+			if (String(result?.source || '').startsWith('network')) {
+				const learned = recordMushafNetworkOutcome({
+					ok: true,
+					latencyMs: now() - startedAt,
+					priority,
+					source: result?.source,
+					reason: `${priority}-font-success`,
+					effectiveType: connectionAtStart.effectiveType
+				});
+				applyAdaptiveProfile(learned);
+				noteNetworkSuccess(`${priority}-font-success`);
+			}
 			return result;
 		})
 		.catch((error) => {
-			if (error?.code !== 'PREFETCH_SUSPENDED') noteNetworkFailure(error, { reason: `${priority}-font-failure` });
+			if (error?.code !== 'PREFETCH_SUSPENDED') {
+				const learned = recordMushafNetworkOutcome({
+					ok: false,
+					latencyMs: now() - startedAt,
+					priority,
+					source: 'network',
+					reason: `${priority}-font-failure`,
+					effectiveType: connectionAtStart.effectiveType
+				});
+				applyAdaptiveProfile(learned);
+				noteNetworkFailure(error, { reason: `${priority}-font-failure` });
+			}
 			throw error;
 		})
 		.finally(() => {
@@ -364,11 +400,13 @@ function scheduleIdle(callback) {
 
 function queueNeighborPrefetch(page) {
 	if (!canPrefetchMushafFonts(networkHealth, { online: navigator.onLine !== false })) return;
+	const adaptiveMode = getAdaptiveProfile().adaptiveMode || 'balanced';
+	if (adaptiveMode === 'recovery') return;
 	const previousPage = lastCriticalPage;
 	lastCriticalPage = page;
 
 	const { effectiveType, saveData } = getConnectionInfo();
-	const plan = getMushafFontPrefetchPlan({ page, previousPage, effectiveType, saveData });
+	const plan = getMushafFontPrefetchPlan({ page, previousPage, effectiveType, saveData, adaptiveMode });
 
 	for (const targetPage of plan) {
 		if (backgroundQueue.length >= MAX_BACKGROUND_QUEUE) break;
@@ -401,7 +439,7 @@ function clearBackgroundQueue() {
 
 function runBackgroundQueue() {
 	if (backgroundRunning || !backgroundQueue.length || navigator.onLine === false || document.hidden) return;
-	if (!canPrefetchMushafFonts(networkHealth, { online: true })) return;
+	if (!canPrefetchMushafFonts(networkHealth, { online: true }) || getAdaptiveProfile().adaptiveMode === 'recovery') return;
 	const connection = getConnectionInfo();
 	if (connection.saveData || ['slow-2g', '2g'].includes(String(connection.effectiveType).toLowerCase())) {
 		clearBackgroundQueue();
@@ -444,7 +482,14 @@ function runBackgroundQueue() {
 			}
 		} finally {
 			backgroundRunning = false;
-			if (backgroundQueue.length && navigator.onLine !== false && !document.hidden && canPrefetchMushafFonts(networkHealth, { online: true })) runBackgroundQueue();
+			if (
+				backgroundQueue.length &&
+				navigator.onLine !== false &&
+				!document.hidden &&
+				canPrefetchMushafFonts(networkHealth, { online: true }) &&
+				getAdaptiveProfile().adaptiveMode !== 'recovery'
+			)
+				runBackgroundQueue();
 		}
 	});
 }
@@ -460,13 +505,27 @@ function retryActiveFonts({ reason = 'recovery-signal', forceProbe = false } = {
 		ensureMushafFont(state.page, state.url).catch(() => {});
 	}
 
-	if (canPrefetchMushafFonts(networkHealth, { online: true })) runBackgroundQueue();
+	recordMushafFieldDiagnostic('recovery-probe', {
+		reason,
+		mode: getAdaptiveProfile().adaptiveMode,
+		effectiveType: getConnectionInfo().effectiveType,
+		failureStreak: networkHealth.failureStreak
+	});
+	if (canPrefetchMushafFonts(networkHealth, { online: true }) && getAdaptiveProfile().adaptiveMode !== 'recovery') runBackgroundQueue();
 	if (isBrowserReady()) window.dispatchEvent(new CustomEvent('mushaf-font-recovery-probe', { detail: { reason, at: timestamp } }));
 }
 
 function installRecoveryListeners() {
 	if (recoveryListenersInstalled || !isBrowserReady()) return;
 	recoveryListenersInstalled = true;
+	adaptiveProfile = readMushafNetworkProfile();
+	publishAdaptiveProfile();
+	recordMushafFieldDiagnostic('network-signal', {
+		ok: navigator.onLine !== false,
+		reason: navigator.onLine === false ? 'startup-offline' : 'startup-online',
+		mode: adaptiveProfile.adaptiveMode,
+		effectiveType: getConnectionInfo().effectiveType
+	});
 	updateNetworkHealth(
 		markMushafFontNetworkSignal(networkHealth, {
 			online: navigator.onLine !== false,
@@ -475,10 +534,12 @@ function installRecoveryListeners() {
 	);
 
 	window.addEventListener('offline', () => {
+		recordMushafFieldDiagnostic('network-signal', { ok: false, reason: 'offline-event', mode: getAdaptiveProfile().adaptiveMode, effectiveType: getConnectionInfo().effectiveType });
 		updateNetworkHealth(markMushafFontNetworkSignal(networkHealth, { online: false, reason: 'offline-event' }));
 		clearBackgroundQueue();
 	});
 	window.addEventListener('online', () => {
+		recordMushafFieldDiagnostic('network-signal', { ok: true, reason: 'online-event', mode: getAdaptiveProfile().adaptiveMode, effectiveType: getConnectionInfo().effectiveType });
 		updateNetworkHealth(markMushafFontNetworkSignal(networkHealth, { online: true, reason: 'online-event' }));
 		retryActiveFonts({ reason: 'online-event', forceProbe: true });
 	});
@@ -489,6 +550,7 @@ function installRecoveryListeners() {
 	const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 	connection?.addEventListener?.('change', () => {
 		if (navigator.onLine !== false) {
+			recordMushafFieldDiagnostic('network-signal', { ok: true, reason: 'connection-change', mode: getAdaptiveProfile().adaptiveMode, effectiveType: getConnectionInfo().effectiveType });
 			updateNetworkHealth(markMushafFontNetworkSignal(networkHealth, { online: true, reason: 'connection-change' }));
 			retryActiveFonts({ reason: 'connection-change', forceProbe: true });
 			if (canPrefetchMushafFonts(networkHealth, { online: true })) {
@@ -581,6 +643,7 @@ export function getSmartMushafFontProgress() {
 		error: snapshots.filter((state) => state.status === 'error').length,
 		backgroundQueue: backgroundQueue.length,
 		network: networkHealthSnapshot(),
+		adaptive: adaptiveProfileSnapshot(),
 		states: snapshots
 	};
 }
