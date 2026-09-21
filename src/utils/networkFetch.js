@@ -17,13 +17,26 @@ function delay(ms, signal) {
 	if (ms <= 0) return Promise.resolve();
 
 	return new Promise((resolve, reject) => {
-		const timer = setTimeout(resolve, ms);
-		if (!signal) return;
-
+		let settled = false;
+		const cleanup = () => {
+			if (signal) signal.removeEventListener('abort', onAbort);
+		};
+		const finish = () => {
+			if (settled) return;
+			settled = true;
+			cleanup();
+			resolve();
+		};
 		const onAbort = () => {
+			if (settled) return;
+			settled = true;
 			clearTimeout(timer);
+			cleanup();
 			reject(signal.reason instanceof Error ? signal.reason : new DOMException('Aborted', 'AbortError'));
 		};
+		const timer = setTimeout(finish, ms);
+
+		if (!signal) return;
 		if (signal.aborted) return onAbort();
 		signal.addEventListener('abort', onAbort, { once: true });
 	});
