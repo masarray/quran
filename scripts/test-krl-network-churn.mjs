@@ -89,6 +89,8 @@ test('manager and worker implement priority, circuit breaker and learned-cache p
 	assert.match(worker, /prefetch: \{ attempts: 1/);
 	assert.match(worker, /critical: \{ attempts: 3/);
 	assert.match(worker, /event\.data\.priority === 'prefetch'/);
+	assert.match(worker, /shared\.priority === 'prefetch'/);
+	assert.match(worker, /smartMushafFontInFlight\.set\(url\.href, \{ promise: taskPromise, priority \}\)/);
 	assert.match(worker, /bytes = await response\.clone\(\)\.arrayBuffer\(\)/);
 
 	assert.match(offlineHandler, /priority = 'critical'/);
