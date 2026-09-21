@@ -383,6 +383,98 @@ test('offline cache writes acknowledge durable completion and resume from cache'
   await context.close();
 });
 
+test('smart Mushaf font cache survives Offline Mode disable and serves while disconnected', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const fontUrl =
+    'https://static.quranwbw.com/data/v4/fonts/Hafs/KFGQPC-v4/COLRv1/QCF4019_COLOR-Regular.woff2?version=12';
+
+  const seeded = await page.evaluate(async ({ fontUrl, base }) => {
+    const source = await fetch(`${location.origin}${base}/fonts/qcf-uthmanic-digital.woff2`);
+    if (!source.ok) throw new Error('missing local WOFF2 fixture');
+    const bytes = await source.arrayBuffer();
+
+    const smartCache = await caches.open('quranwbw-mushaf-font-smart-v1');
+    await smartCache.put(
+      fontUrl,
+      new Response(bytes, {
+        status: 200,
+        headers: {
+          'Content-Type': 'font/woff2',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    );
+
+    const configCache = await caches.open('quranwbw-config');
+    await configCache.put(
+      'caching-enabled',
+      new Response(JSON.stringify({ enabled: false }), {
+        headers: { 'Content-Type': 'application/json' }
+      })
+    );
+
+    return bytes.byteLength;
+  }, { fontUrl, base });
+
+  expect(seeded).toBeGreaterThan(4);
+
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.ready;
+    const worker = navigator.serviceWorker.controller || registration.active;
+    if (!worker) throw new Error('missing active service worker');
+    worker.postMessage({ type: 'DISABLE_CACHING' });
+  });
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(async ({ fontUrl }) => {
+          const cache = await caches.open('quranwbw-mushaf-font-smart-v1');
+          return Boolean(await cache.match(fontUrl));
+        }, { fontUrl }),
+      { timeout: 5_000 }
+    )
+    .toBe(true);
+
+  await context.setOffline(true);
+
+  const first = await page.evaluate(async ({ fontUrl }) => {
+    try {
+      const response = await fetch(fontUrl, { mode: 'cors' });
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      return {
+        ok: response.ok,
+        status: response.status,
+        signature: String.fromCharCode(...bytes.slice(0, 4))
+      };
+    } catch (error) {
+      return { ok: false, error: String(error) };
+    }
+  }, { fontUrl });
+
+  expect(first.ok).toBe(true);
+  expect(first.signature).toBe('wOF2');
+
+  const second = await page.evaluate(async ({ fontUrl }) => {
+    const response = await fetch(fontUrl, { mode: 'cors' });
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return {
+      ok: response.ok,
+      signature: String.fromCharCode(...bytes.slice(0, 4))
+    };
+  }, { fontUrl });
+
+  expect(second.ok).toBe(true);
+  expect(second.signature).toBe('wOF2');
+
+  await context.close();
+});
+
 test('app-shell repair refreshes core cache without deleting offline content or enabling offline mode', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
