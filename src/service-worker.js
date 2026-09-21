@@ -295,6 +295,25 @@ self.addEventListener('message', (event) => {
 			})()
 		);
 	}
+	// Repair the current app shell without changing the user's offline-mode preference.
+	// Existing core caches remain available until refreshed entries are successfully written.
+	else if (event.data.type === 'REPAIR_CORE_CACHE') {
+		event.waitUntil(
+			(async () => {
+				try {
+					await performCaching();
+					replyToMessage(event, { ok: true, type: 'REPAIR_CORE_CACHE_RESULT', cacheName: cacheNames.core });
+				} catch (error) {
+					console.warn('[SW] Core app-shell repair failed; existing caches are retained.', error);
+					replyToMessage(event, {
+						ok: false,
+						type: 'REPAIR_CORE_CACHE_RESULT',
+						error: error instanceof Error ? error.message : String(error)
+					});
+				}
+			})()
+		);
+	}
 	// Cache a specific URL to a specific dedicated offline cache.
 	else if (event.data.type === 'CACHE_URL') {
 		event.waitUntil(

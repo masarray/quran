@@ -32,6 +32,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { getWebsiteWidth } from '$utils/getWebsiteWidth';
+	import { defaultSettings } from '$data/defaultSettings';
+	import { loadUserSettings, parseJsonSafely } from '$utils/settingsStorage';
 
 	const defaultPaddingTop = 'pt-16';
 	const defaultPaddingBottom = 'pb-8';
@@ -45,28 +47,38 @@
 	setDefaultPaddings();
 
 	onMount(() => {
-		const warmReaderCache = async () => {
+		const initializePwa = async () => {
 			try {
 				await disableServiceWorkerInDevelopment();
 
 				const result = await registerServiceWorker({ startCaching: false });
 				if (!result.success) console.warn('[PWA] Service worker registration did not complete:', result.error);
 
-				const settings = JSON.parse(localStorage.getItem('userSettings'));
+				const settings = loadUserSettings(defaultSettings, { persist: true });
 				if (!settings?.offlineModeSettings?.serviceWorker?.downloaded) {
 					await disableHiddenOfflineCaching();
 				}
+			} catch (error) {
+				console.warn('[PWA] Startup registration failed.', error);
+			}
+		};
 
+		const warmReaderCache = async () => {
+			try {
+				const settings = loadUserSettings(defaultSettings, { persist: true });
 				const lastRead = settings?.lastReadManual?.chapter ? settings.lastReadManual : settings?.lastRead;
 				if (lastRead?.chapter) {
 					await fetchChapterData({ chapter: lastRead.chapter, preventStoreUpdate: true });
 					await fetchVerseTranslationData({ preventStoreUpdate: true });
 				}
 			} catch (error) {
-				console.warn(error);
+				console.warn('[PWA] Reader cache warmup failed.', error);
 			}
 		};
 
+		// Service-worker registration is part of PWA startup and must never depend
+		// on the browser finding an idle window. Only optional data warmup is idle.
+		initializePwa();
 		const runWhenIdle = window.requestIdleCallback || ((callback) => setTimeout(callback, 2500));
 		runWhenIdle(warmReaderCache);
 	});
@@ -140,8 +152,8 @@
 
 	// Non-Mushaf Page Base Handling
 	$: if ($__currentPage && $__currentPage !== 'mushaf') {
-		const userSettings = JSON.parse(localStorage.getItem('userSettings'));
-		const parsedUserSettings = JSON.parse($__userSettings);
+		const userSettings = loadUserSettings(defaultSettings, { persist: true });
+		const parsedUserSettings = parseJsonSafely($__userSettings, userSettings) || userSettings;
 
 		// Only restore user settings if sign language mode is OFF
 		if (!$__signLanguageModeEnabled) {

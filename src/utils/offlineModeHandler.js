@@ -178,6 +178,71 @@ export async function inspectOfflineCacheHealth() {
 	};
 }
 
+export async function repairPwaAppShell() {
+	if (dev || !('serviceWorker' in navigator) || !('caches' in window)) {
+		return { success: false, error: 'Pemulihan aplikasi tidak tersedia pada lingkungan ini.' };
+	}
+
+	if (!navigator.onLine) {
+		return { success: false, error: 'Sambungkan internet sebelum memulihkan berkas inti aplikasi.' };
+	}
+
+	try {
+		const probe = await fetch(`${base}/manifest.json?__network_probe=${Date.now()}`, {
+			cache: 'no-store'
+		});
+		if (!probe.ok) {
+			return { success: false, error: 'Koneksi ke berkas aplikasi belum stabil. Silakan coba lagi.' };
+		}
+
+		let registration = await navigator.serviceWorker.getRegistration();
+		if (!registration) {
+			registration = await navigator.serviceWorker.register(`${base}/service-worker.js`, {
+				type: 'module'
+			});
+		} else {
+			registration = (await registration.update()) || registration;
+		}
+
+		const candidate = registration.installing || registration.waiting;
+		if (candidate && candidate.state !== 'activated') {
+			await new Promise((resolve, reject) => {
+				const timer = setTimeout(() => reject(new Error('Service worker baru belum aktif setelah pemulihan.')), 30000);
+				const finish = () => {
+					if (candidate.state === 'activated') {
+						clearTimeout(timer);
+						candidate.removeEventListener('statechange', finish);
+						resolve();
+					} else if (candidate.state === 'redundant') {
+						clearTimeout(timer);
+						candidate.removeEventListener('statechange', finish);
+						reject(new Error('Service worker pengganti gagal diaktifkan.'));
+					}
+				};
+				candidate.addEventListener('statechange', finish);
+				finish();
+			});
+		}
+
+		const readyRegistration = await navigator.serviceWorker.ready;
+		const worker = readyRegistration.active || registration.active || navigator.serviceWorker.controller;
+		if (!worker) {
+			return { success: false, error: 'Service worker belum siap untuk memulihkan aplikasi.' };
+		}
+
+		await postMessageAndWait(worker, { type: 'REPAIR_CORE_CACHE' }, { timeout: 180000 });
+		const health = await inspectOfflineCacheHealth();
+		if (!health.coreShellReady) {
+			return { success: false, error: 'Berkas inti aplikasi belum tersimpan dengan benar. Silakan coba lagi.' };
+		}
+
+		return { success: true, registration: readyRegistration || registration };
+	} catch (error) {
+		console.warn('[PWA] App-shell repair failed.', error);
+		return { success: false, error: error instanceof Error ? error.message : String(error) };
+	}
+}
+
 export async function unregisterServiceWorkerAndClearCache() {
 	try {
 		const registrations = await navigator.serviceWorker.getRegistrations();

@@ -1,5 +1,7 @@
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
+import { defaultSettings } from '$data/defaultSettings';
+import { loadUserSettings } from '$utils/settingsStorage';
 
 let __currentPage,
 	__chapterNumber,
@@ -66,7 +68,7 @@ let __currentPage,
 	__readingAnalytics;
 
 if (browser) {
-	const userSettings = JSON.parse(localStorage.getItem('userSettings'));
+	const userSettings = loadUserSettings(defaultSettings, { persist: true });
 
 	// to store the current page
 	__currentPage = writable('home');

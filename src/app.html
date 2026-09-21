@@ -10,6 +10,53 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="description" content="Al Quran untuk membaca, mendengar, dan mempelajari ayat dengan mudah dalam bahasa Indonesia." />
 
+		<script>
+			(() => {
+				window.__QURAN_BOOT_USER_SETTINGS__ = null;
+
+				try {
+					const key = 'userSettings';
+					const backupKey = 'quranRecovery:userSettingsCorrupt';
+					const raw = localStorage.getItem(key);
+					if (!raw) return;
+
+					try {
+						const parsed = JSON.parse(raw);
+						if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+							throw new Error('Stored user settings root is invalid.');
+						}
+						window.__QURAN_BOOT_USER_SETTINGS__ = parsed;
+					} catch (error) {
+						const backup = JSON.stringify({
+							capturedAt: new Date().toISOString(),
+							raw
+						});
+
+						try {
+							localStorage.setItem(backupKey, backup);
+						} catch {
+							try {
+								sessionStorage.setItem(backupKey, backup);
+							} catch {
+								// Recovery must continue even when backup storage is unavailable.
+							}
+						}
+
+						try {
+							sessionStorage.setItem('quran-settings-recovered', '1');
+						} catch {
+							// Recovery notice is best-effort.
+						}
+
+						localStorage.removeItem(key);
+						console.warn('[Recovery] Invalid user settings were isolated before application startup.', error);
+					}
+				} catch (error) {
+					console.warn('[Recovery] Browser storage is unavailable during startup.', error);
+				}
+			})();
+		</script>
+
 		<meta property="og:url" content="https://masarray.github.io/quran/" />
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="Al Quran" />
@@ -41,7 +88,7 @@
 				preloadFont(`${baseFontUrl}/juz_names-Regular.woff2`);
 				preloadFont(`${baseFontUrl}/surahs_v4-Regular.woff2`);
 			} else {
-				const userSettings1 = JSON.parse(localStorage.getItem('userSettings'));
+				const userSettings1 = window.__QURAN_BOOT_USER_SETTINGS__;
 				const fontType = Number(userSettings1?.displaySettings?.fontType ?? '1');
 
 				const fontMap = {
@@ -172,7 +219,7 @@
 			let currentTheme;
 
 			try {
-				const userSettings = JSON.parse(localStorage.getItem('userSettings'));
+				const userSettings = window.__QURAN_BOOT_USER_SETTINGS__;
 				if (userSettings && userSettings.displaySettings && userSettings.displaySettings.websiteTheme !== undefined) {
 					currentTheme = userSettings.displaySettings.websiteTheme;
 				} else {

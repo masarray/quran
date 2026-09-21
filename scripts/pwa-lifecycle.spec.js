@@ -202,6 +202,103 @@ test('cold GitHub Pages deep link boots through 404.html', async ({ browser }) =
   await context.close();
 });
 
+test('service worker registration does not depend on an idle callback', async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    window.requestIdleCallback = () => 1;
+    window.cancelIdleCallback = () => {};
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30_000
+  });
+
+  await waitForControlledPage(page);
+  await assertAppShell(page);
+
+  await context.close();
+});
+
+test('malformed local settings cannot brick a cold deep-link startup', async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    localStorage.setItem('userSettings', '{ definitely broken');
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/18`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30_000
+  });
+
+  await expect.poll(
+    () => page.evaluate(() => {
+      try {
+        return JSON.parse(localStorage.getItem('userSettings'))?.displaySettings?.fontType;
+      } catch {
+        return null;
+      }
+    }),
+    { timeout: 10_000 }
+  ).toBe(1);
+
+  const recovery = await page.evaluate(() => ({
+    backup: localStorage.getItem('quranRecovery:userSettingsCorrupt'),
+    flag: sessionStorage.getItem('quran-settings-recovered')
+  }));
+  expect(recovery.backup).toContain('{ definitely broken');
+  expect(recovery.flag).toBe('1');
+  await expect(page.locator('body')).toContainText('Pengaturan lokal dipulihkan');
+  expect((await page.title()).toLowerCase()).toContain('quran');
+
+  await context.close();
+});
+
+test('structurally damaged settings are repaired without deleting user notes', async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    localStorage.setItem(
+      'userSettings',
+      JSON.stringify({
+        displaySettings: 'invalid',
+        userNotes: {
+          '1:1': { note: 'catatan tetap ada', modified_at: '2026-09-21T00:00:00.000Z' }
+        }
+      })
+    );
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30_000
+  });
+
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          try {
+            const repaired = JSON.parse(localStorage.getItem('userSettings'));
+            return {
+              fontType: repaired?.displaySettings?.fontType,
+              note: repaired?.userNotes?.['1:1']?.note
+            };
+          } catch {
+            return null;
+          }
+        }),
+      { timeout: 10_000 }
+    )
+    .toEqual({ fontType: 1, note: 'catatan tetap ada' });
+
+  await assertAppShell(page);
+
+  await context.close();
+});
+
 test('installed PWA survives a complete offline relaunch', async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -282,6 +379,56 @@ test('offline cache writes acknowledge durable completion and resume from cache'
   });
   expect(second.ok).toBe(true);
   expect(second.source).toBe('cache');
+
+  await context.close();
+});
+
+test('app-shell repair refreshes core cache without deleting offline content or enabling offline mode', async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  await page.goto(`${origin}${base}/`, { waitUntil: 'domcontentloaded' });
+  await waitForControlledPage(page);
+
+  const sentinelUrl = `${origin}${base}/manifest.json`;
+  await page.evaluate(async ({ sentinelUrl }) => {
+    const chapterCache = await caches.open('quranwbw-chapter-data');
+    await chapterCache.put(sentinelUrl, new Response('sentinel', { headers: { 'Content-Type': 'text/plain' } }));
+
+    const configCache = await caches.open('quranwbw-config');
+    await configCache.put(
+      'caching-enabled',
+      new Response(JSON.stringify({ enabled: false }), { headers: { 'Content-Type': 'application/json' } })
+    );
+  }, { sentinelUrl });
+
+  const repaired = await sendServiceWorkerRequest(page, { type: 'REPAIR_CORE_CACHE' });
+  expect(repaired.ok).toBe(true);
+
+  const state = await page.evaluate(async ({ sentinelUrl, base }) => {
+    const chapterCache = await caches.open('quranwbw-chapter-data');
+    const configCache = await caches.open('quranwbw-config');
+    const configResponse = await configCache.match('caching-enabled');
+    const coreKeys = (await caches.keys()).filter((key) => key.startsWith('quranwbw-cache-'));
+    let shellReady = false;
+    for (const cacheName of coreKeys) {
+      const cache = await caches.open(cacheName);
+      if (await cache.match(`${location.origin}${base}/`)) {
+        shellReady = true;
+        break;
+      }
+    }
+
+    return {
+      sentinel: Boolean(await chapterCache.match(sentinelUrl)),
+      offlineEnabled: configResponse ? (await configResponse.json()).enabled : null,
+      shellReady
+    };
+  }, { sentinelUrl, base });
+
+  expect(state.sentinel).toBe(true);
+  expect(state.offlineEnabled).toBe(false);
+  expect(state.shellReady).toBe(true);
 
   await context.close();
 });

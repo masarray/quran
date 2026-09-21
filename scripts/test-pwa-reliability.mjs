@@ -18,6 +18,8 @@ assert.ok(serviceWorker.includes('OFFLINE_CONTENT_CACHE_NAMES'), 'offline conten
 assert.ok(serviceWorker.includes('OFFLINE_ASSET_ORIGINS'), 'cross-origin interception must be restricted to approved Quran asset origins');
 assert.ok(serviceWorker.includes('if (!sameOrigin && !approvedOfflineOrigin) return;'), 'unrelated external traffic must bypass the service worker');
 assert.ok(serviceWorker.includes('replyToMessage(event'), 'transactional cache operations must acknowledge completion');
+assert.ok(serviceWorker.includes("event.data.type === 'REPAIR_CORE_CACHE'"), 'app-shell repair must be handled transactionally by the service worker');
+assert.ok(serviceWorker.includes('existing caches are retained'), 'failed app-shell repair must retain the previous core cache');
 assert.ok(serviceWorker.includes("source: 'cache'"), 'interrupted downloads must resume from already verified cache entries');
 assert.equal(serviceWorker.includes('await cache.put(event.request, networkResponse.clone())'), false, 'normal network traffic must never be duplicated into the app-shell cache');
 assert.ok(serviceWorker.includes("url.searchParams.has('__network_probe')"), 'network probe must bypass the service worker');
@@ -80,9 +82,31 @@ const offlineHandler = await read('src/utils/offlineModeHandler.js');
 assert.ok(offlineHandler.includes('new MessageChannel()'), 'service-worker requests must use a MessageChannel acknowledgement');
 assert.ok(offlineHandler.includes("type: 'CACHE_URL'"), 'offline handler must expose transactional URL caching');
 assert.ok(offlineHandler.includes("type: 'DELETE_CACHE'"), 'offline handler must await cache deletion');
+assert.ok(offlineHandler.includes("type: 'REPAIR_CORE_CACHE'"), 'app-shell recovery must request an acknowledged non-destructive core-cache repair');
+assert.equal(offlineHandler.includes('if (registration) await registration.unregister();'), false, 'app-shell recovery must not unregister the healthy worker before replacement is proven');
 
 const appHtml = await read('src/app.html');
 assert.ok(appHtml.includes("const appBasePath = '%sveltekit.assets%'.replace(/\\/$/, '');"));
+assert.ok(appHtml.includes('__QURAN_BOOT_USER_SETTINGS__'), 'boot HTML must isolate malformed settings before module startup');
+assert.equal(appHtml.includes("JSON.parse(localStorage.getItem('userSettings'))"), false, 'boot HTML must not directly parse untrusted settings');
+
+const hooksClient = await read('src/hooks.client.js');
+assert.ok(hooksClient.includes('loadUserSettings'), 'client hook must repair user settings before stores initialize');
+assert.ok(hooksClient.includes('handleError'), 'client runtime errors must enter the diagnostic/recovery path');
+
+const settingsStorage = await read('src/utils/settingsStorage.js');
+assert.ok(settingsStorage.includes('mergeSettingsWithDefaults'), 'nested settings must be structurally repaired');
+assert.ok(settingsStorage.includes('quranRecovery:userSettingsCorrupt'), 'malformed settings must be isolated with a local recovery copy');
+
+const settingsManager = await read('src/utils/settingsManager.js');
+assert.equal(settingsManager.includes('window.umami.track('), false, 'settings import/export must not depend on analytics availability');
+assert.ok(settingsManager.includes('window.umami?.track?.('), 'settings telemetry must be best-effort only');
+
+const rootError = await read('src/routes/+error.svelte');
+assert.ok(rootError.includes('repairPwaAppShell'), 'root error boundary must expose non-destructive app-shell recovery');
+
+const pwaRecoveryBanner = await read('src/components/ui/PwaRecoveryBanner.svelte');
+assert.ok(pwaRecoveryBanner.includes('wasUserSettingsRecoveredThisSession'), 'automatic settings recovery must be visible to the user');
 
 if (existsSync(path.join(root, 'build'))) {
 	const requiredArtifacts = ['build/index.html', 'build/404.html', 'build/service-worker.js'];

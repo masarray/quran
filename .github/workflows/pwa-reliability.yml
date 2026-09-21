@@ -11,6 +11,11 @@ on:
       - 'src/utils/fetchData.js'
       - 'src/utils/audioController.js'
       - 'src/utils/networkFetch.js'
+      - 'src/utils/settingsStorage.js'
+      - 'src/utils/runtimeDiagnostics.js'
+      - 'src/data/defaultSettings.js'
+      - 'src/hooks.client.js'
+      - 'src/components/ui/PwaRecoveryBanner.svelte'
       - 'src/utils/quranDataIntegrity.js'
       - 'src/utils/dexie.js'
       - 'src/utils/storageHealth.js'
@@ -52,6 +57,9 @@ jobs:
         run: |
           node --check src/service-worker.js
           node --check src/utils/offlineModeHandler.js
+
+      - name: Test runtime recovery
+        run: npm run test:runtime-recovery
 
       - name: Build GitHub Pages candidate
         shell: bash
