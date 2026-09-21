@@ -7,6 +7,7 @@ import {
 	validateTafsirChapterData,
 	validateVerseKeyData,
 	validateVerseTranslationData,
+	validateWordDatasetAlignment,
 	validateWordLanguageData
 } from '../src/utils/quranDataIntegrity.js';
 
@@ -34,10 +35,11 @@ async function fetchJsonWithRetry(url, attempts = 3) {
 	throw new Error(`Failed to fetch ${url}: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
 
-async function auditAsset(report, { name, url, validator, kind }) {
+async function auditAsset(report, { key, name, url, validator, kind }, liveData) {
 	const started = Date.now();
 	const { data, bytes } = await fetchJsonWithRetry(url);
 	assertQuranDataIntegrity(data, validator, { cacheKey: url, kind });
+	if (key) liveData[key] = data;
 
 	const result = {
 		name,
@@ -55,27 +57,32 @@ async function main() {
 		generatedAt: new Date().toISOString(),
 		assets: []
 	};
+	const liveData = {};
 
 	const assets = [
 		{
+			key: 'metaVerseData',
 			name: 'verse-key metadata',
 			url: `${staticEndpoint}/meta/verseKeyData.json?version=3`,
 			validator: validateVerseKeyData,
 			kind: 'metadata'
 		},
 		{
+			key: 'arabicWordData',
 			name: 'default Arabic word data',
 			url: `${staticEndpoint}/words-data/arabic/1.json?version=5`,
 			validator: validateArabicWordData,
 			kind: 'arabic'
 		},
 		{
+			key: 'translationWordData',
 			name: 'Indonesian word translation',
 			url: `${staticEndpoint}/words-data/translations/4.json?version=1`,
 			validator: validateWordLanguageData,
 			kind: 'word-translation'
 		},
 		{
+			key: 'transliterationWordData',
 			name: 'default word transliteration',
 			url: `${staticEndpoint}/words-data/transliterations/1.json?version=1`,
 			validator: validateWordLanguageData,
@@ -104,7 +111,13 @@ async function main() {
 		});
 	}
 
-	for (const asset of assets) await auditAsset(report, asset);
+	for (const asset of assets) await auditAsset(report, asset, liveData);
+
+	assertQuranDataIntegrity(liveData, validateWordDatasetAlignment, {
+		cacheKey: 'live-default-word-dataset',
+		kind: 'word-alignment'
+	});
+	console.log('PASS default word datasets align with canonical verse word counts');
 
 	report.ok = report.assets.every((asset) => asset.ok);
 	report.totalBytes = report.assets.reduce((total, asset) => total + asset.bytes, 0);
