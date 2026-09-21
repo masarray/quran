@@ -4,23 +4,41 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    paths:
+      - '.github/workflows/deploy-pages.yml'
+      - 'scripts/test-release-pipeline.mjs'
+      - 'scripts/pwa-lifecycle.spec.js'
+      - 'scripts/test-pwa-reliability.mjs'
+      - 'scripts/test-runtime-recovery.mjs'
+      - 'scripts/test-network-reliability.mjs'
+      - 'scripts/test-quran-data-integrity.mjs'
+      - 'scripts/test-footnotes.mjs'
+      - 'src/service-worker.js'
+      - 'src/utils/offlineModeHandler.js'
+      - 'src/utils/networkFetch.js'
+      - 'src/utils/fetchData.js'
+      - 'src/utils/quranDataIntegrity.js'
+      - 'src/utils/settingsStorage.js'
+      - 'src/utils/runtimeDiagnostics.js'
+      - 'src/routes/**'
+      - 'src/app.html'
+      - 'svelte.config.js'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 concurrency:
-  group: pages
+  group: deploy-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 35
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -34,17 +52,120 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build for Pages
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Lint unused imports
+        run: npm run lint:unused
+
+      - name: Syntax-check PWA runtime
+        run: |
+          node --check src/service-worker.js
+          node --check src/utils/offlineModeHandler.js
+
+      - name: Test runtime recovery
+        run: npm run test:runtime-recovery
+
+      - name: Test bounded network recovery
+        run: npm run test:network-reliability
+
+      - name: Test Quran data validators
+        run: npm run test:quran-integrity
+
+      - name: Test footnote recovery
+        run: npm run test:footnotes
+
+      - name: Audit live Quran datasets
+        env:
+          QURAN_INTEGRITY_REPORT: quran-data-integrity-report.json
+        run: npm run audit:quran-integrity
+
+      - name: Audit configured media sources
+        env:
+          MEDIA_SOURCE_REPORT: media-source-report.json
+        run: npm run audit:media-sources
+
+      - name: Audit Indonesian footnotes
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run audit:footnotes -- --translation=33 --show-problems=500 --output=footnote-audit-33.json --fail-on-missing 2>&1 | tee footnote-audit-33.log
+
+      - name: Build tested Pages artifact
+        shell: bash
         env:
           GITHUB_PAGES: 'true'
           BASE_PATH: '/quran'
-        run: npm run build
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee release-build.log
 
-      - name: Upload artifact
+      - name: Verify PWA reliability invariants
+        run: npm run test:pwa-reliability
+
+      - name: Verify release pipeline invariants
+        run: npm run test:release-pipeline
+
+      - name: Reject known startup regressions
+        shell: bash
+        run: |
+          if grep -Fq 'Overwriting build/index.html with fallback page' release-build.log; then
+            echo 'index.html was overwritten as fallback; expected build/404.html'
+            exit 1
+          fi
+          if grep -Fq 'Offline - resource not cached' build/service-worker.js; then
+            echo 'Raw offline failure text returned to production service worker'
+            exit 1
+          fi
+          if grep -Eq '"(untrack|fork|settled)" is not exported' release-build.log; then
+            echo 'Svelte/SvelteKit runtime export mismatch detected'
+            exit 1
+          fi
+          if grep -Fq 'css-syntax-error' release-build.log; then
+            echo 'CSS minifier syntax warning detected'
+            exit 1
+          fi
+
+      - name: Install Playwright lifecycle harness
+        run: |
+          npm install --no-save --package-lock=false @playwright/test@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Run real PWA lifecycle tests
+        run: npx playwright test scripts/pwa-lifecycle.spec.js --workers=1 --reporter=line
+
+      - name: Upload release diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-gate-${{ github.sha }}
+          path: |
+            release-build.log
+            quran-data-integrity-report.json
+            media-source-report.json
+            footnote-audit-33.log
+            footnote-audit-33.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload tested Pages artifact
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5
         with:
           path: build
 
-      - name: Deploy to GitHub Pages
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy tested artifact to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

@@ -26,6 +26,8 @@ on:
       - 'package-lock.json'
       - 'scripts/test-pwa-reliability.mjs'
       - 'scripts/pwa-lifecycle.spec.js'
+      - 'scripts/test-release-pipeline.mjs'
+      - '.github/workflows/deploy-pages.yml'
       - '.github/workflows/pwa-reliability.yml'
   workflow_dispatch:
 
@@ -72,6 +74,9 @@ jobs:
 
       - name: Verify PWA reliability invariants
         run: npm run test:pwa-reliability
+
+      - name: Verify release pipeline invariants
+        run: npm run test:release-pipeline
 
       - name: Reject known startup regressions
         shell: bash
