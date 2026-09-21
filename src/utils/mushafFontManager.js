@@ -168,6 +168,18 @@ async function findCachedFont(url) {
 	return null;
 }
 
+function uncachedNetworkResult(result) {
+	if (result?.persisted !== false) return null;
+	const bytes = result.bytes;
+	if (bytes && bytes.byteLength) {
+		return {
+			response: new Response(bytes, { status: 200, headers: { 'Content-Type': 'font/woff2' } }),
+			source: result.source || 'network-uncached'
+		};
+	}
+	return { response: null, source: result?.source || 'network-uncached' };
+}
+
 async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 	const existing = await findCachedFont(url);
 	if (existing) return existing;
@@ -182,7 +194,7 @@ async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 	if (shared) {
 		try {
 			const sharedResult = await shared.promise;
-			if (sharedResult?.persisted === false) return { response: null, source: sharedResult.source || 'network-uncached' };
+			if (sharedResult?.persisted === false) return uncachedNetworkResult(sharedResult);
 			const cachedAfterSharedDownload = await findCachedFont(url);
 			if (cachedAfterSharedDownload) return cachedAfterSharedDownload;
 		} catch (error) {
@@ -216,7 +228,7 @@ async function ensureCachedFont(url, { priority = 'critical' } = {}) {
 
 	cacheInFlight.set(url, { promise: taskPromise, priority });
 	const result = await taskPromise;
-	if (result?.persisted === false) return { response: null, source: result.source || 'network-uncached' };
+	if (result?.persisted === false) return uncachedNetworkResult(result);
 
 	const cached = await findCachedFont(url);
 	if (!cached) throw new Error('Mushaf font was not durably stored after download.');
