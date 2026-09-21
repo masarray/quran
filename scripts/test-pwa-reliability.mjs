@@ -98,6 +98,10 @@ const settingsStorage = await read('src/utils/settingsStorage.js');
 assert.ok(settingsStorage.includes('mergeSettingsWithDefaults'), 'nested settings must be structurally repaired');
 assert.ok(settingsStorage.includes('quranRecovery:userSettingsCorrupt'), 'malformed settings must be isolated with a local recovery copy');
 
+const settingsManager = await read('src/utils/settingsManager.js');
+assert.equal(settingsManager.includes('window.umami.track('), false, 'settings import/export must not depend on analytics availability');
+assert.ok(settingsManager.includes('window.umami?.track?.('), 'settings telemetry must be best-effort only');
+
 const rootError = await read('src/routes/+error.svelte');
 assert.ok(rootError.includes('repairPwaAppShell'), 'root error boundary must expose non-destructive app-shell recovery');
 
