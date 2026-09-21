@@ -370,7 +370,7 @@ function runBackgroundQueue() {
 				try {
 					const cached = await findCachedFont(item.url);
 					const result = cached || (await ensureCachedFont(item.url, { priority: 'prefetch' }));
-					if (!result.response && result.source === 'network-uncached') {
+					if (result.source === 'network-uncached') {
 						clearBackgroundQueue();
 						break;
 					}
