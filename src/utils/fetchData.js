@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import { __fontType, __chapterData, __verseTranslationData, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 import { staticEndpoint, cdnStaticDataUrls } from '$data/websiteSettings';
 import { selectableFontTypes, selectableWordTranslations, selectableWordTransliterations, selectableVerseTranslations } from '$data/options';
-import { assertQuranDataIntegrity, chapterFromJsonPath, normalizeTafsirChapterData, validateArabicWordData, validateWordLanguageData, validateVerseTranslationData, validateVerseKeyData, validateTafsirChapterData, validateMorphologySummaryData, validateMorphologyStaticData } from '$utils/quranDataIntegrity';
+import { assertQuranDataIntegrity, chapterFromJsonPath, normalizeTafsirChapterData, validateArabicWordData, validateWordDatasetAlignment, validateWordLanguageData, validateVerseTranslationData, validateVerseKeyData, validateTafsirChapterData, validateMorphologySummaryData, validateMorphologyStaticData } from '$utils/quranDataIntegrity';
 
 // Keep track of in-progress fetches globally
 const inFlightRequests = new Map();
@@ -264,10 +264,16 @@ export async function fetchWordData(fontType, wordTranslation, wordTransliterati
 
 	const [arabicWordData, translationWordData, transliterationWordData, metaVerseData] = await Promise.all(urls.map(({ url, type }) => fetchAndCacheJson(url, type, { requireCacheWrite })));
 
-	return {
+	const combinedWordData = {
 		arabicWordData,
 		translationWordData,
 		transliterationWordData,
 		metaVerseData
 	};
+	assertQuranDataIntegrity(combinedWordData, validateWordDatasetAlignment, {
+		cacheKey: 'combined-word-dataset',
+		kind: 'word-alignment'
+	});
+
+	return combinedWordData;
 }
