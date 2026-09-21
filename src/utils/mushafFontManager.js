@@ -269,14 +269,18 @@ function runBackgroundQueue() {
 				queuedBackgroundUrls.delete(item.url);
 				try {
 					const cached = await findCachedFont(item.url);
-					if (!cached) await ensureCachedFont(item.url);
+					const result = cached || (await ensureCachedFont(item.url));
+					if (!result.response && result.source === 'network-uncached') {
+						clearBackgroundQueue();
+						break;
+					}
 					window.dispatchEvent(
 						new CustomEvent('mushaf-font-progress', {
 							detail: {
 								page: item.page,
 								url: item.url,
 								status: 'prefetched',
-								source: cached?.source || 'network',
+								source: result.source,
 								queueDepth: backgroundQueue.length,
 								updatedAt: now()
 							}
@@ -351,7 +355,7 @@ async function performEnsureMushafFont(page, url) {
 		}
 		clearRetry(state);
 		setState(state, { status: 'ready', source: cached.source, attempts: 0 });
-		queueNeighborPrefetch(page);
+		if (cached.source !== 'network-uncached') queueNeighborPrefetch(page);
 		return publicState(state);
 	} catch (error) {
 		const offline = navigator.onLine === false || error?.code === 'OFFLINE';
