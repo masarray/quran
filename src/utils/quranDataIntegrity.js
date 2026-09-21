@@ -68,6 +68,28 @@ export function validateWordLanguageData(data) {
 	});
 }
 
+export function validateWordDatasetAlignment({ arabicWordData, translationWordData, transliterationWordData, metaVerseData }) {
+	if (!validateArabicWordData(arabicWordData) || !validateWordLanguageData(translationWordData) || !validateWordLanguageData(transliterationWordData) || !validateVerseKeyData(metaVerseData)) {
+		return false;
+	}
+
+	return hasAllExpectedVerses((chapter, verse) => {
+		const key = `${chapter}:${verse}`;
+		const expectedWords = Number(metaVerseData[key]?.words);
+		const arabicWords = arabicWordData[chapter]?.[verse]?.[0];
+		const translationWords = translationWordData[chapter]?.[verse]?.[0];
+		const transliterationWords = transliterationWordData[chapter]?.[verse]?.[0];
+
+		return (
+			Number.isInteger(expectedWords) &&
+			expectedWords > 0 &&
+			arabicWords?.length === expectedWords &&
+			translationWords?.length === expectedWords &&
+			transliterationWords?.length === expectedWords
+		);
+	});
+}
+
 export function validateVerseTranslationData(data) {
 	if (!isObject(data)) return false;
 
