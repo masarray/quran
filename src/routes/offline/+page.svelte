@@ -364,7 +364,6 @@
 			showAlert(errorAlertMessage, '');
 		} finally {
 			isDownloadingChapter = false;
-			downloadProgressPercentage = 100;
 		}
 	}
 
@@ -405,7 +404,6 @@
 			showAlert(errorAlertMessage, '');
 		} finally {
 			isDownloadingMushaf = false;
-			downloadProgressPercentage = 100;
 		}
 	}
 
@@ -455,7 +453,6 @@
 			showAlert(errorAlertMessage, '');
 		} finally {
 			isDownloadingMorphology = false;
-			downloadProgressPercentage = 100;
 		}
 	}
 
@@ -493,7 +490,6 @@
 			showAlert(errorAlertMessage, '');
 		} finally {
 			isDownloadingTafsir = false;
-			downloadProgressPercentage = 100;
 		}
 	}
 
