@@ -47,7 +47,7 @@
 	setDefaultPaddings();
 
 	onMount(() => {
-		const warmReaderCache = async () => {
+		const initializePwa = async () => {
 			try {
 				await disableServiceWorkerInDevelopment();
 
@@ -58,17 +58,27 @@
 				if (!settings?.offlineModeSettings?.serviceWorker?.downloaded) {
 					await disableHiddenOfflineCaching();
 				}
+			} catch (error) {
+				console.warn('[PWA] Startup registration failed.', error);
+			}
+		};
 
+		const warmReaderCache = async () => {
+			try {
+				const settings = loadUserSettings(defaultSettings, { persist: true });
 				const lastRead = settings?.lastReadManual?.chapter ? settings.lastReadManual : settings?.lastRead;
 				if (lastRead?.chapter) {
 					await fetchChapterData({ chapter: lastRead.chapter, preventStoreUpdate: true });
 					await fetchVerseTranslationData({ preventStoreUpdate: true });
 				}
 			} catch (error) {
-				console.warn(error);
+				console.warn('[PWA] Reader cache warmup failed.', error);
 			}
 		};
 
+		// Service-worker registration is part of PWA startup and must never depend
+		// on the browser finding an idle window. Only optional data warmup is idle.
+		initializePwa();
 		const runWhenIdle = window.requestIdleCallback || ((callback) => setTimeout(callback, 2500));
 		runWhenIdle(warmReaderCache);
 	});
