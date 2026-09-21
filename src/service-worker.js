@@ -365,13 +365,13 @@ self.addEventListener('fetch', (event) => {
 
 	if (event.request.method !== 'GET' || stuffNotToCache.some((excluded) => url.pathname.includes(excluded))) return;
 	if (url.searchParams.has('__network_probe')) return;
-	if (url.origin !== scopeUrl.origin) return;
+	const sameOrigin = url.origin === scopeUrl.origin;
 
 	event.respondWith(
 		(async () => {
 			await ensureCachingStatusLoaded();
 
-			if (event.request.mode !== 'navigate') {
+			if (sameOrigin && event.request.mode !== 'navigate') {
 				const coreResponse = await matchVersionedCoreCaches(event.request);
 				if (coreResponse) return coreResponse;
 			}
@@ -384,7 +384,7 @@ self.addEventListener('fetch', (event) => {
 			try {
 				const networkResponse = await fetch(event.request);
 				if (networkResponse && networkResponse.status < 500) {
-					if (cachingEnabled && networkResponse.ok) {
+					if (sameOrigin && cachingEnabled && networkResponse.ok) {
 						const cache = await caches.open(cacheNames.core);
 						await cache.put(event.request, networkResponse.clone());
 					}
@@ -394,8 +394,10 @@ self.addEventListener('fetch', (event) => {
 				console.warn('[SW] Network request failed; using local fallback when possible.', error);
 			}
 
-			const exactCore = await matchVersionedCoreCaches(event.request);
-			if (exactCore) return exactCore;
+			if (sameOrigin) {
+				const exactCore = await matchVersionedCoreCaches(event.request);
+				if (exactCore) return exactCore;
+			}
 
 			if (event.request.mode === 'navigate') {
 				const shell = await matchAppShell();
