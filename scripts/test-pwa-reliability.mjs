@@ -26,6 +26,17 @@ assert.equal(serviceWorker.includes('networkTimeout'), false, 'hard network time
 assert.equal(serviceWorker.includes('fetchWithTimeout'), false, 'hard network timeout helper must stay removed');
 assert.equal(serviceWorker.includes('Offline - resource not cached'), false, 'raw technical 503 text must never be the navigation UX');
 
+const audioController = await read('src/utils/audioController.js');
+assert.ok(audioController.includes('fetchWithRetry'), 'audio playback must retry transient media failures');
+assert.ok(audioController.includes('isUsableAudioResponse'), 'audio responses must be validated before cache/playback');
+assert.ok(audioController.includes('await audio.play()'), 'media playback rejection must be observed');
+assert.equal(audioController.includes('checkOnlineAndAlert'), false, 'audio must not depend on an unrelated same-origin connectivity probe');
+assert.equal(audioController.includes('return url;'), false, 'failed controlled audio fetches must not escape to an untracked raw-URL fallback');
+
+const networkFetch = await read('src/utils/networkFetch.js');
+assert.ok(networkFetch.includes('isRetryableHttpStatus'), 'network retry policy must be explicit');
+assert.ok(networkFetch.includes('timeoutMs = 30000'), 'data/media retries must have a bounded per-attempt timeout');
+
 const config = await read('svelte.config.js');
 assert.ok(config.includes("fallback: '404.html'"), 'GitHub Pages must generate a 404 SPA fallback');
 assert.equal(config.includes("fallback: 'index.html'"), false, 'index.html must not be overwritten as the adapter fallback');
