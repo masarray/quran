@@ -4,7 +4,8 @@ import { __reciter, __translationReciter, __playbackSpeed, __audioSettings, __au
 import { staticEndpoint, wordsAudioURL } from '$data/websiteSettings';
 import { selectableReciters, selectableTranslationReciters, selectablePlaybackSpeeds, selectableAudioDelays } from '$data/options';
 import { fetchAndCacheJson } from '$utils/fetchData';
-import { checkOnlineAndAlert } from '$utils/offlineModeHandler';
+import { fetchWithRetry, isUsableAudioResponse } from '$utils/networkFetch';
+import { showAlert } from '$utils/confirmationAlertHandler';
 
 // <audio> element used for all verse and word playback
 let audio = document.querySelector('#player');
@@ -530,42 +531,65 @@ async function fetchTimestampData() {
 }
 
 // Fetch audio and cache it in the Cache API.
-// returnBlob=true  → cache + return a Blob URL for immediate playback
-// returnBlob=false → cache only, no Blob URL returned (used for prefetching)
+// A playback request uses the actual media endpoint as the connectivity authority:
+// cache -> media fetch with bounded retry -> validated Blob URL.
+// Background prefetch failures stay silent and never trigger user-facing alerts.
 async function getAudioUrl(url, returnBlob = true) {
-	try {
-		const cache = await caches.open('quranwbw-audio-cache');
+	const cache = await caches.open('quranwbw-audio-cache');
 
+	try {
 		let response = await cache.match(url);
 
-		// If not cached, fetch from network and store for future use
+		if (response && !isUsableAudioResponse(response)) {
+			console.warn('[AudioCache] Rejecting invalid cached audio response:', url);
+			await cache.delete(url);
+			response = null;
+		}
+
 		if (!response) {
-			// Guard against fetching while offline — shows an alert to the user if offline
-			if (!(await checkOnlineAndAlert())) return;
-
 			console.log('[AudioCache] Fetching:', url);
-			response = await fetch(url);
+			response = await fetchWithRetry(
+				url,
+				{ cache: 'no-store' },
+				{
+					attempts: returnBlob ? 3 : 2,
+					timeoutMs: returnBlob ? 20000 : 12000,
+					baseDelayMs: 350,
+					onRetry: ({ nextAttempt, status }) => console.warn('[AudioCache] Retrying media request', { url, nextAttempt, status })
+				}
+			);
 
-			if (!response.ok) {
-				throw new Error(`Failed to fetch audio: ${response.status}`);
+			if (!isUsableAudioResponse(response)) {
+				throw new Error(`Invalid audio response: HTTP ${response.status}, content-type=${response.headers.get('content-type') || 'missing'}`);
 			}
 
-			// Clone before caching since response body can only be consumed once
-			await cache.put(url, response.clone());
+			try {
+				await cache.put(url, response.clone());
+			} catch (cacheError) {
+				// CacheStorage is an optimization for audio. Playback should still work
+				// when storage is full or the browser evicts media data.
+				console.warn('[AudioCache] Unable to persist audio; continuing playback.', cacheError);
+			}
 		} else {
 			console.log('[AudioCache] Using cached:', url);
 		}
 
-		// Prefetch calls stop here — no need to create a Blob URL
 		if (!returnBlob) return;
 
-		// Convert response to a Blob URL so the audio element can play it
 		const blob = await response.blob();
+		if (blob.size <= 0) {
+			await cache.delete(url);
+			throw new Error('Audio response body is empty.');
+		}
+
 		return URL.createObjectURL(blob);
 	} catch (error) {
-		// Fall back to the raw URL if anything goes wrong
 		console.warn('[AudioCache] Error:', error);
-		return url;
+
+		if (returnBlob) {
+			showAlert(navigator.onLine ? 'Audio tidak dapat dimuat. Silakan coba lagi.' : 'Audio belum tersedia offline. Sambungkan internet atau putar audio yang sudah pernah dimuat.', '');
+		}
+		return null;
 	}
 }
 
