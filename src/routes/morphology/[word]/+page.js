@@ -1,4 +1,5 @@
 import { goto } from '$app/navigation';
+import { base } from '$app/paths';
 import { error } from '@sveltejs/kit';
 import { isValidVerseKey, isValidWordKey } from '$utils/validateKey';
 
@@ -11,5 +12,5 @@ export async function load({ params }) {
 		});
 	}
 
-	goto(`/morphology?word=${key}`, { replaceState: false });
+	goto(`${base}/morphology?word=${key}`, { replaceState: false });
 }
