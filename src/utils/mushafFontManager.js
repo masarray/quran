@@ -15,6 +15,7 @@ const queuedBackgroundUrls = new Set();
 
 const MAX_BACKGROUND_QUEUE = 8;
 const MAX_ACTIVE_RETRIES = 3;
+const MIN_BACKGROUND_STORAGE_HEADROOM_BYTES = 12 * 1024 * 1024;
 
 let backgroundRunning = false;
 let recoveryListenersInstalled = false;
@@ -92,7 +93,9 @@ async function isValidCachedWoff2(response) {
 async function findCachedFont(url) {
 	if (!('caches' in window)) return null;
 
+	const existingCacheNames = new Set(await caches.keys());
 	for (const cacheName of cacheSearchOrder) {
+		if (!existingCacheNames.has(cacheName)) continue;
 		const cache = await caches.open(cacheName);
 		const response = await cache.match(url);
 		if (!response) continue;
@@ -107,7 +110,8 @@ async function ensureCachedFont(url) {
 	if (existing) return existing;
 
 	if (cacheInFlight.has(url)) {
-		await cacheInFlight.get(url);
+		const sharedResult = await cacheInFlight.get(url);
+		if (sharedResult?.persisted === false) return { response: null, source: sharedResult.source || 'network-uncached' };
 		const cachedAfterSharedDownload = await findCachedFont(url);
 		if (!cachedAfterSharedDownload) throw new Error('Mushaf font download completed without a durable cache entry.');
 		return cachedAfterSharedDownload;
@@ -121,7 +125,8 @@ async function ensureCachedFont(url) {
 
 	const task = cacheMushafFontWithServiceWorker(url, { timeout: 60000 }).finally(() => cacheInFlight.delete(url));
 	cacheInFlight.set(url, task);
-	await task;
+	const result = await task;
+	if (result?.persisted === false) return { response: null, source: result.source || 'network-uncached' };
 
 	const cached = await findCachedFont(url);
 	if (!cached) throw new Error('Mushaf font was not durably stored after download.');
@@ -132,12 +137,17 @@ async function activateFont(state, cached) {
 	const alreadyLoaded = loadedFamilies.get(state.family);
 	if (alreadyLoaded?.url === state.url && alreadyLoaded.face?.status === 'loaded') return;
 
-	const blob = await cached.response.blob();
-	if (!blob.size) throw new Error('Cached Mushaf font is empty.');
-
-	const objectUrl = URL.createObjectURL(blob);
+	let objectUrl = null;
 	try {
-		const face = new FontFace(state.family, `url("${objectUrl}")`);
+		let source = `url("${state.url}")`;
+		if (cached.response) {
+			const blob = await cached.response.blob();
+			if (!blob.size) throw new Error('Cached Mushaf font is empty.');
+			objectUrl = URL.createObjectURL(blob);
+			source = `url("${objectUrl}")`;
+		}
+
+		const face = new FontFace(state.family, source);
 		await face.load();
 
 		const previous = loadedFamilies.get(state.family);
@@ -152,7 +162,7 @@ async function activateFont(state, cached) {
 		document.fonts.add(face);
 		loadedFamilies.set(state.family, { url: state.url, face });
 	} finally {
-		URL.revokeObjectURL(objectUrl);
+		if (objectUrl) URL.revokeObjectURL(objectUrl);
 	}
 }
 
@@ -211,12 +221,37 @@ function queueNeighborPrefetch(page) {
 	runBackgroundQueue();
 }
 
+async function hasBackgroundStorageHeadroom() {
+	try {
+		if (!navigator.storage?.estimate) return true;
+		const estimate = await navigator.storage.estimate();
+		if (!Number.isFinite(estimate.quota) || !Number.isFinite(estimate.usage)) return true;
+		return estimate.quota - estimate.usage >= MIN_BACKGROUND_STORAGE_HEADROOM_BYTES;
+	} catch {
+		return true;
+	}
+}
+
+function clearBackgroundQueue() {
+	backgroundQueue.length = 0;
+	queuedBackgroundUrls.clear();
+}
+
 function runBackgroundQueue() {
 	if (backgroundRunning || !backgroundQueue.length || navigator.onLine === false || document.hidden) return;
+	const connection = getConnectionInfo();
+	if (connection.saveData || ['slow-2g', '2g'].includes(String(connection.effectiveType).toLowerCase())) {
+		clearBackgroundQueue();
+		return;
+	}
 	backgroundRunning = true;
 
 	scheduleIdle(async () => {
 		try {
+			if (!(await hasBackgroundStorageHeadroom())) {
+				clearBackgroundQueue();
+				return;
+			}
 			while (backgroundQueue.length && navigator.onLine !== false && !document.hidden) {
 				const item = backgroundQueue.shift();
 				queuedBackgroundUrls.delete(item.url);
@@ -287,7 +322,7 @@ async function performEnsureMushafFont(page, url) {
 		setState(state, { status: 'checking' });
 		let cached = await findCachedFont(url);
 		if (!cached) {
-			setState(state, { status: 'downloading', attempts: state.attempts + 1 });
+			setState(state, { status: 'downloading' });
 			cached = await ensureCachedFont(url);
 		}
 
@@ -301,7 +336,8 @@ async function performEnsureMushafFont(page, url) {
 		const offline = navigator.onLine === false || error?.code === 'OFFLINE';
 		setState(state, {
 			status: offline ? 'waiting-network' : 'error',
-			source: null
+			source: null,
+			attempts: state.attempts + 1
 		});
 		scheduleActiveRetry(state);
 		throw error;
