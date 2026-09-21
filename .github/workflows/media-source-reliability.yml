@@ -1,0 +1,53 @@
+name: Media Source Reliability
+
+on:
+  push:
+    branches:
+      - 'reliability/r7-network-media'
+  pull_request:
+    paths:
+      - 'src/utils/audioController.js'
+      - 'src/utils/networkFetch.js'
+      - 'src/utils/fetchData.js'
+      - 'src/data/options.js'
+      - 'src/data/websiteSettings.js'
+      - 'scripts/audit-media-sources.mjs'
+      - 'scripts/test-network-reliability.mjs'
+      - 'package.json'
+      - '.github/workflows/media-source-reliability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit configured media sources
+        env:
+          MEDIA_SOURCE_REPORT: media-source-report.json
+        run: npm run audit:media-sources
+
+      - name: Upload media source report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: media-source-reliability-${{ github.sha }}
+          path: media-source-report.json
+          if-no-files-found: ignore
+          retention-days: 7
