@@ -147,25 +147,23 @@ async function assertAppShell(page) {
 }
 
 async function sendServiceWorkerRequest(page, message) {
-  return page.evaluate(
-    ({ message }) =>
-      new Promise(async (resolve, reject) => {
-        const registration = await navigator.serviceWorker.ready;
-        const worker = navigator.serviceWorker.controller || registration.active;
-        if (!worker) return reject(new Error('missing active service worker'));
+  return page.evaluate(async ({ message }) => {
+    const registration = await navigator.serviceWorker.ready;
+    const worker = navigator.serviceWorker.controller || registration.active;
+    if (!worker) throw new Error('missing active service worker');
 
-        const channel = new MessageChannel();
-        const timer = setTimeout(() => reject(new Error(`service worker request timed out: ${message.type}`)), 10_000);
+    return new Promise((resolve, reject) => {
+      const channel = new MessageChannel();
+      const timer = setTimeout(() => reject(new Error(`service worker request timed out: ${message.type}`)), 10_000);
 
-        channel.port1.onmessage = (event) => {
-          clearTimeout(timer);
-          resolve(event.data);
-        };
+      channel.port1.onmessage = (event) => {
+        clearTimeout(timer);
+        resolve(event.data);
+      };
 
-        worker.postMessage(message, [channel.port2]);
-      }),
-    { message }
-  );
+      worker.postMessage(message, [channel.port2]);
+    });
+  }, { message });
 }
 
 test.beforeAll(async () => {
