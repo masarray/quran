@@ -7,7 +7,7 @@
 	import Info from '$svgs/Info.svelte';
 	import { __currentPage, __offlineModeSettings, __verseTafsir, __fontType, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 	import { buttonClasses, disabledClasses } from '$data/commonClasses';
-	import { registerServiceWorker, unregisterServiceWorkerAndClearCache, checkOnlineAndAlert } from '$utils/offlineModeHandler';
+	import { registerServiceWorker, unregisterServiceWorkerAndClearCache, checkOnlineAndAlert, cacheUrlWithServiceWorker, deleteServiceWorkerCache } from '$utils/offlineModeHandler';
 	import { updateSettings } from '$utils/updateSettings';
 	import { showConfirm, showAlert } from '$utils/confirmationAlertHandler';
 	import { fetchChapterData, fetchVerseTranslationData, fetchAndCacheJson } from '$utils/fetchData';
@@ -131,23 +131,24 @@
 		updateSettings({ type: 'offlineModeSettings', value: offlineModeSettings });
 	}
 
-	async function cacheUrlToCache(url, cacheName) {
-		if (navigator.serviceWorker.controller) {
-			navigator.serviceWorker.controller.postMessage({
-				type: 'CACHE_URL',
-				url: url,
-				cacheName: cacheName
-			});
-			await new Promise((resolve) => setTimeout(resolve, 50));
-		}
+	async function cacheUrlsToCache(urls, cacheName, { concurrency = 4, onProgress = () => {} } = {}) {
+		let nextIndex = 0;
+		const workerCount = Math.min(concurrency, urls.length);
+
+		const worker = async () => {
+			while (nextIndex < urls.length) {
+				const index = nextIndex++;
+				await cacheUrlWithServiceWorker(urls[index], cacheName);
+				onProgress(index + 1, urls.length);
+			}
+		};
+
+		await Promise.all(Array.from({ length: workerCount }, () => worker()));
 	}
 
 	async function deleteSpecificCache(cacheName) {
-		if (navigator.serviceWorker.controller) {
-			navigator.serviceWorker.controller.postMessage({
-				type: 'DELETE_CACHE',
-				cacheName: cacheName
-			});
+		if (cacheName.startsWith('quranwbw-')) {
+			await deleteServiceWorkerCache(cacheName);
 		}
 
 		window.umami?.track(`Delete Specific Cache (${cacheName})`);
@@ -224,15 +225,21 @@
 		}
 	}
 
-	async function ensureCoreDataDownloaded() {
+	async function ensureCoreDataDownloaded(onProgress = () => {}) {
 		if (isServiceWorkerRegistered) return;
 
 		const result = await registerServiceWorker();
 		if (!result.success) throw new Error(result.error);
+		onProgress();
 
 		await downloadAllCdnStaticData();
+		onProgress();
+
 		await downloadAllBismillahFonts();
+		onProgress();
+
 		await downloadChapterHeaderFont();
+		onProgress();
 	}
 
 	async function handleDeleteSpecificData(cacheName, objectName) {
@@ -329,7 +336,7 @@
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
-			const totalStepsInDownloadProgress = coreSteps + totalChapters + 1 + 1;
+			const totalStepsInDownloadProgress = coreSteps + totalChapters;
 			let completedStepsInDownloadProgress = 0;
 
 			await ensureCoreDataDownloaded(() => {
@@ -338,11 +345,13 @@
 			});
 
 			const chapterRoutes = Array.from({ length: totalChapters }, (_, i) => `${base}/${i + 1}`);
-			for (const route of chapterRoutes) {
-				await cacheUrlToCache(route, 'quranwbw-chapter-data');
-				completedStepsInDownloadProgress++;
-				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-			}
+			await cacheUrlsToCache(chapterRoutes, 'quranwbw-chapter-data', {
+				concurrency: 4,
+				onProgress: () => {
+					completedStepsInDownloadProgress++;
+					updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
+				}
+			});
 
 			await downloadChapterAndVerseTranslationData({});
 			completedStepsInDownloadProgress++;
@@ -368,7 +377,7 @@
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
-			const totalStepsInDownloadProgress = coreSteps + totalPages + 1 + 1;
+			const totalStepsInDownloadProgress = coreSteps + totalPages + 1;
 			let completedStepsInDownloadProgress = 0;
 
 			await ensureCoreDataDownloaded(() => {
@@ -376,11 +385,14 @@
 				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
 			});
 
-			for (let page = 1; page <= totalPages; page++) {
-				await cacheUrlToCache(getMushafWordFontLink(page), 'quranwbw-mushaf-data');
-				completedStepsInDownloadProgress++;
-				updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
-			}
+			const mushafFontUrls = Array.from({ length: totalPages }, (_, index) => getMushafWordFontLink(index + 1));
+			await cacheUrlsToCache(mushafFontUrls, 'quranwbw-mushaf-data', {
+				concurrency: 4,
+				onProgress: () => {
+					completedStepsInDownloadProgress++;
+					updateDownloadProgress(completedStepsInDownloadProgress, totalStepsInDownloadProgress);
+				}
+			});
 
 			await downloadChapterAndVerseTranslationData({ fontType: [2, 3] });
 			completedStepsInDownloadProgress++;
@@ -406,7 +418,7 @@
 
 		try {
 			const coreSteps = isServiceWorkerRegistered ? 0 : 4;
-			const totalStepsInDownloadProgress = coreSteps + totalChapters + 4 + 1 + 1;
+			const totalStepsInDownloadProgress = coreSteps + totalChapters + 4 + 1;
 			let completedStepsInDownloadProgress = 0;
 
 			await ensureCoreDataDownloaded(() => {
@@ -498,11 +510,8 @@
 
 	async function downloadAllBismillahFonts() {
 		try {
-			const fontPromises = Object.values(bismillahFonts).map(({ file, version }) => {
-				const url = `${staticEndpoint}/fonts/Extras/bismillah/${file}.woff2?version=${version}`;
-				return fetch(url);
-			});
-			await Promise.all(fontPromises);
+			const fontUrls = Object.values(bismillahFonts).map(({ file, version }) => `${staticEndpoint}/fonts/Extras/bismillah/${file}.woff2?version=${version}`);
+			await cacheUrlsToCache(fontUrls, 'quranwbw-font-data', { concurrency: 3 });
 			console.log('All bismillah fonts cached successfully');
 		} catch (error) {
 			console.warn(error);
@@ -512,7 +521,7 @@
 
 	async function downloadChapterHeaderFont() {
 		try {
-			await fetch(chapterHeaderFontLink);
+			await cacheUrlWithServiceWorker(chapterHeaderFontLink, 'quranwbw-font-data');
 			console.log('Chapter header font cached successfully');
 		} catch (error) {
 			console.warn(error);
