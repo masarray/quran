@@ -82,11 +82,18 @@ export function validateVerseTranslationData(data) {
 	return complete && seen === expectedQuranVerseCount;
 }
 
+export function normalizeTafsirChapterData(data) {
+	if (Array.isArray(data)) return { ayahs: data };
+	if (isObject(data) && (Array.isArray(data.ayahs) || isObject(data.ayahs))) return data;
+	return data;
+}
+
 export function validateTafsirChapterData(data, chapter) {
 	const expected = expectedVersesInChapter(chapter);
-	if (!expected || !isObject(data) || (!isObject(data.ayahs) && !Array.isArray(data.ayahs))) return false;
+	const normalized = normalizeTafsirChapterData(data);
+	if (!expected || !isObject(normalized) || (!isObject(normalized.ayahs) && !Array.isArray(normalized.ayahs))) return false;
 
-	const ayahs = Object.values(data.ayahs);
+	const ayahs = Object.values(normalized.ayahs);
 	const coverage = new Map();
 
 	for (const entry of ayahs) {
