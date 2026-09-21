@@ -11,7 +11,9 @@ assert.match(serviceWorker, /self\.addEventListener\('install',[\s\S]*?event\.wa
 assert.match(serviceWorker, /cache\.addAll\(\[withBase\('\/'\), \.\.\.build\.map\(withBase\)\]\)/);
 assert.ok(serviceWorker.includes('getVersionedCoreCacheNames'), 'previous healthy core cache fallback must be retained');
 assert.ok(serviceWorker.includes('offlineRecoveryResponse'), 'navigation must have a branded recovery response');
-assert.ok(serviceWorker.includes("url.origin !== scopeUrl.origin"), 'service worker must not proxy arbitrary cross-origin traffic');
+assert.ok(serviceWorker.includes('const sameOrigin = url.origin === scopeUrl.origin;'), 'service worker must distinguish same-origin app shell requests');
+assert.ok(serviceWorker.includes('if (sameOrigin && cachingEnabled && networkResponse.ok)'), 'cross-origin responses must not leak into the core app-shell cache');
+assert.ok(serviceWorker.includes('matchOfflineDataCaches(event.request)'), 'explicitly downloaded cross-origin offline assets must remain readable');
 assert.ok(serviceWorker.includes("url.searchParams.has('__network_probe')"), 'network probe must bypass the service worker');
 assert.ok(serviceWorker.includes('cacheNames.core, cacheNames.config, cacheNames.audioData'), 'disabling offline mode must preserve the app shell');
 assert.equal(serviceWorker.includes('networkTimeout'), false, 'hard network timeout must not gate PWA startup');
