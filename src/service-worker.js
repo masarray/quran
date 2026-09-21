@@ -48,7 +48,7 @@ const stuffNotToCache = ['/service-worker.js', '/service-worker-settings.json'];
 const precacheFiles = [
 	...files, // Static files from /static folder
 	...build // Generated JS/CSS chunks (includes the main bundle)
-];
+].map(withBase);
 
 // Important pages we want to cache
 const staticRoutesToCache = ['/about', '/bookmarks', '/changelog', '/duas', '/games/guess-the-word', '/morphology', '/offline', '/supplications', '/topics', '/juz', '/hizb', '/page'].map(withBase);
@@ -116,7 +116,7 @@ self.addEventListener('install', (event) => {
 		(async () => {
 			const cache = await caches.open(cacheNames.core);
 			try {
-				await cache.addAll([withBase('/'), ...build]);
+				await cache.addAll([withBase('/'), ...build.map(withBase)]);
 				await self.skipWaiting();
 			} catch (error) {
 				await caches.delete(cacheNames.core);
@@ -233,27 +233,19 @@ self.addEventListener('message', (event) => {
 	if (event.data.type === 'START_CACHING') {
 		cachingEnabled = true;
 		cachingStatusLoaded = true;
-		saveCachingStatus(true); // Remember this preference
 
 		event.waitUntil(
 			(async () => {
-				// Tell the website we're starting
-				const clients = await self.clients.matchAll();
-				clients.forEach((client) => {
-					client.postMessage({ type: 'CACHE_STARTED' });
-				});
+				await saveCachingStatus(true);
+				await notifyClients({ type: 'CACHE_STARTED' });
 
-				// Download and cache everything
-				await performCaching();
-
-				// Tell the website we're done
-				const finalClients = await self.clients.matchAll();
-				finalClients.forEach((client) => {
-					client.postMessage({
-						type: 'CACHE_COMPLETE',
-						cacheName: cacheNames.core
-					});
-				});
+				try {
+					await performCaching();
+					await notifyClients({ type: 'CACHE_COMPLETE', cacheName: cacheNames.core });
+				} catch (error) {
+					console.warn('[SW] Initial offline cache failed.', error);
+					await notifyClients({ type: 'CACHE_FAILED' });
+				}
 			})()
 		);
 	}
@@ -299,10 +291,10 @@ self.addEventListener('message', (event) => {
 	else if (event.data.type === 'DISABLE_CACHING') {
 		cachingEnabled = false;
 		cachingStatusLoaded = true;
-		saveCachingStatus(false); // Remember this preference
 
 		event.waitUntil(
 			(async () => {
+				await saveCachingStatus(false);
 				// Keep the verified app shell, config, and audio cache. Offline content caches are cleared.
 				const keys = await caches.keys();
 				const preserve = new Set([cacheNames.core, cacheNames.config, cacheNames.audioData]);
