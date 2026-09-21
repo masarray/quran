@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import test from 'node:test';
 
-import { fetchWithRetry, isRetryableHttpStatus } from '../src/utils/networkFetch.js';
+import { fetchWithRetry, isAudioContentType, isRetryableHttpStatus, isUsableAudioResponse } from '../src/utils/networkFetch.js';
 
 async function withServer(handler, run) {
 	const server = http.createServer(handler);
@@ -24,6 +24,19 @@ test('retry classification covers transient HTTP failures only', () => {
 	for (const status of [200, 301, 400, 401, 403, 404, 409, 422]) {
 		assert.equal(isRetryableHttpStatus(status), false, String(status));
 	}
+});
+
+test('audio response validation rejects HTML error bodies even with HTTP 200', () => {
+	assert.equal(isAudioContentType('audio/mpeg'), true);
+	assert.equal(isAudioContentType('audio/mp3; charset=binary'), true);
+	assert.equal(isAudioContentType('application/octet-stream'), true);
+	assert.equal(isAudioContentType('text/html'), false);
+	assert.equal(isAudioContentType('application/json'), false);
+
+	const good = new Response('audio', { status: 200, headers: { 'Content-Type': 'audio/mpeg' } });
+	const bad = new Response('<html>error</html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
+	assert.equal(isUsableAudioResponse(good), true);
+	assert.equal(isUsableAudioResponse(bad), false);
 });
 
 test('retries transient 503 responses and returns the eventual success', async () => {
