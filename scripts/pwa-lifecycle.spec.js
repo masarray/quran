@@ -257,9 +257,24 @@ test('structurally damaged settings are repaired without deleting user notes', a
     timeout: 30_000
   });
 
-  const repaired = await page.evaluate(() => JSON.parse(localStorage.getItem('userSettings')));
-  expect(repaired.displaySettings.fontType).toBe(1);
-  expect(repaired.userNotes['1:1'].note).toBe('catatan tetap ada');
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          try {
+            const repaired = JSON.parse(localStorage.getItem('userSettings'));
+            return {
+              fontType: repaired?.displaySettings?.fontType,
+              note: repaired?.userNotes?.['1:1']?.note
+            };
+          } catch {
+            return null;
+          }
+        }),
+      { timeout: 10_000 }
+    )
+    .toEqual({ fontType: 1, note: 'catatan tetap ada' });
+
   await assertAppShell(page);
 
   await context.close();
