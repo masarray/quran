@@ -85,6 +85,11 @@ export async function cacheUrlWithServiceWorker(url, cacheName, { force = false,
 	return postMessageAndWait(worker, { type: 'CACHE_URL', url, cacheName, force }, { timeout });
 }
 
+export async function cacheMushafFontWithServiceWorker(url, { timeout = 60000 } = {}) {
+	const worker = await getReadyServiceWorker();
+	return postMessageAndWait(worker, { type: 'CACHE_MUSHAF_FONT', url }, { timeout });
+}
+
 export async function deleteServiceWorkerCache(cacheName, { timeout = 30000 } = {}) {
 	const worker = await getReadyServiceWorker();
 	return postMessageAndWait(worker, { type: 'DELETE_CACHE', cacheName }, { timeout });
@@ -174,6 +179,7 @@ export async function inspectOfflineCacheHealth() {
 		chapterDataCount: await countEntries('quranwbw-chapter-data'),
 		mushafDataCount: await countEntries('quranwbw-mushaf-data'),
 		fontDataCount: await countEntries('quranwbw-font-data'),
+		smartMushafFontCount: await countEntries('quranwbw-mushaf-font-smart-v1'),
 		audioDataCount: await countEntries('quranwbw-audio-cache')
 	};
 }

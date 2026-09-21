@@ -16,6 +16,7 @@ for (const command of [
   'npm audit --omit=dev --audit-level=high',
   'npm run lint:unused',
   'npm run test:runtime-recovery',
+  'npm run test:smart-fonts',
   'npm run test:network-reliability',
   'npm run test:quran-integrity',
   'npm run test:footnotes',

@@ -8,6 +8,9 @@ on:
     paths:
       - 'src/service-worker.js'
       - 'src/utils/offlineModeHandler.js'
+      - 'src/utils/mushafFontManager.js'
+      - 'src/utils/mushafFontPolicy.js'
+      - 'src/components/display/verses/WordsBlock.svelte'
       - 'src/utils/fetchData.js'
       - 'src/utils/audioController.js'
       - 'src/utils/networkFetch.js'
@@ -26,6 +29,7 @@ on:
       - 'package-lock.json'
       - 'scripts/test-pwa-reliability.mjs'
       - 'scripts/pwa-lifecycle.spec.js'
+      - 'scripts/test-smart-mushaf-fonts.mjs'
       - 'scripts/test-release-pipeline.mjs'
       - '.github/workflows/deploy-pages.yml'
       - '.github/workflows/pwa-reliability.yml'
@@ -59,9 +63,14 @@ jobs:
         run: |
           node --check src/service-worker.js
           node --check src/utils/offlineModeHandler.js
+          node --check src/utils/mushafFontManager.js
+          node --check src/utils/mushafFontPolicy.js
 
       - name: Test runtime recovery
         run: npm run test:runtime-recovery
+
+      - name: Test smart Mushaf font pipeline
+        run: npm run test:smart-fonts
 
       - name: Build GitHub Pages candidate
         shell: bash

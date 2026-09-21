@@ -3,12 +3,14 @@ import { build, files, version } from '$service-worker';
 /**
  * SERVICE WORKER FOR QURANWBW OFFLINE FUNCTIONALITY
  *
- * This service worker enables optional offline access to the website.
- * It does NOT automatically cache anything - users must explicitly enable offline mode.
+ * This service worker provides the verified app shell, optional offline content,
+ * and a small automatic cache for Mushaf page fonts encountered while reading.
  *
  * HOW IT WORKS:
- * 1. Service worker registers automatically when user visits the site (but does nothing)
- * 2. User initially downloads the core website files
+ * 1. Service worker registers automatically when user visits the site
+ * 2. Mushaf page fonts are learned incrementally and persisted independently of Offline Mode
+ * 3. User can optionally download the wider offline data sets
+ * 4. User initially downloads the core website files
  * 3. Service worker receives START_CACHING message
  * 4. All website pages are downloaded and cached on the user's device
  * 5. When offline, cached pages are served instead of showing errors
@@ -28,13 +30,18 @@ const cacheNames = {
 	audioData: 'quranwbw-audio-cache', // Audio files (recitations and word audios)
 	chapterData: 'quranwbw-chapter-data', // Chapter routes and data
 	fontData: 'quranwbw-font-data', // Shared offline Quran fonts
-	mushafData: 'quranwbw-mushaf-data', // Mushaf pages and fonts
+	mushafData: 'quranwbw-mushaf-data', // Full optional Mushaf offline download
+	mushafFontSmart: 'quranwbw-mushaf-font-smart-v1', // Incremental page fonts learned while reading
 	morphologyData: 'quranwbw-morphology-data', // Morphology data files
 	tafsirData: 'quranwbw-tafsir-data' // Tafsir data files
 };
-const OFFLINE_CONTENT_CACHE_NAMES = new Set([cacheNames.audioData, cacheNames.chapterData, cacheNames.fontData, cacheNames.mushafData, cacheNames.morphologyData, cacheNames.tafsirData]);
+const OFFLINE_CONTENT_CACHE_NAMES = new Set([cacheNames.audioData, cacheNames.chapterData, cacheNames.fontData, cacheNames.mushafData, cacheNames.mushafFontSmart, cacheNames.morphologyData, cacheNames.tafsirData]);
+const PERSISTENT_AUTOMATIC_CACHE_NAMES = new Set([cacheNames.mushafFontSmart]);
 const OFFLINE_ASSET_ORIGINS = new Set(['https://static.quranwbw.com', 'https://cdn.jsdelivr.net', 'https://audios.quranwbw.com']);
 const CACHE_REQUEST_ATTEMPTS = 3;
+const MUSHAF_FONT_FETCH_TIMEOUT_MS = 15000;
+const MUSHAF_FONT_PATH_MARKER = '/data/v4/fonts/Hafs/KFGQPC-v4/';
+const smartMushafFontInFlight = new Map();
 
 const scopeUrl = new URL(self.registration.scope);
 const basePath = scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname.slice(0, -1) : scopeUrl.pathname;
@@ -166,6 +173,95 @@ async function fetchOfflineResource(url) {
 		}
 	}
 	throw lastError ?? new Error(`Unable to cache ${url}`);
+}
+
+function isMushafFontUrl(input) {
+	const url = input instanceof URL ? input : new URL(input, scopeUrl.origin);
+	return url.origin === 'https://static.quranwbw.com' && url.pathname.includes(MUSHAF_FONT_PATH_MARKER) && url.pathname.endsWith('.woff2');
+}
+
+async function assertValidMushafFontResponse(response, url) {
+	if (!response?.ok) throw new Error(`HTTP ${response?.status ?? 'unknown'} while loading Mushaf font ${url}`);
+
+	const contentType = (response.headers.get('content-type') || '').toLowerCase();
+	if (contentType.includes('text/html') || contentType.includes('application/json') || contentType.includes('text/plain')) {
+		throw new Error(`Invalid Mushaf font content type: ${contentType || 'unknown'}`);
+	}
+
+	const bytes = new Uint8Array(await response.clone().arrayBuffer());
+	const isWoff2 = bytes.length >= 4 && bytes[0] === 0x77 && bytes[1] === 0x4f && bytes[2] === 0x46 && bytes[3] === 0x32;
+	if (!isWoff2) throw new Error(`Invalid WOFF2 payload for Mushaf font ${url}`);
+	return response;
+}
+
+async function fetchMushafFontResource(url) {
+	let lastError;
+	for (let attempt = 1; attempt <= CACHE_REQUEST_ATTEMPTS; attempt++) {
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), MUSHAF_FONT_FETCH_TIMEOUT_MS);
+		try {
+			const response = await fetch(url, { cache: 'default', signal: controller.signal });
+			if (!response.ok) {
+				const retryable = [408, 425, 429].includes(response.status) || response.status >= 500;
+				const error = new Error(`${retryable ? 'Transient ' : ''}HTTP ${response.status} while loading Mushaf font ${url}`);
+				error.retryable = retryable;
+				throw error;
+			}
+			await assertValidMushafFontResponse(response, url);
+			return response;
+		} catch (error) {
+			lastError = error;
+			if (error?.retryable === false) throw error;
+			if (attempt < CACHE_REQUEST_ATTEMPTS) await sleep(500 * 2 ** (attempt - 1));
+		} finally {
+			clearTimeout(timeout);
+		}
+	}
+	throw lastError ?? new Error(`Unable to cache Mushaf font ${url}`);
+}
+
+async function matchMushafFontCaches(request) {
+	const existingCacheNames = new Set(await caches.keys());
+	for (const cacheName of [cacheNames.mushafFontSmart, cacheNames.mushafData]) {
+		if (!existingCacheNames.has(cacheName)) continue;
+		const cache = await caches.open(cacheName);
+		const response = await cache.match(request);
+		if (!response) continue;
+		try {
+			await assertValidMushafFontResponse(response, request.url || request);
+			return { response, source: cacheName };
+		} catch (error) {
+			console.warn('[SW] Removing invalid cached Mushaf font.', error);
+			await cache.delete(request);
+		}
+	}
+	return null;
+}
+
+async function ensureSmartMushafFontCached(input) {
+	const url = input instanceof URL ? input : new URL(input, scopeUrl.origin);
+	if (!isMushafFontUrl(url)) throw new Error('Refusing to cache a non-Mushaf font in the smart font cache.');
+
+	const request = new Request(url.href, { mode: 'cors', credentials: 'omit' });
+	const existing = await matchMushafFontCaches(request);
+	if (existing) return { source: existing.source, url: url.href, persisted: true };
+
+	if (smartMushafFontInFlight.has(url.href)) return smartMushafFontInFlight.get(url.href);
+
+	const task = (async () => {
+		const response = await fetchMushafFontResource(url.href);
+		try {
+			const cache = await caches.open(cacheNames.mushafFontSmart);
+			await cache.put(request, response.clone());
+			return { source: 'network', url: url.href, status: response.status, persisted: true };
+		} catch (error) {
+			console.warn('[SW] Mushaf font loaded but could not be persisted; allowing live rendering.', error);
+			return { source: 'network-uncached', url: url.href, status: response.status, persisted: false };
+		}
+	})().finally(() => smartMushafFontInFlight.delete(url.href));
+
+	smartMushafFontInFlight.set(url.href, task);
+	return task;
 }
 
 function validateOfflineCacheRequest(url, cacheName) {
@@ -315,12 +411,34 @@ self.addEventListener('message', (event) => {
 		);
 	}
 	// Cache a specific URL to a specific dedicated offline cache.
+	else if (event.data.type === 'CACHE_MUSHAF_FONT') {
+		event.waitUntil(
+			(async () => {
+				try {
+					const result = await ensureSmartMushafFontCached(event.data.url);
+					replyToMessage(event, { ok: true, type: 'CACHE_MUSHAF_FONT_RESULT', ...result });
+				} catch (error) {
+					console.warn('[SW] CACHE_MUSHAF_FONT failed', error);
+					replyToMessage(event, { ok: false, type: 'CACHE_MUSHAF_FONT_RESULT', error: error instanceof Error ? error.message : String(error) });
+				}
+			})()
+		);
+	}
+	// Cache a specific URL to a specific dedicated offline cache.
 	else if (event.data.type === 'CACHE_URL') {
 		event.waitUntil(
 			(async () => {
 				try {
 					const cacheName = event.data.cacheName;
 					const url = validateOfflineCacheRequest(event.data.url, cacheName);
+					if (cacheName === cacheNames.mushafFontSmart && !isMushafFontUrl(url)) {
+						throw new Error('Smart Mushaf font cache only accepts versioned Mushaf WOFF2 files.');
+					}
+					if (cacheName === cacheNames.mushafFontSmart) {
+						const result = await ensureSmartMushafFontCached(url);
+						replyToMessage(event, { ok: true, type: 'CACHE_URL_RESULT', cacheName, url: url.href, source: result.source, status: result.status });
+						return;
+					}
 					const cache = await caches.open(cacheName);
 					const request = new Request(url.href);
 
@@ -368,9 +486,9 @@ self.addEventListener('message', (event) => {
 		event.waitUntil(
 			(async () => {
 				await saveCachingStatus(false);
-				// Keep the verified app shell, config, and audio cache. Offline content caches are cleared.
+				// Keep the verified app shell, config, audio cache, and learned smart fonts. Optional offline downloads are cleared.
 				const keys = await caches.keys();
-				const preserve = new Set([cacheNames.core, cacheNames.config, cacheNames.audioData]);
+				const preserve = new Set([cacheNames.core, cacheNames.config, cacheNames.audioData, ...PERSISTENT_AUTOMATIC_CACHE_NAMES]);
 				await Promise.all(
 					keys.map((key) => {
 						if (!preserve.has(key) && !key.startsWith(CORE_CACHE_PREFIX)) {
@@ -449,6 +567,31 @@ self.addEventListener('fetch', (event) => {
 			if (sameOrigin && event.request.mode !== 'navigate') {
 				const coreResponse = await matchVersionedCoreCaches(event.request);
 				if (coreResponse) return coreResponse;
+			}
+
+			// Mushaf page fonts are an automatic incremental cache, independent of Offline Mode.
+			// Serve verified cached fonts first; on first use, persist a valid WOFF2 response.
+			if (isMushafFontUrl(url)) {
+				const cachedFont = await matchMushafFontCaches(event.request);
+				if (cachedFont) return cachedFont.response;
+
+				try {
+					const response = await fetchMushafFontResource(url.href);
+					try {
+						const cache = await caches.open(cacheNames.mushafFontSmart);
+						await cache.put(event.request, response.clone());
+					} catch (cacheError) {
+						console.warn('[SW] Mushaf font is usable but could not be persisted.', cacheError);
+					}
+					return response;
+				} catch (error) {
+					console.warn('[SW] Mushaf font unavailable after bounded retry.', error);
+					return new Response('Mushaf font temporarily unavailable', {
+						status: 503,
+						statusText: 'Service Unavailable',
+						headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+					});
+				}
 			}
 
 			if (cachingEnabled) {

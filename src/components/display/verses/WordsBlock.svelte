@@ -1,9 +1,3 @@
-<script context="module">
-	const loadedMushafFonts = new Set();
-	const loadingMushafFonts = new Map();
-	const failedMushafFonts = new Set();
-</script>
-
 <script>
 	export let key;
 	export let value;
@@ -17,7 +11,8 @@
 	import { selectableDisplays, selectableWordTranslations, selectableWordTransliterations } from '$data/options';
 	import { supplicationsFromQuran } from '$data/quranMeta';
 	import { __currentPage, __fontType, __displayType, __userSettings, __audioSettings, __morphologyKey, __verseKey, __websiteTheme, __morphologyModalVisible, __wordMorphologyOnClick, __wordTranslation, __wordTransliteration, __wordTranslationEnabled, __wordTransliterationEnabled, __wordTooltip, __hideNonDuaPart, __signLanguageModeEnabled } from '$utils/stores';
-	import { loadFont } from '$utils/loadFont';
+	import { onDestroy } from 'svelte';
+	import { subscribeMushafFont } from '$utils/mushafFontManager';
 	import { wordAudioController } from '$utils/audioController';
 	import { updateSettings } from '$utils/updateSettings';
 	import { getMushafWordFontLink, isFirefoxDarkNonTajweed, isFirefoxDarkTajweed } from '$utils/getMushafWordFontLink';
@@ -35,6 +30,10 @@
 	let pointerMoved = false;
 	let wordTapTimer = null;
 	let lastTappedWordKey = null;
+	let subscribedMushafFontUrl = null;
+	let unsubscribeMushafFont = () => {};
+	let mushafFontReady = false;
+	let mushafFontStatus = 'idle';
 
 	// fix for Ba'da Ma Ja'aka for page 254
 	// since it's just a cosmetic change, there's no need of changing it at database level
@@ -45,25 +44,32 @@
 
 	$: displayIsContinuous = selectableDisplays[$__displayType].continuous;
 
-	$: if ([2, 3].includes($__fontType)) {
-		const fontFamily = `p${value.meta.page}`;
-		const fontUrl = getMushafWordFontLink(value.meta.page);
+	$: usesMushafPageFont = [2, 3].includes($__fontType);
+	// Keep theme and font type explicit so platform/theme-specific Mushaf font variants re-evaluate.
+	$: mushafFontContext = `${$__fontType}:${$__websiteTheme}:${value.meta.page}`;
+	$: mushafFontUrl = mushafFontContext && usesMushafPageFont ? getMushafWordFontLink(value.meta.page) : null;
 
-		if (!loadedMushafFonts.has(fontFamily) && !failedMushafFonts.has(fontFamily) && !loadingMushafFonts.has(fontFamily)) {
-			const loadPromise = loadFont(fontFamily, fontUrl)
-				.then(() => {
-					loadedMushafFonts.add(fontFamily);
-				})
-				.catch(() => {
-					failedMushafFonts.add(fontFamily);
-				})
-				.finally(() => {
-					loadingMushafFonts.delete(fontFamily);
-				});
+	$: if (mushafFontUrl !== subscribedMushafFontUrl) {
+		unsubscribeMushafFont();
+		subscribedMushafFontUrl = mushafFontUrl;
 
-			loadingMushafFonts.set(fontFamily, loadPromise);
+		if (!mushafFontUrl) {
+			mushafFontReady = true;
+			mushafFontStatus = 'not-required';
+			unsubscribeMushafFont = () => {};
+		} else {
+			mushafFontReady = false;
+			mushafFontStatus = 'checking';
+			const expectedUrl = mushafFontUrl;
+			unsubscribeMushafFont = subscribeMushafFont(value.meta.page, expectedUrl, (state) => {
+				if (subscribedMushafFontUrl !== expectedUrl) return;
+				mushafFontStatus = state.status;
+				mushafFontReady = state.status === 'ready';
+			});
 		}
 	}
+
+	onDestroy(() => unsubscribeMushafFont());
 
 	/**
 	 * Handles click interactions on words or verse-end icons depending on the current page and context.
@@ -148,6 +154,8 @@
 		arabic-font-${$__fontType} 
 		${$__currentPage !== 'mushaf' && fontSizes.arabicText} 
 		${displayIsContinuous && 'inline-block'}
+		${usesMushafPageFont ? (mushafFontReady ? 'opacity-100' : 'opacity-0 select-none') : ''}
+		${usesMushafPageFont && 'transition-opacity duration-150'}
 		${$__fontType === 9 && 'pb-4'}
 	`;
 
@@ -225,7 +233,7 @@
 			on:pointermove={pointerMoveHandler}
 			on:click={() => wordClickHandler({ key: wordKey, type: 'word' })}
 		>
-			<span class={wordSpanClasses} data-fontSize={fontSizes.arabicText}>
+			<span class={wordSpanClasses} data-fontSize={fontSizes.arabicText} data-mushaf-font-status={usesMushafPageFont ? mushafFontStatus : undefined} aria-busy={usesMushafPageFont && !mushafFontReady}>
 				<!-- Everything except Mushaf fonts -->
 				{#if ![2, 3].includes($__fontType)}
 					{arabicWords[word]}
