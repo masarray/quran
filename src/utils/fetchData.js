@@ -1,4 +1,5 @@
 import { cacheTableMap } from '$utils/dexie';
+import { fetchWithRetry } from '$utils/networkFetch';
 import { get } from 'svelte/store';
 import { __fontType, __chapterData, __verseTranslationData, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 import { staticEndpoint, cdnStaticDataUrls } from '$data/websiteSettings';
@@ -127,7 +128,15 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 				cacheKey,
 				(async () => {
 					try {
-						const response = await fetch(url);
+						const response = await fetchWithRetry(
+							url,
+							{ cache: 'no-store' },
+							{
+								attempts: 3,
+								timeoutMs: 20000,
+								onRetry: ({ nextAttempt, status }) => console.warn(`[network] retrying Quran data request (attempt ${nextAttempt})`, { url, status })
+							}
+						);
 						if (!response.ok) throw new Error('CDN response not ok');
 						const freshData = normalizeJsonForConsumer(await response.json(), type);
 						validateCachedJson(freshData, validator, cacheKey, type);
@@ -156,8 +165,16 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 	// 3. Otherwise start a new fetch and store the Promise
 	const fetchPromise = (async () => {
 		try {
-			const response = await fetch(url);
-			if (!response.ok) throw new Error('Failed to fetch data from the CDN');
+			const response = await fetchWithRetry(
+				url,
+				{ cache: 'no-store' },
+				{
+					attempts: 3,
+					timeoutMs: 20000,
+					onRetry: ({ nextAttempt, status }) => console.warn(`[network] retrying Quran data request (attempt ${nextAttempt})`, { url, status })
+				}
+			);
+			if (!response.ok) throw new Error(`Failed to fetch data from the CDN: HTTP ${response.status}`);
 			const data = normalizeJsonForConsumer(await response.json(), type);
 			validateCachedJson(data, validator, cacheKey, type);
 			const cacheWriteSucceeded = await manageCache(cacheKey, type, data, { throwOnWriteError: requireCacheWrite });
