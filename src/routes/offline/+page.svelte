@@ -18,6 +18,7 @@
 	import { selectableTafsirs } from '$data/selectableTafsirs';
 	import { clearDexieTable, getDexieTableCount } from '$utils/dexie';
 	import { ensureStorageCapacity, isQuotaExceededError } from '$utils/storageHealth';
+	import { clearMushafFieldDiagnostics, readMushafFieldDiagnostics } from '$utils/mushafFontFieldDiagnostics';
 
 	const errorAlertMessage = 'Terjadi kesalahan. Silakan coba lagi beberapa saat lagi.';
 	const mismatchMessage = 'Pengaturan telah berubah. Unduh ulang agar akses offline tetap bekerja dengan benar.';
@@ -31,6 +32,25 @@
 	let isDownloadingMorphology = false;
 	let isDownloadingTafsir = false;
 	let downloadProgressPercentage = 0;
+	let fieldDiagnostics = null;
+
+	$: adaptiveModeLabel =
+		({
+			recovery: 'Pemulihan',
+			cautious: 'Hemat',
+			balanced: 'Seimbang',
+			fast: 'Cepat'
+		}[fieldDiagnostics?.profile?.adaptiveMode] || 'Seimbang');
+	$: recentSuccessPercent = (() => {
+		const outcomes = fieldDiagnostics?.profile?.recentOutcomes;
+		if (!Array.isArray(outcomes) || outcomes.length === 0) return null;
+		return Math.round((outcomes.filter((value) => value === 1).length / outcomes.length) * 100);
+	})();
+	$: learnedLatency = Number.isFinite(fieldDiagnostics?.profile?.ewmaLatencyMs)
+		? fieldDiagnostics.profile.ewmaLatencyMs < 1000
+			? `${fieldDiagnostics.profile.ewmaLatencyMs} ms`
+			: `${(fieldDiagnostics.profile.ewmaLatencyMs / 1000).toFixed(1)} dtk`
+		: null;
 
 	ensureOfflineSettingsStructure('serviceWorker');
 	ensureOfflineSettingsStructure('chapterData');
@@ -172,6 +192,28 @@
 		}
 	}
 
+	function refreshFieldDiagnostics() {
+		fieldDiagnostics = readMushafFieldDiagnostics();
+	}
+
+	async function copyFieldDiagnostics() {
+		const report = readMushafFieldDiagnostics();
+		const content = JSON.stringify(report, null, 2);
+		try {
+			await navigator.clipboard.writeText(content);
+			showAlert('Diagnostik jaringan Mushaf telah disalin. Laporan hanya berisi telemetry teknis lokal tanpa riwayat bacaan, URL, lokasi, SSID, atau IP.', '');
+		} catch (error) {
+			console.warn('[Diagnostics] Unable to copy Mushaf field report.', error);
+			showAlert('Diagnostik belum dapat disalin oleh browser ini.', '');
+		}
+	}
+
+	function resetFieldDiagnostics() {
+		clearMushafFieldDiagnostics();
+		refreshFieldDiagnostics();
+		showAlert('Diagnostik dan pembelajaran jaringan Mushaf telah direset.', '');
+	}
+
 	function showDownloadFailure(error) {
 		console.warn(error);
 		if (isQuotaExceededError(error)) {
@@ -203,12 +245,16 @@
 		window.addEventListener('sw-cache-started', handleCacheStarted);
 		window.addEventListener('sw-cache-complete', handleCacheComplete);
 		window.addEventListener('sw-cache-failed', handleCacheFailed);
+		const handleAdaptiveProfile = () => refreshFieldDiagnostics();
+		window.addEventListener('mushaf-font-adaptive-profile', handleAdaptiveProfile);
+		refreshFieldDiagnostics();
 		reconcileOfflineSettingsWithStorage();
 
 		return () => {
 			window.removeEventListener('sw-cache-started', handleCacheStarted);
 			window.removeEventListener('sw-cache-complete', handleCacheComplete);
 			window.removeEventListener('sw-cache-failed', handleCacheFailed);
+			window.removeEventListener('mushaf-font-adaptive-profile', handleAdaptiveProfile);
 		};
 	});
 
@@ -673,5 +719,32 @@
 				<div class="border-b border-theme-accent/20"></div>
 			{/if}
 		{/each}
+	</div>
+
+	<div class="mt-7 border-t border-theme-accent/20 pt-5">
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div>
+				<div class="text-sm text-theme-accent">Diagnostik jaringan Mushaf</div>
+				<div class="mt-1 text-xs leading-relaxed opacity-70">
+					Mode adaptif: {adaptiveModeLabel}
+					{#if fieldDiagnostics?.profile?.sampleCount}
+						· {fieldDiagnostics.profile.sampleCount} sampel
+					{/if}
+					{#if recentSuccessPercent !== null}
+						· sukses terbaru {recentSuccessPercent}%
+					{/if}
+					{#if learnedLatency}
+						· latensi ±{learnedLatency}
+					{/if}
+				</div>
+				<div class="mt-1 text-xs opacity-60">Disimpan lokal dan terbatas; tidak mencatat bacaan, URL, lokasi, SSID, atau IP.</div>
+			</div>
+			<div class="flex items-center gap-2">
+				<button class="text-xs h-max whitespace-nowrap {buttonClasses}" on:click={copyFieldDiagnostics}>Salin diagnosis</button>
+				<button class="text-xs h-max whitespace-nowrap {buttonClasses}" on:click={() => showConfirm('Reset diagnostik dan pembelajaran jaringan?', 'Riwayat teknis lokal akan dihapus dan mode adaptif kembali ke baseline.', resetFieldDiagnostics)}>
+					<Trash size={3.5} />
+				</button>
+			</div>
+		</div>
 	</div>
 </div>
