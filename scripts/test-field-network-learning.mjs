@@ -29,6 +29,11 @@ test('adaptive profile recovers only after repeated successful evidence', () => 
 	for (let index = 0; index < 8; index++) {
 		profile = updateMushafNetworkProfile(profile, { ok: true, latencyMs: 900, at: 3000 + index * 1000 });
 	}
+	assert.equal(profile.adaptiveMode, 'cautious');
+
+	for (let index = 8; index < 12; index++) {
+		profile = updateMushafNetworkProfile(profile, { ok: true, latencyMs: 900, at: 3000 + index * 1000 });
+	}
 
 	assert.ok(['balanced', 'fast'].includes(profile.adaptiveMode));
 	assert.ok(profile.ewmaLatencyMs < 5000);
