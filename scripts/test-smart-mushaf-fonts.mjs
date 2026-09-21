@@ -45,9 +45,14 @@ test('smart font implementation keeps persistent cache and removes permanent ses
 	assert.match(worker, /isMushafFontUrl/);
 	assert.match(worker, /Invalid WOFF2 payload/);
 	assert.match(worker, /PERSISTENT_AUTOMATIC_CACHE_NAMES/);
+	assert.match(worker, /persisted: false/);
+	assert.match(worker, /could not be persisted/);
 	assert.match(manager, /cacheSearchOrder = \[smartMushafFontCacheName, fullMushafCacheName\]/);
 	assert.match(manager, /cacheInFlight/);
 	assert.match(manager, /fontReadyInFlight/);
+	assert.match(manager, /desiredUrlByFamily/);
+	assert.match(manager, /MIN_BACKGROUND_STORAGE_HEADROOM_BYTES/);
+	assert.match(manager, /network-uncached/);
 	assert.match(manager, /navigator\.connection/);
 	assert.match(manager, /mushaf-font-progress/);
 	assert.doesNotMatch(words, /failedMushafFonts/);
