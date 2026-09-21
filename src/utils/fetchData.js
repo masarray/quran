@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import { __fontType, __chapterData, __verseTranslationData, __wordTranslation, __wordTransliteration, __verseTranslations } from '$utils/stores';
 import { staticEndpoint, cdnStaticDataUrls } from '$data/websiteSettings';
 import { selectableFontTypes, selectableWordTranslations, selectableWordTransliterations, selectableVerseTranslations } from '$data/options';
-import { assertQuranDataIntegrity, chapterFromJsonPath, validateArabicWordData, validateWordLanguageData, validateVerseTranslationData, validateVerseKeyData, validateTafsirChapterData, validateMorphologySummaryData, validateMorphologyStaticData } from '$utils/quranDataIntegrity';
+import { assertQuranDataIntegrity, chapterFromJsonPath, normalizeTafsirChapterData, validateArabicWordData, validateWordLanguageData, validateVerseTranslationData, validateVerseKeyData, validateTafsirChapterData, validateMorphologySummaryData, validateMorphologyStaticData } from '$utils/quranDataIntegrity';
 
 // Keep track of in-progress fetches globally
 const inFlightRequests = new Map();
@@ -108,8 +108,9 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 
 	if (cachedData) {
 		let cachedDataValid = true;
+		const normalizedCachedData = normalizeJsonForConsumer(cachedData.data, type);
 		try {
-			validateCachedJson(cachedData.data, validator, cacheKey, type);
+			validateCachedJson(normalizedCachedData, validator, cacheKey, type);
 		} catch (error) {
 			cachedDataValid = false;
 			console.warn('[integrity] rejecting corrupt cached Quran data', error);
@@ -128,7 +129,7 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 					try {
 						const response = await fetch(url);
 						if (!response.ok) throw new Error('CDN response not ok');
-						const freshData = await response.json();
+						const freshData = normalizeJsonForConsumer(await response.json(), type);
 						validateCachedJson(freshData, validator, cacheKey, type);
 						await manageCache(cacheKey, type, freshData);
 						console.log(`[cache] background update done for ${cacheKey}`);
@@ -143,7 +144,7 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 		}
 
 			// Always return a valid stale (or fresh) cache immediately.
-			return cachedData.data;
+			return normalizedCachedData;
 		}
 	}
 
@@ -157,7 +158,7 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 		try {
 			const response = await fetch(url);
 			if (!response.ok) throw new Error('Failed to fetch data from the CDN');
-			const data = await response.json();
+			const data = normalizeJsonForConsumer(await response.json(), type);
 			validateCachedJson(data, validator, cacheKey, type);
 			const cacheWriteSucceeded = await manageCache(cacheKey, type, data, { throwOnWriteError: requireCacheWrite });
 			if (requireCacheWrite && !cacheWriteSucceeded) {
@@ -172,6 +173,11 @@ export async function fetchAndCacheJson(url, type = 'other', { requireCacheWrite
 	inFlightRequests.set(requestKey, fetchPromise);
 
 	return fetchPromise;
+}
+
+function normalizeJsonForConsumer(data, type) {
+	if (type === 'tafsir') return normalizeTafsirChapterData(data);
+	return data;
 }
 
 function validateCachedJson(data, validator, cacheKey, kind) {
