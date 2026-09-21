@@ -37,11 +37,13 @@ import {
 } from '$utils/stores';
 import { fetchChapterData, fetchVerseTranslationData } from '$utils/fetchData';
 import { deleteReadingMark, normalizeReadingMarks, upsertReadingMark } from '$utils/readingMarks';
+import { defaultSettings } from '$data/defaultSettings';
+import { loadUserSettings } from '$utils/settingsStorage';
 
 // function to update website settings
 export function updateSettings(props) {
 	// get the settings from localStorage
-	const userSettings = JSON.parse(localStorage.getItem('userSettings'));
+	const userSettings = loadUserSettings(defaultSettings, { persist: false });
 	ensureLastReadCompatibility(userSettings);
 	let trackEvent = false;
 	// let uploadSettings = false;
