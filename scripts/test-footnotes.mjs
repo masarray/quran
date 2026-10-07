@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { extractFootnoteMarkers, recoverCompositeFootnotes, resolveFootnote, splitCompositeFootnote } from '../src/utils/footnotes.js';
+import { canonicalizeVerseFootnotes, extractFootnoteMarkers, recoverCompositeFootnotes, resolveFootnote, splitCompositeFootnote } from '../src/utils/footnotes.js';
 
 test('recovers five sequential composite footnotes like Al-Maidah 5:2', () => {
 	const composite =
@@ -14,6 +14,21 @@ test('recovers five sequential composite footnotes like Al-Maidah 5:2', () => {
 	assert.match(sections[2], /^Hadyu/);
 	assert.match(sections[3], /^Qalāid/);
 	assert.match(sections[4], /^Dimaksud dengan karunia/);
+});
+
+test('canonicalizes composite payload before direct display-index resolution', () => {
+	const verseText = 'A <sup foot_note="101">1</sup> B <sup foot_note="102">2</sup>';
+	const footnotes = [
+		'* Catatan pertama yang valid. 108) Catatan kedua yang valid.',
+		''
+	];
+
+	const canonical = canonicalizeVerseFootnotes(verseText, footnotes);
+	assert.equal(canonical.diagnostics.compositeRecovered, true);
+	assert.equal(canonical.footnotes.length, 2);
+	assert.equal(canonical.footnotes[0].content, 'Catatan pertama yang valid.');
+	assert.equal(canonical.footnotes[1].content, 'Catatan kedua yang valid.');
+	assert.equal(canonical.footnotes[0].content.includes('Catatan kedua'), false);
 });
 
 test('smoke: extracts and resolves markers 1 through 5 without empty content', () => {
@@ -38,10 +53,15 @@ test('smoke: extracts and resolves markers 1 through 5 without empty content', (
 		[1, 2, 3, 4, 5]
 	);
 
-	const resolved = markers.map((marker) => resolveFootnote(footnotes, marker.footnoteId, marker.displayNumber, { markerCount: markers.length }));
+	const resolved = markers.map((marker) =>
+		resolveFootnote(footnotes, marker.footnoteId, marker.displayNumber, {
+			markerCount: markers.length,
+			verseText
+		})
+	);
 	assert.equal(resolved.length, 5);
 	assert.ok(resolved.every((entry) => typeof entry?.content === 'string' && entry.content.length > 0));
-	assert.match(resolved[0].content, /^\* Catatan pertama/);
+	assert.equal(resolved[0].content, 'Catatan pertama yang valid.');
 	assert.equal(resolved[1].content, 'Catatan kedua yang valid.');
 	assert.equal(resolved[2].content, 'Catatan ketiga yang valid.');
 	assert.equal(resolved[3].content, 'Catatan keempat yang valid.');
@@ -85,15 +105,58 @@ test('does not recover when multiple source entries already contain content', ()
 	assert.equal(recoverCompositeFootnotes(footnotes, 2), null);
 });
 
-test('resolver uses recovered second footnote without changing first-footnote authority', () => {
-	const footnotes = ['* Catatan pertama yang tetap menjadi sumber utama.708) Catatan kedua hasil recovery.', ''];
+test('canonical resolver preserves exact embedded IDs when all markers have authoritative entries', () => {
+	const verseText = 'A <sup foot_note="135204">1</sup> B <sup foot_note="135205">2</sup>';
+	const footnotes = [
+		{ foot_note: { id: 135204, text: 'Catatan pertama authoritative.' } },
+		{ foot_note: { id: 135205, text: 'Catatan kedua authoritative.' } }
+	];
 
-	const first = resolveFootnote(footnotes, '1', 1, { markerCount: 2 });
-	const second = resolveFootnote(footnotes, '2', 2, { markerCount: 2 });
+	const canonical = canonicalizeVerseFootnotes(verseText, footnotes);
+	assert.deepEqual(
+		canonical.footnotes.map((entry) => [entry.strategy, entry.content]),
+		[
+			['embedded-id', 'Catatan pertama authoritative.'],
+			['embedded-id', 'Catatan kedua authoritative.']
+		]
+	);
+});
 
-	assert.equal(first?.strategy, 'display-number');
-	assert.match(first?.content ?? '', /Catatan pertama/);
-	assert.equal(second?.strategy, 'composite-sequential-boundaries');
-	assert.equal(second?.recovered, true);
-	assert.equal(second?.content, 'Catatan kedua hasil recovery.');
+test('ambiguous composite candidate is not guessed', () => {
+	const verseText = 'A <sup foot_note="1">1</sup> B <sup foot_note="2">2</sup>';
+	const footnotes = ['* Satu payload tanpa boundary yang cukup panjang untuk terlihat valid.', ''];
+
+	const canonical = canonicalizeVerseFootnotes(verseText, footnotes);
+	assert.equal(canonical.diagnostics.ambiguousComposite, true);
+	assert.equal(canonical.footnotes[0].strategy, 'display-number');
+	assert.equal(canonical.footnotes[1].strategy, 'unresolved');
+});
+
+test('regression: Al-Baqarah 2:276-style payload keeps note 1 and note 2 independent', () => {
+	const verseText =
+		'Allah memusnahkan riba dan menyuburkan sedekah. <sup foot_note="27601">1</sup> Allah tidak menyukai setiap orang yang tetap dalam kekafiran dan bergelimang dosa. <sup foot_note="27602">2</sup>';
+	const footnotes = [
+		'Memusnahkan riba ialah memusnahkan harta itu atau meniadakan berkahnya. Dan menyuburkan sedekah ialah memperkembangkan harta yang telah dikeluarkan sedekahnya atau melipatgandakan berkahnya. 108) Orang-orang yang menghalalkan riba dan tetap melakukannya.',
+		''
+	];
+
+	const canonical = canonicalizeVerseFootnotes(verseText, footnotes);
+	assert.equal(canonical.footnotes[0].content.includes('108)'), false);
+	assert.equal(canonical.footnotes[0].content.includes('Orang-orang yang menghalalkan riba'), false);
+	assert.equal(canonical.footnotes[1].content, 'Orang-orang yang menghalalkan riba dan tetap melakukannya.');
+});
+
+test('regression: result is independent of click order', () => {
+	const verseText = 'A <sup foot_note="1">1</sup> B <sup foot_note="2">2</sup>';
+	const footnotes = ['* Catatan satu. 108) Catatan dua.', ''];
+
+	const secondFirst = resolveFootnote(footnotes, '2', 2, { markerCount: 2, verseText });
+	const firstSecond = resolveFootnote(footnotes, '1', 1, { markerCount: 2, verseText });
+	const firstFirst = resolveFootnote(footnotes, '1', 1, { markerCount: 2, verseText });
+	const secondSecond = resolveFootnote(footnotes, '2', 2, { markerCount: 2, verseText });
+
+	assert.equal(firstSecond.content, firstFirst.content);
+	assert.equal(secondFirst.content, secondSecond.content);
+	assert.equal(firstFirst.content, 'Catatan satu.');
+	assert.equal(secondFirst.content, 'Catatan dua.');
 });
