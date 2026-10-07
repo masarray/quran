@@ -279,7 +279,7 @@ export function extractFootnoteMarkers(verseText) {
 
 	while ((match = supRegex.exec(verseText)) !== null) {
 		const attributes = match[1] || '';
-		const idMatch = attributes.match(/\bfoot_note\s*=\s*(?:\"([^\"]+)\"|'([^']+)'|([^\s>]+))/i);
+		const idMatch = attributes.match(/\bfoot_note\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/i);
 		if (!idMatch) continue;
 
 		const footnoteId = idMatch[1] ?? idMatch[2] ?? idMatch[3] ?? '';
