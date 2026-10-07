@@ -5,7 +5,7 @@
 	import Skeleton from '$ui/FlowbiteSvelte/skeleton/Skeleton.svelte';
 	import { __currentPage, __verseTranslations, __verseTranslationData, __userSettings } from '$utils/stores';
 	import { fetchVerseTranslationData } from '$utils/fetchData';
-	import { extractFootnoteMarkers, resolveFootnote } from '$utils/footnotes';
+	import { canonicalizeVerseFootnotes } from '$utils/footnotes';
 	import { selectableVerseTranslations } from '$data/options';
 
 	$: fontSizes = JSON.parse($__userSettings).displaySettings.fontSizes;
@@ -53,19 +53,20 @@
 
 		const verseKey = `${footnoteChapter}:${footnoteVerse}`;
 		const verseData = $__verseTranslationData?.[footnoteTranslation]?.[verseKey];
-		const footnotes = verseData?.footnotes;
-		const markerCount = extractFootnoteMarkers(verseData?.text ?? '').length;
-		const resolvedFootnote = resolveFootnote(footnotes, footnoteId, footnoteNumber, { markerCount });
+		const canonical = canonicalizeVerseFootnotes(verseData?.text ?? '', verseData?.footnotes);
+		const resolvedFootnote = canonical.footnotes.find(
+			(entry) => entry.footnoteId === footnoteId || entry.displayNumber === footnoteNumber
+		);
 		footnoteText = resolvedFootnote?.content || 'Catatan kaki tidak tersedia.';
 
-		if (!resolvedFootnote) {
-			console.warn('[footnote] unresolved footnote', {
+		if (!resolvedFootnote?.content) {
+			console.warn('[footnote] unresolved canonical footnote', {
 				chapter: footnoteChapter,
 				verse: footnoteVerse,
 				translation: footnoteTranslation,
 				footnoteId,
 				footnoteNumber,
-				markerCount
+				diagnostics: canonical.diagnostics
 			});
 		}
 
