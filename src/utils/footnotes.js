@@ -59,12 +59,6 @@ export function splitCompositeFootnote(content, markerCount) {
 	if (typeof content !== 'string' || content.trim() === '') return null;
 	if (!Number.isInteger(markerCount) || markerCount < 2 || markerCount > 10) return null;
 
-	// Resource 33 commonly stores later footnotes inside the first footnote using
-	// sequential source-note numbers such as "254) ... 255) ...". Some source
-	// records omit the space before the next number (for example ".708) ...").
-	// Recovery stays strict: a boundary must follow whitespace or safe sentence
-	// punctuation, exactly markerCount - 1 boundaries must exist, and the source
-	// note numbers must be sequential.
 	const boundaryRegex = /(^|[\s.;:!?])(\d{2,5})\)\s+/g;
 	const boundaries = [];
 	let match;
@@ -73,8 +67,6 @@ export function splitCompositeFootnote(content, markerCount) {
 		const separator = match[1] ?? '';
 		boundaries.push({
 			number: Number(match[2]),
-			// Keep punctuation with the preceding footnote while excluding the
-			// source-note number from the recovered text.
 			start: match.index + separator.length,
 			contentStart: boundaryRegex.lastIndex
 		});
@@ -102,20 +94,119 @@ export function recoverCompositeFootnotes(footnotes, markerCount) {
 	if (!Number.isInteger(markerCount) || markerCount < 2) return null;
 
 	const populatedEntries = getFootnoteEntries(footnotes)
-		.map((entry) => normalizeFootnoteContent(entry))
-		.filter(Boolean);
+		.map((entry, sourceIndex) => ({ entry, sourceIndex, content: normalizeFootnoteContent(entry) }))
+		.filter((candidate) => candidate.content);
 
-	// Do not attempt recovery if the source already provides multiple usable
-	// entries. In that case normal ID/index resolution remains authoritative.
 	if (populatedEntries.length !== 1) return null;
 
-	const sections = splitCompositeFootnote(populatedEntries[0], markerCount);
+	const sections = splitCompositeFootnote(populatedEntries[0].content, markerCount);
 	if (!sections) return null;
 
 	return {
 		sections,
+		sourceIndex: populatedEntries[0].sourceIndex,
 		strategy: 'composite-sequential-boundaries'
 	};
+}
+
+function resolveExactEmbeddedId(footnotes, id) {
+	if (!Array.isArray(footnotes) || id === '') return null;
+	const entry = footnotes.find((candidate) => getEmbeddedFootnoteId(candidate) === id);
+	const content = normalizeFootnoteContent(entry);
+	return content ? { content, strategy: 'embedded-id', recovered: false } : null;
+}
+
+function resolveDirectEntry(footnotes, id, displayNumber) {
+	const number = Number(displayNumber);
+	const displayIndex = Number.isInteger(number) && number > 0 ? number - 1 : null;
+
+	if (Array.isArray(footnotes)) {
+		const candidate = getArrayCandidate(footnotes, displayIndex);
+		const content = normalizeFootnoteContent(candidate);
+		return content ? { content, strategy: 'display-number', recovered: false } : null;
+	}
+
+	if (footnotes && typeof footnotes === 'object') {
+		if (id !== '') {
+			const byId = normalizeFootnoteContent(footnotes[id]);
+			if (byId) return { content: byId, strategy: 'id-map', recovered: false };
+		}
+		if (Number.isInteger(number) && number > 0) {
+			const byDisplayNumber = normalizeFootnoteContent(footnotes[String(number)]);
+			if (byDisplayNumber) return { content: byDisplayNumber, strategy: 'display-number-map', recovered: false };
+		}
+		if (displayIndex !== null) {
+			const byDisplayIndex = normalizeFootnoteContent(footnotes[String(displayIndex)]);
+			if (byDisplayIndex) return { content: byDisplayIndex, strategy: 'display-index-map', recovered: false };
+		}
+	}
+
+	return null;
+}
+
+export function canonicalizeVerseFootnotes(verseText, footnotes) {
+	const markers = extractFootnoteMarkers(verseText);
+	const markerCount = markers.length;
+	const canonical = [];
+	const diagnostics = {
+		markerCount,
+		populatedSourceEntries: getFootnoteEntries(footnotes).map((entry) => normalizeFootnoteContent(entry)).filter(Boolean).length,
+		compositeRecovered: false,
+		ambiguousComposite: false
+	};
+
+	if (markerCount === 0) return { markers, footnotes: canonical, diagnostics };
+
+	const exactByMarker = markers.map((marker) => resolveExactEmbeddedId(footnotes, marker.footnoteId));
+	const hasExactForEveryMarker = exactByMarker.every(Boolean);
+
+	if (hasExactForEveryMarker) {
+		for (let index = 0; index < markers.length; index += 1) {
+			canonical.push({
+				displayNumber: markers[index].displayNumber,
+				footnoteId: markers[index].footnoteId,
+				content: exactByMarker[index].content,
+				strategy: exactByMarker[index].strategy,
+				recovered: false
+			});
+		}
+		return { markers, footnotes: canonical, diagnostics };
+	}
+
+	const compositeCandidate = markerCount >= 2 && diagnostics.populatedSourceEntries === 1;
+	const recoveredComposite = compositeCandidate ? recoverCompositeFootnotes(footnotes, markerCount) : null;
+
+	if (recoveredComposite) {
+		diagnostics.compositeRecovered = true;
+		for (let index = 0; index < markers.length; index += 1) {
+			const exact = exactByMarker[index];
+			canonical.push({
+				displayNumber: markers[index].displayNumber,
+				footnoteId: markers[index].footnoteId,
+				content: exact?.content ?? recoveredComposite.sections[index],
+				strategy: exact ? exact.strategy : recoveredComposite.strategy,
+				recovered: !exact,
+				sourceIndex: exact ? undefined : recoveredComposite.sourceIndex
+			});
+		}
+		return { markers, footnotes: canonical, diagnostics };
+	}
+
+	if (compositeCandidate) diagnostics.ambiguousComposite = true;
+
+	for (const marker of markers) {
+		const exact = resolveExactEmbeddedId(footnotes, marker.footnoteId);
+		const direct = exact ?? resolveDirectEntry(footnotes, marker.footnoteId, marker.displayNumber);
+		canonical.push({
+			displayNumber: marker.displayNumber,
+			footnoteId: marker.footnoteId,
+			content: direct?.content ?? null,
+			strategy: direct?.strategy ?? 'unresolved',
+			recovered: false
+		});
+	}
+
+	return { markers, footnotes: canonical, diagnostics };
 }
 
 export function resolveFootnote(footnotes, footnoteId, displayNumber, options = {}) {
@@ -127,32 +218,22 @@ export function resolveFootnote(footnotes, footnoteId, displayNumber, options = 
 	const numericId = Number(id);
 	const legacyIndex = Number.isInteger(numericId) && numericId > 0 ? numericId - 1 : null;
 
-	if (Array.isArray(footnotes)) {
-		if (id !== '') {
-			const byEmbeddedId = footnotes.find((entry) => getEmbeddedFootnoteId(entry) === id);
-			const content = normalizeFootnoteContent(byEmbeddedId);
-			if (content) return { content, strategy: 'embedded-id' };
-		}
-
-		const byDisplayNumber = getArrayCandidate(footnotes, displayIndex);
-		const displayContent = normalizeFootnoteContent(byDisplayNumber);
-		if (displayContent) return { content: displayContent, strategy: 'display-number' };
-	} else if (typeof footnotes === 'object') {
-		if (id !== '') {
-			const directById = normalizeFootnoteContent(footnotes[id]);
-			if (directById) return { content: directById, strategy: 'id-map' };
-		}
-
-		if (Number.isInteger(number) && number > 0) {
-			const directByDisplayNumber = normalizeFootnoteContent(footnotes[String(number)]);
-			if (directByDisplayNumber) return { content: directByDisplayNumber, strategy: 'display-number-map' };
-		}
-
-		if (displayIndex !== null) {
-			const directByDisplayIndex = normalizeFootnoteContent(footnotes[String(displayIndex)]);
-			if (directByDisplayIndex) return { content: directByDisplayIndex, strategy: 'display-index-map' };
+	if (typeof options.verseText === 'string') {
+		const canonical = canonicalizeVerseFootnotes(options.verseText, footnotes);
+		const match = canonical.footnotes.find(
+			(entry) => entry.footnoteId === id || (Number.isInteger(number) && entry.displayNumber === number)
+		);
+		if (match?.content) {
+			return {
+				content: match.content,
+				strategy: match.strategy,
+				recovered: match.recovered === true
+			};
 		}
 	}
+
+	const exact = resolveExactEmbeddedId(footnotes, id);
+	if (exact) return exact;
 
 	if (displayIndex !== null && Number.isInteger(options.markerCount) && options.markerCount >= 2) {
 		const recovered = recoverCompositeFootnotes(footnotes, options.markerCount);
@@ -166,7 +247,9 @@ export function resolveFootnote(footnotes, footnoteId, displayNumber, options = 
 		}
 	}
 
-	// Legacy ID-as-index lookup stays last as a compatibility fallback only.
+	const direct = resolveDirectEntry(footnotes, id, number);
+	if (direct) return direct;
+
 	if (Array.isArray(footnotes) && legacyIndex !== displayIndex) {
 		const byLegacyIndex = getArrayCandidate(footnotes, legacyIndex);
 		const legacyContent = normalizeFootnoteContent(byLegacyIndex);
@@ -196,7 +279,7 @@ export function extractFootnoteMarkers(verseText) {
 
 	while ((match = supRegex.exec(verseText)) !== null) {
 		const attributes = match[1] || '';
-		const idMatch = attributes.match(/\bfoot_note\s*=\s*(?:"([^"]+)"|'([^']+)'|([^\s>]+))/i);
+		const idMatch = attributes.match(/\bfoot_note\s*=\s*(?:\"([^\"]+)\"|'([^']+)'|([^\s>]+))/i);
 		if (!idMatch) continue;
 
 		const footnoteId = idMatch[1] ?? idMatch[2] ?? idMatch[3] ?? '';
@@ -272,20 +355,20 @@ export function auditTranslationFootnotes(translationData) {
 		if (!verseData || typeof verseData !== 'object' || typeof verseData.text !== 'string') continue;
 		summary.versesScanned += 1;
 
-		const markers = extractFootnoteMarkers(verseData.text);
+		const canonical = canonicalizeVerseFootnotes(verseData.text, verseData.footnotes);
+		const markers = canonical.markers;
 		if (markers.length === 0) continue;
 		summary.versesWithFootnotes += 1;
-
-		const compositeCandidate = markers.length >= 2 && getFootnoteEntries(verseData.footnotes).map((entry) => normalizeFootnoteContent(entry)).filter(Boolean).length === 1;
-		const recoveredComposite = compositeCandidate ? recoverCompositeFootnotes(verseData.footnotes, markers.length) : null;
-		if (compositeCandidate && !recoveredComposite) summary.ambiguousComposite += 1;
+		if (canonical.diagnostics.ambiguousComposite) summary.ambiguousComposite += 1;
 
 		for (const marker of markers) {
 			summary.markers += 1;
 			const is2Plus = marker.displayNumber >= 2;
 			if (is2Plus) summary.markers2Plus += 1;
 
-			const resolved = resolveFootnote(verseData.footnotes, marker.footnoteId, marker.displayNumber, { markerCount: markers.length });
+			const resolved = canonical.footnotes.find(
+				(entry) => entry.footnoteId === marker.footnoteId || entry.displayNumber === marker.displayNumber
+			);
 			const legacy = resolveLegacyFootnote(verseData.footnotes, marker.footnoteId);
 
 			if (resolved?.content) {
@@ -310,7 +393,7 @@ export function auditTranslationFootnotes(translationData) {
 				verseKey,
 				displayNumber: marker.displayNumber,
 				footnoteId: marker.footnoteId,
-				status: compositeCandidate && !recoveredComposite ? 'ambiguous-composite' : status,
+				status: canonical.diagnostics.ambiguousComposite ? 'ambiguous-composite' : status,
 				footnotesType: Array.isArray(verseData.footnotes) ? 'array' : typeof verseData.footnotes,
 				footnotesCount: Array.isArray(verseData.footnotes) ? verseData.footnotes.length : verseData.footnotes && typeof verseData.footnotes === 'object' ? Object.keys(verseData.footnotes).length : 0
 			});
